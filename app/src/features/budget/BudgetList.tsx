@@ -24,7 +24,8 @@ import {
   PageHeader,
   ProgressBar,
 } from '@/components/ui';
-import { db, type Budget, type Category, type Transaction } from '@/db';
+import { db, type Budget, type Category, type Transaction, useSpaceId } from '@/db';
+import { filterBySpace } from '@/space';
 import { BudgetFormModal } from './BudgetFormModal';
 import { DeleteConfirmModal } from './DeleteConfirmModal';
 import { formatMoney, periodLabel, periodRange } from './format';
@@ -35,7 +36,7 @@ export default function BudgetList() {
   const [editing, setEditing] = useState<Budget | null>(null);
   const [deleting, setDeleting] = useState<Budget | null>(null);
 
-  const budgets = useLiveQuery(
+  const budgetsAll = useLiveQuery(
     () => db.budgets.orderBy('createdAt').toArray(),
     [],
   ) as Budget[] | undefined;
@@ -43,10 +44,19 @@ export default function BudgetList() {
     () => db.categories.toArray(),
     [],
   ) as Category[] | undefined;
-  const transactions = useLiveQuery(
+  const transactionsAll = useLiveQuery(
     () => db.transactions.toArray(),
     [],
   ) as Transaction[] | undefined;
+  const spaceId = useSpaceId();
+  const budgets = useMemo(
+    () => filterBySpace(budgetsAll ?? [], spaceId),
+    [budgetsAll, spaceId],
+  );
+  const transactions = useMemo(
+    () => filterBySpace(transactionsAll ?? [], spaceId),
+    [transactionsAll, spaceId],
+  );
 
   // ?create=1 自动打开新建模态
   useEffect(() => {
@@ -65,7 +75,7 @@ export default function BudgetList() {
     return m;
   }, [categories]);
 
-  const budgetCount = budgets?.length ?? 0;
+  const budgetCount = budgets.length;
   const isEmpty = budgetCount === 0;
 
   // 按 (period, categoryId) 缓存支出聚合；预算卡片渲染时直接读取
@@ -83,7 +93,7 @@ export default function BudgetList() {
       return `${b.period}:${cid}:${range.from}`;
     };
     const buckets: Array<{ b: Budget; from: number; to: number }> = [];
-    for (const b of budgets ?? []) {
+    for (const b of budgets) {
       const r = ranges[b.period];
       buckets.push({ b, from: r.from, to: r.to });
     }
@@ -129,7 +139,7 @@ export default function BudgetList() {
         }
       />
 
-      <div className="p-8 max-w-[1400px]">
+      <div className="p-4 lg:p-8 max-w-[1400px]">
         {isEmpty ? (
           <Card>
             <EmptyState
@@ -147,7 +157,7 @@ export default function BudgetList() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-            {(budgets ?? []).map((b) => {
+            {(budgets).map((b) => {
               const range = periodRange(b.period);
               const key = `${b.period}:${b.categoryId ?? 0}:${range.from}`;
               const spent = spentByKey.get(key) ?? 0;

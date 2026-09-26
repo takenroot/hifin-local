@@ -22,7 +22,8 @@ import {
   Modal,
   Select,
 } from '@/components/ui';
-import { db, type Account, type Goal, type GoalKind } from '@/db';
+import { db, type Account, type Goal, type GoalKind, useSpaceId } from '@/db';
+import { filterBySpace } from '@/space';
 import {
   COLOR_CHOICES,
   REPAYMENT_SUBTYPES,
@@ -91,9 +92,14 @@ export function GoalFormModal({ open, onClose, goal }: Props) {
   const [form, setForm] = useState<FormState>(DEFAULT_FORM);
   const [submitted, setSubmitted] = useState(false);
 
-  const accounts = useLiveQuery(
+  const accountsAll = useLiveQuery(
     () => db.accounts.orderBy('name').toArray(),
     [],
+  );
+  const spaceId = useSpaceId();
+  const accounts = useMemo(
+    () => filterBySpace(accountsAll ?? [], spaceId),
+    [accountsAll, spaceId],
   );
 
   useEffect(() => {
@@ -142,6 +148,7 @@ export function GoalFormModal({ open, onClose, goal }: Props) {
       accountId: form.accountId,
       icon: form.icon,
       color: form.color,
+      spaceId: goal?.spaceId ?? spaceId,
       createdAt: goal?.createdAt ?? now,
     };
     if (goal?.id != null) {

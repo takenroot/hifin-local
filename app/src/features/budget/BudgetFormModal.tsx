@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { IconCheck } from '@tabler/icons-react';
 import { Button, Input, Modal, Select } from '@/components/ui';
-import { db, type Budget, type Category, type BudgetPeriod } from '@/db';
+import { db, type Budget, type Category, type BudgetPeriod, useSpaceId } from '@/db';
 import { parseAmount } from './format';
 
 interface Props {
@@ -47,6 +47,7 @@ export function BudgetFormModal({ open, onClose, budget }: Props) {
   const isEdit = !!budget;
   const [form, setForm] = useState<FormState>(DEFAULT_FORM);
   const [submitted, setSubmitted] = useState(false);
+  const spaceId = useSpaceId();
 
   const categories = useLiveQuery(
     () => db.categories.toArray(),
@@ -104,6 +105,7 @@ export function BudgetFormModal({ open, onClose, budget }: Props) {
       categoryId: form.categoryId,
       amount: parseAmount(form.amount),
       period: form.period,
+      spaceId: budget?.spaceId ?? spaceId,
       createdAt: budget?.createdAt ?? now,
     };
     if (budget?.id != null) {

@@ -25,7 +25,8 @@ import {
   PageHeader,
   ProgressBar,
 } from '@/components/ui';
-import { db, type Account, type Goal } from '@/db';
+import { db, type Account, type Goal, useSpaceId } from '@/db';
+import { filterBySpace } from '@/space';
 import { GoalFormModal } from './GoalFormModal';
 import { GoalAmountModal } from './GoalAmountModal';
 import { DeleteConfirmModal } from './DeleteConfirmModal';
@@ -42,11 +43,20 @@ export default function GoalList() {
   } | null>(null);
   const [deleting, setDeleting] = useState<Goal | null>(null);
 
-  const goals = useLiveQuery(
+  const goalsAll = useLiveQuery(
     () => db.goals.orderBy('createdAt').toArray(),
     [],
   );
-  const accounts = useLiveQuery(() => db.accounts.toArray(), []);
+  const accountsAll = useLiveQuery(() => db.accounts.toArray(), []);
+  const spaceId = useSpaceId();
+  const goals = useMemo(
+    () => filterBySpace(goalsAll ?? [], spaceId),
+    [goalsAll, spaceId],
+  );
+  const accounts = useMemo(
+    () => filterBySpace(accountsAll ?? [], spaceId),
+    [accountsAll, spaceId],
+  );
 
   // ?create=1 自动打开新建模态
   useEffect(() => {
@@ -65,7 +75,7 @@ export default function GoalList() {
     return m;
   }, [accounts]);
 
-  const goalCount = goals?.length ?? 0;
+  const goalCount = goals.length;
   const isEmpty = goalCount === 0;
 
   async function handleDeleteConfirm() {
@@ -97,7 +107,7 @@ export default function GoalList() {
         }
       />
 
-      <div className="p-8 max-w-[1400px]">
+      <div className="p-4 lg:p-8 max-w-[1400px]">
         {isEmpty ? (
           <Card>
             <EmptyState
@@ -115,7 +125,7 @@ export default function GoalList() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-            {(goals ?? []).map((g) => (
+            {goals.map((g) => (
               <GoalCard
                 key={g.id}
                 goal={g}

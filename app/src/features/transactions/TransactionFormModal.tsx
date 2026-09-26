@@ -19,7 +19,8 @@ import {
   IconBuildingStore,
   IconWand,
 } from '@tabler/icons-react';
-import { db, type Account, type Category, type Tag, type Merchant, type Transaction, type TransactionType, type TxRule } from '@/db';
+import { db, type Account, type Category, type Tag, type Merchant, type Transaction, type TransactionType, type TxRule, useSpaceId } from '@/db';
+import { filterBySpace } from '@/space';
 import { deltasOf } from './balance';
 import { toDatetimeLocal } from './format';
 import { applyRules } from '@/features/rules/engine';
@@ -58,11 +59,17 @@ function accountsOfType(
 /* ---------------- component ---------------- */
 
 export function TransactionFormModal({ open, onClose, editing }: Props) {
-  const accounts = useLiveQuery(() => db.accounts.toArray(), [], [] as Account[]);
+  const accountsAll = useLiveQuery(() => db.accounts.toArray(), [], [] as Account[]);
   const categories = useLiveQuery(() => db.categories.toArray(), [], [] as Category[]);
   const tags = useLiveQuery(() => db.tags.toArray(), [], [] as Tag[]);
   const merchants = useLiveQuery(() => db.merchants.toArray(), [], [] as Merchant[]);
   const rules = useLiveQuery(() => db.rules.toArray(), [], [] as TxRule[]);
+  const spaceId = useSpaceId();
+  // 账户选项限定为当前空间，避免在"工作空间"里选到"家庭空间"的账户
+  const accounts = useMemo(
+    () => filterBySpace(accountsAll, spaceId),
+    [accountsAll, spaceId],
+  );
 
   /** 规则建议的 categoryId（name 失焦后计算，用户接受后清空） */
   const [suggestedCategoryId, setSuggestedCategoryId] = useState<number | undefined>();
@@ -237,6 +244,7 @@ export function TransactionFormModal({ open, onClose, editing }: Props) {
         tagIds: tagIds.length > 0 ? tagIds : undefined,
         merchantId,
         includeInAsset,
+        spaceId: editing?.spaceId ?? spaceId,
         createdAt: editing?.createdAt ?? Date.now(),
       };
 

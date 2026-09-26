@@ -62,16 +62,18 @@ export function PreferencesSection() {
             <div className="min-w-0">
               <div className="text-sm text-text dark:text-text-dark">主题</div>
               <div className="text-xs text-text-muted mt-1">
-                选择您的主题，切换纯白或暗黑模式
+                选择您的主题，切换纯白、暗黑模式或跟随系统
               </div>
             </div>
-            <div className="flex items-center gap-3 flex-none">
-              <span className="text-xs text-text-muted">
-                {theme === 'dark' ? '暗黑' : '浅色'}
-              </span>
-              <Switch
-                checked={theme === 'dark'}
-                onChange={(v) => setTheme((v ? 'dark' : 'light') as Theme)}
+            <div className="w-[180px] flex-none">
+              <Select
+                value={theme}
+                options={[
+                  { label: '浅色', value: 'light' },
+                  { label: '暗黑', value: 'dark' },
+                  { label: '跟随系统', value: 'system' },
+                ]}
+                onChange={(e) => setTheme(e.target.value as Theme)}
               />
             </div>
           </div>

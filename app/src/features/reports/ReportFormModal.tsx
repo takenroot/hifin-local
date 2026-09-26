@@ -1,15 +1,18 @@
 /**
  * 新建 / 编辑报表模态
  *
- * 字段：名称（0/20）、描述（0/200）、模板（四选一）、图标
+ * 字段：名称（0/20）、描述（0/200）、模板（四选一）、图标 / 颜色。
+ * 当选择"自定义"模板时，额外展示：数据范围下拉 + 展示组件多选；
+ * 两者会以 JSON 形式写入 Report.config（向后兼容：未启用自定义时 config 为空）。
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import clsx from 'clsx';
 import { IconCheck } from '@tabler/icons-react';
 import {
   Button,
   Input,
   Modal,
+  Select,
   Textarea,
 } from '@/components/ui';
 import { db, type Report } from '@/db';
@@ -19,6 +22,15 @@ import {
   REPORT_TEMPLATES,
   type ReportTemplate,
 } from './metadata';
+import {
+  DEFAULT_REPORT_CONFIG,
+  REPORT_COMPONENT_OPTIONS,
+  REPORT_RANGE_OPTIONS,
+  parseReportConfig,
+  type ReportComponentKey,
+  type ReportConfig,
+  type ReportRangeKey,
+} from './config';
 
 interface Props {
   open: boolean;
@@ -35,6 +47,7 @@ interface FormState {
   template: ReportTemplate;
   icon: string;
   color: string;
+  config: ReportConfig;
 }
 
 const DEFAULT_FORM: FormState = {
@@ -43,6 +56,7 @@ const DEFAULT_FORM: FormState = {
   template: 'monthly',
   icon: REPORT_ICON_CHOICES[0],
   color: REPORT_COLOR_CHOICES[0],
+  config: { ...DEFAULT_REPORT_CONFIG },
 };
 
 function formFromReport(r: Report): FormState {
@@ -55,6 +69,7 @@ function formFromReport(r: Report): FormState {
     color: REPORT_COLOR_CHOICES.includes(meta?.tone ?? '')
       ? meta!.tone
       : REPORT_COLOR_CHOICES[0],
+    config: parseReportConfig(r.config),
   };
 }
 
@@ -74,8 +89,33 @@ export function ReportFormModal({ open, onClose, report }: Props) {
   const nameInvalid = submitted && trimmedName.length === 0;
   const nameTooLong = form.name.length > NAME_LIMIT;
   const descTooLong = form.description.length > DESC_LIMIT;
+  const componentsEmpty = form.config.components.length === 0;
+  const configInvalid = submitted && componentsEmpty;
   const canConfirm =
-    trimmedName.length > 0 && !nameTooLong && !descTooLong;
+    trimmedName.length > 0 && !nameTooLong && !descTooLong && !componentsEmpty;
+
+  const rangeOptions = useMemo(
+    () =>
+      REPORT_RANGE_OPTIONS.map((o) => ({
+        label: o.label,
+        value: o.key,
+      })),
+    [],
+  );
+
+  function toggleComponent(key: ReportComponentKey) {
+    const exists = form.config.components.includes(key);
+    const next = exists
+      ? form.config.components.filter((c) => c !== key)
+      : [...form.config.components, key];
+    setForm({
+      ...form,
+      config: {
+        ...form.config,
+        components: next.length > 0 ? next : [key], // 至少保留一个
+      },
+    });
+  }
 
   async function handleConfirm() {
     setSubmitted(true);
@@ -87,6 +127,7 @@ export function ReportFormModal({ open, onClose, report }: Props) {
       template: form.template,
       icon: form.icon,
       createdAt: report?.createdAt ?? now,
+      config: JSON.stringify(form.config),
     };
     if (report?.id != null) {
       await db.reports.update(report.id, payload);
@@ -144,7 +185,7 @@ export function ReportFormModal({ open, onClose, report }: Props) {
           <Input
             placeholder="为报表起个名字"
             value={form.name}
-            maxLength={NAME_LIMIT + 50} // 允许溢出让 invalid 样式生效
+            maxLength={NAME_LIMIT + 50}
             invalid={nameInvalid || nameTooLong}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
           />
@@ -218,6 +259,75 @@ export function ReportFormModal({ open, onClose, report }: Props) {
               );
             })}
           </div>
+        </div>
+
+        {/* 自定义：数据范围 */}
+        <div>
+          <div className="mb-1.5 text-sm">数据范围</div>
+          <Select
+            value={form.config.range}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                config: {
+                  ...form.config,
+                  range: e.target.value as ReportRangeKey,
+                },
+              })
+            }
+            options={rangeOptions}
+          />
+        </div>
+
+        {/* 自定义：展示组件（多选） */}
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="text-sm">
+              展示组件 <span className="text-expense">*</span>
+            </label>
+            <span className="text-xs text-text-muted">
+              已选 {form.config.components.length} 项
+            </span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {REPORT_COMPONENT_OPTIONS.map((opt) => {
+              const active = form.config.components.includes(opt.key);
+              return (
+                <button
+                  key={opt.key}
+                  type="button"
+                  onClick={() => toggleComponent(opt.key)}
+                  className={clsx(
+                    'flex flex-col items-start gap-1 p-3 rounded-xl text-left border transition',
+                    active
+                      ? 'border-text dark:border-bg-card bg-bg dark:bg-bg-dark'
+                      : 'border-border dark:border-border-dark hover:bg-bg dark:hover:bg-bg-dark',
+                  )}
+                  aria-pressed={active}
+                >
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={clsx(
+                        'w-4 h-4 rounded border flex-none flex items-center justify-center',
+                        active
+                          ? 'bg-text dark:bg-bg-card-dark border-text dark:border-bg-card-dark text-bg dark:text-text-dark'
+                          : 'border-border dark:border-border-dark',
+                      )}
+                    >
+                      {active && <IconCheck size={12} />}
+                    </span>
+                    <span className="text-sm font-medium">{opt.label}</span>
+                  </div>
+                  <div className="text-xs text-text-muted">
+                    {opt.description}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+          {configInvalid && (
+            <div className="mt-1 text-xs text-expense">请至少勾选一个展示组件</div>
+          )}
         </div>
 
         {/* 图标 */}

@@ -22,7 +22,9 @@ import {
   type Account,
   type Tag,
   type Merchant,
+  useSpaceId,
 } from '@/db';
+import { filterBySpace } from '@/space';
 import { EmptyState } from '@/components/ui';
 import { applyFilter, summarize, type TxFilter } from './balance';
 import { formatMoney, groupKey } from './format';
@@ -40,11 +42,22 @@ export function TransactionListView({ filter, onEdit }: Props) {
     [] as Transaction[],
   );
   const categories = useLiveQuery(() => db.categories.toArray(), [], [] as Category[]);
-  const accounts = useLiveQuery(() => db.accounts.toArray(), [], [] as Account[]);
+  const accountsAll = useLiveQuery(() => db.accounts.toArray(), [], [] as Account[]);
   const tags = useLiveQuery(() => db.tags.toArray(), [], [] as Tag[]);
   const merchants = useLiveQuery(() => db.merchants.toArray(), [], [] as Merchant[]);
+  const spaceId = useSpaceId();
 
-  const filtered = useMemo(() => applyFilter(transactions, filter), [transactions, filter]);
+  // 空间隔离：只展示当前空间下的流水 + 账户（转账/选账户时也要限定）
+  const scopedTx = useMemo(
+    () => filterBySpace(transactions, spaceId),
+    [transactions, spaceId],
+  );
+  const accounts = useMemo(
+    () => filterBySpace(accountsAll, spaceId),
+    [accountsAll, spaceId],
+  );
+
+  const filtered = useMemo(() => applyFilter(scopedTx, filter), [scopedTx, filter]);
 
   const groups = useMemo(() => {
     const today = dayjs();
@@ -110,7 +123,7 @@ export function TransactionListView({ filter, onEdit }: Props) {
       <EmptyState
         title="暂无流水"
         description={
-          transactions.length === 0
+          scopedTx.length === 0
             ? '创建一笔流水开始记账吧～'
             : '当前筛选条件下没有匹配的流水'
         }

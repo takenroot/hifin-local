@@ -23,7 +23,7 @@ import {
   Switch,
   Textarea,
 } from '@/components/ui';
-import { db, type Account, type AccountType } from '@/db';
+import { db, type Account, type AccountType, useSpaceId } from '@/db';
 import {
   ACCOUNT_TYPE_META,
   ACCOUNT_TONE_BG,
@@ -68,6 +68,7 @@ export function AccountFormModal({ open, onClose, account }: AccountFormModalPro
   );
   const [form, setForm] = useState<FormState>(DEFAULT_FORM);
   const [submitted, setSubmitted] = useState(false);
+  const spaceId = useSpaceId();
 
   // 每次打开 / 切换编辑对象时，重置状态
   useEffect(() => {
@@ -123,6 +124,7 @@ export function AccountFormModal({ open, onClose, account }: AccountFormModalPro
       remark: form.remark.trim() || undefined,
       tagIds: form.tagIds,
       includeInNetAsset: form.includeInNetAsset,
+      spaceId: account?.spaceId ?? spaceId,
       createdAt: account?.createdAt ?? now,
       updatedAt: now,
     };

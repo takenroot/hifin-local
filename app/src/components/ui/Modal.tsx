@@ -52,7 +52,7 @@ export function Modal({
       />
       <div
         className={clsx(
-          'relative card max-h-[85vh] overflow-hidden flex flex-col',
+          'relative card max-h-[85vh] overflow-hidden flex flex-col max-w-[calc(100vw-2rem)]',
         )}
         style={{ width }}
       >

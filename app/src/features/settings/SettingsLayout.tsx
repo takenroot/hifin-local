@@ -85,7 +85,7 @@ export function SettingsLayout({ active, onSelect, children }: SettingsLayoutPro
       </div>
 
       {/* 内容区 */}
-      <main className="flex-1 min-w-0 px-6 py-8 lg:px-10">
+      <main className="flex-1 min-w-0 px-4 py-8 lg:px-10">
         <div className="max-w-[960px] mx-auto">{children}</div>
       </main>
     </div>

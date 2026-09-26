@@ -47,6 +47,7 @@ export const CMD_ITEMS: CmdItem[] = [
     group: '快捷操作',
     to: '/account/list?create=1',
     icon: <IconPlus size={14} />,
+    shortcut: 'n',
   },
   {
     id: 'new-cat',

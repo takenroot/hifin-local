@@ -14,7 +14,7 @@
  *    集成阶段由 App.tsx 的 glob 收集决定保留哪一个。
  *    本文件**未修改** App.tsx 与 features/home。
  */
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useNavigate } from 'react-router-dom';
@@ -30,6 +30,7 @@ import {
   IconArrowDownLeft,
   IconArrowRight,
   IconAlertTriangle,
+  IconSettings,
 } from '@tabler/icons-react';
 import clsx from 'clsx';
 import {
@@ -54,7 +55,8 @@ import {
   ProgressBar,
   PageHeader,
 } from '@/components/ui';
-import { db } from '@/db';
+import { db, useSpaceId } from '@/db';
+import { filterBySpace } from '@/space';
 import {
   calcNetAsset,
   sumIncome,
@@ -65,6 +67,14 @@ import {
   buildCalendar,
   transactionsOnDay,
 } from './calculations';
+import {
+  fetchWeather,
+  getSavedCity,
+  saveCity,
+  wmoToText,
+  CITY_PRESETS,
+  type WeatherInfo,
+} from './weather';
 import {
   formatMoney,
   formatPercent,
@@ -92,12 +102,37 @@ export default function Dashboard() {
   const currentMonth = useMemo(() => today.startOf('month'), [today]);
   const prevMonth = useMemo(() => today.subtract(1, 'month').startOf('month'), [today]);
 
+  // 天气（Open-Meteo，失败静默隐藏）
+  const [weather, setWeather] = useState<WeatherInfo | null>(null);
+  const [cityModalOpen, setCityModalOpen] = useState(false);
+  const [currentCity, setCurrentCity] = useState<string>('');
+  useEffect(() => {
+    let cancelled = false;
+    void fetchWeather().then((w) => {
+      if (!cancelled && w) {
+        setWeather(w);
+        setCurrentCity(w.cityName);
+      }
+    });
+    void getSavedCity().then((c) => {
+      if (!cancelled) setCurrentCity((prev) => prev || c.name);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // 实时数据
-  const accounts = useLiveQuery(() => db.accounts.toArray(), []) ?? [];
-  const transactions = useLiveQuery(() => db.transactions.toArray(), []) ?? [];
-  const goals = useLiveQuery(() => db.goals.toArray(), []) ?? [];
+  const accountsAll = useLiveQuery(() => db.accounts.toArray(), []) ?? [];
+  const transactionsAll = useLiveQuery(() => db.transactions.toArray(), []) ?? [];
+  const goalsAll = useLiveQuery(() => db.goals.toArray(), []) ?? [];
   const categories = useLiveQuery(() => db.categories.toArray(), []) ?? [];
   const nicknameKv = useLiveQuery(() => db.kv.get('nickname'), []);
+  const spaceId = useSpaceId();
+  // 按空间过滤；sid=0 不过滤
+  const accounts = useMemo(() => filterBySpace(accountsAll, spaceId), [accountsAll, spaceId]);
+  const transactions = useMemo(() => filterBySpace(transactionsAll, spaceId), [transactionsAll, spaceId]);
+  const goals = useMemo(() => filterBySpace(goalsAll, spaceId), [goalsAll, spaceId]);
 
   const nickname = (nicknameKv?.value as string | undefined) || '用户';
 
@@ -192,8 +227,8 @@ export default function Dashboard() {
         }
       />
 
-      <div className="p-6 lg:p-8">
-        <div className="flex flex-col xl:flex-row gap-6 max-w-[1440px] mx-auto">
+      <div className="p-4 lg:p-8">
+        <div className="flex flex-col lg:flex-row gap-6 max-w-[1440px] mx-auto">
           {/* 主区域 */}
           <div className="flex-1 min-w-0 space-y-6">
             {/* 欢迎区 */}
@@ -203,8 +238,26 @@ export default function Dashboard() {
                   你好，{nickname} 👋
                 </div>
               </div>
-              <div className="text-sm text-text-muted mt-1">
-                {greetingByHour(today.hour())}，今天是 {today.format('YYYY年MM月DD日')}，{weekdayCn(today)}
+              <div className="text-sm text-text-muted mt-1 flex items-center gap-2 flex-wrap">
+                <span>
+                  {greetingByHour(today.hour())}，今天是 {today.format('YYYY年MM月DD日')}，{weekdayCn(today)}
+                </span>
+                {weather && (
+                  <span className="inline-flex items-center gap-1 text-text-muted">
+                    <span aria-hidden>{wmoToText(weather.weathercode).icon}</span>
+                    <span>
+                      {weather.cityName} {wmoToText(weather.weathercode).label} {Math.round(weather.temperature)}°C
+                    </span>
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setCityModalOpen(true)}
+                  className="inline-flex items-center text-text-muted hover:text-text dark:hover:text-text-dark transition-colors"
+                  title="切换城市"
+                >
+                  <IconSettings size={14} />
+                </button>
               </div>
             </section>
 
@@ -392,7 +445,7 @@ export default function Dashboard() {
           </div>
 
           {/* 右侧栏 280px */}
-          <aside className="w-full xl:w-[280px] flex-none space-y-4">
+          <aside className="w-full lg:w-[280px] flex-none space-y-4">
             {/* 还款提醒 */}
             <Card title="还款提醒">
               {repayAccounts.length === 0 ? (
@@ -642,6 +695,44 @@ export default function Dashboard() {
             })}
           </div>
         )}
+      </Modal>
+
+      {/* 城市切换 Modal（浏览器定位失败/被拒绝时使用选定城市） */}
+      <Modal
+        open={cityModalOpen}
+        onClose={() => setCityModalOpen(false)}
+        title="天气城市"
+        width={400}
+      >
+        <div className="space-y-2">
+          <p className="text-xs text-text-muted">
+            浏览器定位可用时优先使用当前位置；否则展示所选城市的天气。
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            {CITY_PRESETS.map((c) => (
+              <button
+                key={c.name}
+                type="button"
+                onClick={() => {
+                  void saveCity(c).then(() => fetchWeather());
+                  setCurrentCity(c.name);
+                  setWeather(null);
+                  setCityModalOpen(false);
+                  // 重新拉取（缓存键随城市变化）
+                  void fetchWeather().then((w) => w && setWeather(w));
+                }}
+                className={clsx(
+                  'rounded-xl border px-3 py-2 text-sm transition-colors',
+                  currentCity === c.name
+                    ? 'border-text dark:border-text-dark bg-text text-bg-card dark:bg-bg-card-dark dark:text-text-dark'
+                    : 'border-border dark:border-border-dark text-text-muted hover:text-text dark:hover:text-text-dark',
+                )}
+              >
+                {c.name}
+              </button>
+            ))}
+          </div>
+        </div>
       </Modal>
     </div>
   );

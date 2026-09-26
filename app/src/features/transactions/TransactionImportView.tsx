@@ -21,7 +21,8 @@ import {
 } from '@tabler/icons-react';
 import clsx from 'clsx';
 import { Tabs, Button, Select, Badge } from '@/components/ui';
-import { db, type Account, type Category, type Transaction, type TxRule } from '@/db';
+import { db, type Account, type Category, type Transaction, type TxRule, useSpaceId } from '@/db';
+import { filterBySpace } from '@/space';
 import { PLATFORMS, parseCsvText, type ParsedTx } from './csv';
 import { deltasOf } from './balance';
 import { formatMoney } from './format';
@@ -69,12 +70,17 @@ export function TransactionImportView() {
 /* -------- 导入面板 -------- */
 
 function ImportPanel() {
-  const accounts = useLiveQuery(() => db.accounts.toArray(), [], [] as Account[]);
+  const accountsAll = useLiveQuery(() => db.accounts.toArray(), [], [] as Account[]);
   const rules = useLiveQuery(() => db.rules.toArray(), [], [] as TxRule[]);
   const categories = useLiveQuery(
     () => db.categories.toArray(),
     [],
     [] as Category[],
+  );
+  const spaceId = useSpaceId();
+  const accounts = useMemo(
+    () => filterBySpace(accountsAll, spaceId),
+    [accountsAll, spaceId],
   );
 
   const [file, setFile] = useState<File | null>(null);
@@ -226,6 +232,7 @@ function ImportPanel() {
                 : undefined,
             remark: it.remark,
             includeInAsset: true,
+            spaceId,
             createdAt: now,
           };
           const id = await db.transactions.add(tx);

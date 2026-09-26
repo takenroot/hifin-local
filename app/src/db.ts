@@ -1,11 +1,16 @@
 /**
  * HiFin 本地数据库（Dexie / IndexedDB）
  *
- * 启动时通过 ensureSeed() 自动写入默认分类 / 默认标签。
+ * 启动时通过 ensureSeed() 自动写入默认分类 / 默认标签 / 默认空间。
  * 所有 id 字段均为自增 number。
+ *
+ * v4：新增 spaces 表与空间过滤（accounts/transactions/goals/budgets
+ *     都带可选 spaceId 字段）。records 无 spaceId 视为属于默认空间 1。
  */
 
 import Dexie, { type Table } from 'dexie';
+import { useAtomValue } from 'jotai';
+import { spaceIdAtom } from '@/store/atoms';
 
 // ─────────────────────────── 枚举 / 类型 ───────────────────────────
 
@@ -26,6 +31,13 @@ export type CategoryType = 'expense' | 'income';
 
 // ─────────────────────────── 接口 ───────────────────────────
 
+/** 多空间：默认空间 id = 1；id=0 在前端语义上是"全部空间"（不过滤）。 */
+export interface Space {
+  id?: number;
+  name: string;
+  createdAt: number;
+}
+
 export interface Account {
   id?: number;
   name: string;
@@ -34,6 +46,8 @@ export interface Account {
   remark?: string;
   tagIds?: number[];
   includeInNetAsset: boolean;
+  /** 所属空间 id；undefined 视为默认空间 1 */
+  spaceId?: number;
   createdAt: number;
   updatedAt: number;
 }
@@ -51,6 +65,8 @@ export interface Transaction {
   tagIds?: number[];
   merchantId?: number;
   includeInAsset: boolean;
+  /** 所属空间 id；undefined 视为默认空间 1 */
+  spaceId?: number;
   createdAt: number;
 }
 
@@ -65,6 +81,8 @@ export interface Goal {
   accountId?: number;
   icon?: string;
   color?: string;
+  /** 所属空间 id；undefined 视为默认空间 1 */
+  spaceId?: number;
   createdAt: number;
 }
 
@@ -95,6 +113,8 @@ export interface Report {
   description?: string;
   template?: string;
   icon?: string;
+  /** 自定义配置（JSON 字符串）。存在时 ReportDetail 按配置渲染，否则按 template 走老模板逻辑（向后兼容）。 */
+  config?: string;
   createdAt: number;
 }
 
@@ -108,6 +128,8 @@ export interface Budget {
   categoryId?: number;
   amount: number;
   period: BudgetPeriod;
+  /** 所属空间 id；undefined 视为默认空间 1 */
+  spaceId?: number;
   createdAt: number;
 }
 
@@ -157,6 +179,7 @@ export class HiFinDB extends Dexie {
   budgets!: Table<Budget, number>;
   rules!: Table<TxRule, number>;
   kv!: Table<KvItem, string>;
+  spaces!: Table<Space, number>;
 
   constructor() {
     super('hifin');
@@ -198,10 +221,29 @@ export class HiFinDB extends Dexie {
       rules: '++id, priority',
       kv: '&key',
     });
+    // v4：新增 spaces 表 + accounts/transactions/goals/budgets 加 spaceId 字段
+    // （spaceId 不建索引，保持 stores schema 与 v3 一致，字段通过 ensureSeed 迁移保证）
+    this.version(4).stores({
+      accounts: '++id, type, name, includeInNetAsset, createdAt',
+      transactions: '++id, type, date, accountId, toAccountId, categoryId, merchantId, createdAt',
+      goals: '++id, kind, subtype, deadline, createdAt',
+      categories: '++id, type, group, name',
+      tags: '++id, name',
+      merchants: '++id, name',
+      reports: '++id, createdAt',
+      aiModels: '++id, name',
+      budgets: '++id, categoryId, period, createdAt',
+      rules: '++id, priority',
+      kv: '&key',
+      spaces: '++id, name',
+    });
   }
 }
 
 export const db = new HiFinDB();
+
+/** 默认空间 id（兼容老数据）；前端语义 0 = "全部空间"（不过滤）。 */
+export const DEFAULT_SPACE_ID = 1;
 
 // ─────────────────────────── Seed 数据 ───────────────────────────
 
@@ -259,7 +301,13 @@ const SEED_TAGS: Array<Omit<Tag, 'id'>> = [
   { name: '月度复盘', color: '#10b981' },
 ];
 
-/** 首次启动写入默认分类 / 标签 */
+/** 默认空间（首次启动写入；老用户升级时由 ensureSeed 兜底） */
+const SEED_SPACE: Omit<Space, 'id'> = {
+  name: '默认空间',
+  createdAt: 0, // 真实写入时覆写
+};
+
+/** 首次启动写入默认分类 / 标签 / 空间，并把历史记录的 spaceId 补成 1 */
 export async function ensureSeed(): Promise<void> {
   const catCount = await db.categories.count();
   if (catCount === 0) {
@@ -269,4 +317,43 @@ export async function ensureSeed(): Promise<void> {
   if (tagCount === 0) {
     await db.tags.bulkAdd(SEED_TAGS);
   }
+
+  // 空间必须存在 id=1（默认空间）；幂等保证
+  const defaultSpace = await db.spaces.get(DEFAULT_SPACE_ID);
+  if (!defaultSpace) {
+    const now = Date.now();
+    await db.spaces.add({ ...SEED_SPACE, createdAt: now });
+  }
+  await migrateLegacySpaceIds();
+}
+
+/**
+ * v4 迁移辅助：把所有无 spaceId 的存量记录补成默认空间 1。
+ * 已存在的 spaceId 视为可信（用户在 v4 后手动改过则保留）。
+ */
+async function migrateLegacySpaceIds(): Promise<void> {
+  await Promise.all([
+    backfillSpaceId(db.accounts),
+    backfillSpaceId(db.transactions),
+    backfillSpaceId(db.goals),
+    backfillSpaceId(db.budgets),
+  ]);
+}
+
+async function backfillSpaceId<T extends { id?: number; spaceId?: number }>(
+  table: Table<T, number>,
+): Promise<void> {
+  await table
+    .filter((row) => row.spaceId === undefined)
+    .modify((row) => {
+      row.spaceId = DEFAULT_SPACE_ID;
+    });
+}
+
+/**
+ * 在 React 组件中读取当前空间 id（来自 spaceIdAtom）。
+ * 单一来源：所有需要按空间过滤的地方都通过此 hook 拿值。
+ */
+export function useSpaceId(): number {
+  return useAtomValue(spaceIdAtom);
 }

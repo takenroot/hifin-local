@@ -1,13 +1,11 @@
 /**
  * 报表详情页 /report/detail/:id
  *
- * 根据报表的 template 字段分发到四个不同的渲染器：
- *   - monthly         近 12 月收入 / 支出分组柱状图（recharts BarChart）
- *   - yearly          当年收支 / 结余汇总卡 + 月度趋势折线（recharts LineChart）
- *   - distribution    按账户环形图 + 明细表
- *   - budget          占位（"预算功能尚未开启"）
+ * 渲染策略：
+ *   - 若 Report.config 存在，按 config.range 过滤交易并按 config.components 顺序渲染组件。
+ *   - 否则按 Report.template 字段分发到四个老模板渲染器（向后兼容）。
  *
- * 所有数据均来自 db.accounts / db.transactions 的 useLiveQuery，实时计算。
+ * 数据均来自 db.accounts / db.transactions / db.categories 的 useLiveQuery，实时计算。
  */
 import { useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -23,19 +21,21 @@ import {
   IconCircleDashed,
 } from '@tabler/icons-react';
 import {
-  BarChart,
+  Area,
+  AreaChart,
   Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell,
 } from 'recharts';
 import {
   Badge,
@@ -55,6 +55,14 @@ import {
 } from './calculations';
 import { formatAxis, formatMoney } from './format';
 import { getTemplateKey, templateMeta } from './metadata';
+import {
+  REPORT_RANGE_OPTIONS,
+  categoryRankByRange,
+  monthlyByRange,
+  parseReportConfig,
+  type ReportComponentKey,
+  type ReportConfig,
+} from './config';
 import { useState } from 'react';
 import { ReportFormModal } from './ReportFormModal';
 import { DeleteConfirmModal } from './DeleteConfirmModal';
@@ -105,7 +113,7 @@ export default function ReportDetail() {
             </Button>
           }
         />
-        <div className="p-8 text-sm text-text-muted">加载中…</div>
+        <div className="p-4 lg:p-8 text-sm text-text-muted">加载中…</div>
       </div>
     );
   }
@@ -126,7 +134,7 @@ export default function ReportDetail() {
             </Button>
           }
         />
-        <div className="p-8 text-sm text-text-muted">
+        <div className="p-4 lg:p-8 text-sm text-text-muted">
           该报表已被删除或不存在。
         </div>
       </div>
@@ -141,6 +149,11 @@ export default function ReportDetail() {
   }
 
   const meta = templateMeta(getTemplateKey(report));
+  const hasConfig = !!report.config;
+  const config = hasConfig ? parseReportConfig(report.config) : null;
+  const rangeLabel = config
+    ? REPORT_RANGE_OPTIONS.find((o) => o.key === config.range)?.label ?? ''
+    : '';
 
   return (
     <div className="min-h-full bg-bg dark:bg-bg-dark">
@@ -179,7 +192,7 @@ export default function ReportDetail() {
         }
       />
 
-      <div className="p-8 max-w-[1200px] space-y-6">
+      <div className="p-4 lg:p-8 max-w-[1200px] space-y-6">
         {report.description && (
           <Card>
             <div className="text-sm whitespace-pre-wrap text-text-muted">
@@ -188,7 +201,11 @@ export default function ReportDetail() {
           </Card>
         )}
 
-        <TemplateRenderer templateKey={getTemplateKey(report)} />
+        {hasConfig && config ? (
+          <ConfigRenderer config={config} rangeLabel={rangeLabel} />
+        ) : (
+          <TemplateRenderer templateKey={getTemplateKey(report)} />
+        )}
       </div>
 
       <ReportFormModal
@@ -213,7 +230,402 @@ export default function ReportDetail() {
   );
 }
 
-/* ───────────────────── 模板分发 ───────────────────── */
+/* ───────────────────── 自定义配置渲染器 ───────────────────── */
+
+function ConfigRenderer({
+  config,
+  rangeLabel,
+}: {
+  config: ReportConfig;
+  rangeLabel: string;
+}) {
+  const transactions = useLiveQuery(
+    () => db.transactions.toArray(),
+    [],
+  ) ?? [];
+  const accounts = useLiveQuery(() => db.accounts.toArray(), []) ?? [];
+  const categories = useLiveQuery(() => db.categories.toArray(), []) ?? [];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-2 text-xs text-text-muted">
+        <span className="inline-flex items-center px-2 h-5 rounded-md bg-bg dark:bg-bg-card-dark">
+          数据范围 · {rangeLabel}
+        </span>
+        <span>
+          已选 {config.components.length} 个组件
+        </span>
+      </div>
+
+      {config.components.map((key) => (
+        <ConfigComponent
+          key={key}
+          componentKey={key}
+          config={config}
+          transactions={transactions}
+          accounts={accounts}
+          categories={categories}
+        />
+      ))}
+    </div>
+  );
+}
+
+function ConfigComponent({
+  componentKey,
+  config,
+  transactions,
+  accounts,
+  categories,
+}: {
+  componentKey: ReportComponentKey;
+  config: ReportConfig;
+  transactions: Parameters<typeof monthlyByRange>[0];
+  accounts: Parameters<typeof distributionByAccount>[0];
+  categories: Array<{ id?: number; name: string; group: string }>;
+}) {
+  switch (componentKey) {
+    case 'incomeExpenseBar':
+      return <ConfigIncomeExpenseBar transactions={transactions} rangeKey={config.range} />;
+    case 'assetPie':
+      return <ConfigAssetPie accounts={accounts} />;
+    case 'trendArea':
+      return <ConfigTrendArea transactions={transactions} rangeKey={config.range} />;
+    case 'categoryRank':
+      return (
+        <ConfigCategoryRank
+          transactions={transactions}
+          categories={categories}
+          rangeKey={config.range}
+        />
+      );
+    default:
+      return null;
+  }
+}
+
+function ConfigIncomeExpenseBar({
+  transactions,
+  rangeKey,
+}: {
+  transactions: Parameters<typeof monthlyByRange>[0];
+  rangeKey: ReportConfig['range'];
+}) {
+  const data = useMemo(() => monthlyByRange(transactions, rangeKey), [transactions, rangeKey]);
+  const hasData = data.some((d) => d.income > 0 || d.expense > 0);
+  return (
+    <Card title="收支柱状图">
+      {hasData ? (
+        <div className="h-72 -mx-2">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
+              <CartesianGrid
+                strokeDasharray="3 3"
+                className="text-border dark:text-border-dark"
+                stroke="currentColor"
+              />
+              <XAxis
+                dataKey="label"
+                tick={{ fontSize: 11, fill: 'currentColor' }}
+                className="text-text-muted"
+              />
+              <YAxis
+                tick={{ fontSize: 11, fill: 'currentColor' }}
+                className="text-text-muted"
+                tickFormatter={(v: number) => formatAxis(v)}
+                width={60}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#fff',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: 12,
+                  fontSize: 12,
+                }}
+                formatter={(v: number | string, name: string) => [
+                  formatMoney(Number(v)),
+                  name === 'income' ? '收入' : '支出',
+                ]}
+              />
+              <Legend
+                wrapperStyle={{ fontSize: 12 }}
+                formatter={(v) => (v === 'income' ? '收入' : '支出')}
+              />
+              <Bar dataKey="income" fill="#10b981" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="expense" fill="#ef4444" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      ) : (
+        <EmptyState
+          title="暂无数据"
+          description="当前数据范围内没有收入或支出记录"
+        />
+      )}
+    </Card>
+  );
+}
+
+function ConfigAssetPie({
+  accounts,
+}: {
+  accounts: Parameters<typeof distributionByAccount>[0];
+}) {
+  const [mode, setMode] = useState<'account' | 'type'>('account');
+  const data: DistributionDatum[] = useMemo(
+    () =>
+      mode === 'account'
+        ? distributionByAccount(accounts)
+        : distributionByType(accounts),
+    [mode, accounts],
+  );
+  const total = useMemo(() => data.reduce((s, x) => s + x.value, 0), [data]);
+  const hasData = data.length > 0;
+  return (
+    <Card
+      title="资产分布环图"
+      extra={
+        hasData && (
+          <div className="flex items-center gap-1 p-1 bg-bg dark:bg-bg-card-dark rounded-xl text-xs">
+            {(
+              [
+                { key: 'account', label: '按账户' },
+                { key: 'type', label: '按类型' },
+              ] as const
+            ).map((it) => (
+              <button
+                key={it.key}
+                type="button"
+                onClick={() => setMode(it.key)}
+                className={
+                  mode === it.key
+                    ? 'px-3 h-7 rounded-lg bg-text text-bg-card dark:bg-bg-card-dark dark:text-text-dark'
+                    : 'px-3 h-7 rounded-lg text-text-muted hover:text-text dark:hover:text-text-dark'
+                }
+              >
+                {it.label}
+              </button>
+            ))}
+          </div>
+        )
+      }
+    >
+      {hasData ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={data}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius="55%"
+                  outerRadius="85%"
+                  paddingAngle={2}
+                >
+                  {data.map((_, i) => (
+                    <Cell
+                      key={i}
+                      fill={PIE_COLORS[i % PIE_COLORS.length]}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#fff',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: 12,
+                    fontSize: 12,
+                  }}
+                  formatter={(v: number | string) => formatMoney(Number(v))}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="space-y-2">
+            {data.map((d, i) => (
+              <div key={d.key} className="flex items-center gap-3 text-sm">
+                <span
+                  className="w-3 h-3 rounded-sm flex-none"
+                  style={{ background: PIE_COLORS[i % PIE_COLORS.length] }}
+                />
+                <span className="flex-1 truncate">{d.name}</span>
+                <span className="text-text-muted tabular-nums">
+                  {d.pct.toFixed(1)}%
+                </span>
+                <span className="font-medium tabular-nums w-28 text-right">
+                  {formatMoney(d.value, false)}
+                </span>
+              </div>
+            ))}
+            <div className="mt-3 pt-3 border-t border-border dark:border-border-dark flex items-center justify-between text-sm">
+              <span className="text-text-muted">合计</span>
+              <span className="font-medium tabular-nums text-income">
+                {formatMoney(total, false)}
+              </span>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <EmptyState
+          title="暂无数据"
+          description="添加账户并设置余额后，这里会显示资产占比"
+        />
+      )}
+    </Card>
+  );
+}
+
+function ConfigTrendArea({
+  transactions,
+  rangeKey,
+}: {
+  transactions: Parameters<typeof monthlyByRange>[0];
+  rangeKey: ReportConfig['range'];
+}) {
+  const data = useMemo(() => monthlyByRange(transactions, rangeKey), [transactions, rangeKey]);
+  const hasData = data.some((d) => d.net !== 0);
+  return (
+    <Card title="趋势面积图">
+      {hasData ? (
+        <div className="h-72 -mx-2">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={data} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
+              <defs>
+                <linearGradient id="trendNet" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#6366f1" stopOpacity={0.5} />
+                  <stop offset="100%" stopColor="#6366f1" stopOpacity={0.05} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid
+                strokeDasharray="3 3"
+                className="text-border dark:text-border-dark"
+                stroke="currentColor"
+              />
+              <XAxis
+                dataKey="label"
+                tick={{ fontSize: 11, fill: 'currentColor' }}
+                className="text-text-muted"
+              />
+              <YAxis
+                tick={{ fontSize: 11, fill: 'currentColor' }}
+                className="text-text-muted"
+                tickFormatter={(v: number) => formatAxis(v)}
+                width={60}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#fff',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: 12,
+                  fontSize: 12,
+                }}
+                formatter={(v: number | string) => [formatMoney(Number(v)), '结余']}
+              />
+              <Area
+                type="monotone"
+                dataKey="net"
+                stroke="#6366f1"
+                strokeWidth={2}
+                fill="url(#trendNet)"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      ) : (
+        <EmptyState
+          title="暂无数据"
+          description="当前数据范围内没有结余可显示"
+        />
+      )}
+    </Card>
+  );
+}
+
+function ConfigCategoryRank({
+  transactions,
+  categories,
+  rangeKey,
+}: {
+  transactions: Parameters<typeof monthlyByRange>[0];
+  categories: Array<{ id?: number; name: string; group: string }>;
+  rangeKey: ReportConfig['range'];
+}) {
+  const rows = useMemo(
+    () => categoryRankByRange(transactions, categories, rangeKey),
+    [transactions, categories, rangeKey],
+  );
+  const hasData = rows.length > 0;
+  const total = rows.reduce((s, r) => s + r.amount, 0);
+  return (
+    <Card title="分类排行表">
+      {hasData ? (
+        <div className="overflow-x-auto -mx-2">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-text-muted border-b border-border dark:border-border-dark">
+                <th className="px-2 py-2 font-normal">排名</th>
+                <th className="px-2 py-2 font-normal">分类</th>
+                <th className="px-2 py-2 font-normal text-right">金额</th>
+                <th className="px-2 py-2 font-normal">占比</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r, idx) => (
+                <tr
+                  key={r.categoryId}
+                  className="border-b border-border dark:border-border-dark last:border-b-0"
+                >
+                  <td className="px-2 py-3 text-text-muted tabular-nums w-12">
+                    {idx + 1}
+                  </td>
+                  <td className="px-2 py-3 font-medium">{r.name}</td>
+                  <td className="px-2 py-3 text-right tabular-nums">
+                    {formatMoney(r.amount, false)}
+                  </td>
+                  <td className="px-2 py-3 w-48">
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-1.5 rounded-full bg-bg dark:bg-bg-card-dark overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-expense"
+                          style={{
+                            width: `${Math.max(0, Math.min(100, r.pct))}%`,
+                          }}
+                        />
+                      </div>
+                      <span className="text-xs tabular-nums w-10 text-right text-text-muted">
+                        {r.pct.toFixed(0)}%
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="border-t border-border dark:border-border-dark">
+                <td className="px-2 py-3 text-text-muted">合计</td>
+                <td className="px-2 py-3" />
+                <td className="px-2 py-3 text-right font-medium tabular-nums">
+                  {formatMoney(total, false)}
+                </td>
+                <td className="px-2 py-3" />
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      ) : (
+        <EmptyState
+          title="暂无数据"
+          description="当前数据范围内没有支出记录"
+        />
+      )}
+    </Card>
+  );
+}
+
+/* ───────────────────── 模板分发（老数据 / 无 config 时使用） ───────────────────── */
 
 function TemplateRenderer({ templateKey }: { templateKey: string }) {
   switch (templateKey) {

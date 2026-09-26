@@ -21,7 +21,7 @@ export function PageHeader({ title, description, actions, icon, className }: Pag
   return (
     <header
       className={clsx(
-        'flex items-center justify-between gap-4 px-8 h-16 border-b border-border dark:border-border-dark',
+        'flex items-center justify-between gap-4 px-4 lg:px-8 h-16 border-b border-border dark:border-border-dark',
         className,
       )}
     >

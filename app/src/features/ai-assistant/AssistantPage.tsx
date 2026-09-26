@@ -29,7 +29,8 @@ import {
   Select,
   Textarea,
 } from '@/components/ui';
-import { db } from '@/db';
+import { db, useSpaceId } from '@/db';
+import { filterBySpace } from '@/space';
 import { buildFinancialSnapshot, snapshotToText } from './aggregate';
 import { chat, describeAiError, type ChatMessage } from './client';
 import {
@@ -45,10 +46,15 @@ export default function AssistantPage() {
   const navigate = useNavigate();
 
   const models = useLiveQuery(() => db.aiModels.orderBy('name').toArray(), []) ?? [];
-  const accounts = useLiveQuery(() => db.accounts.toArray(), []) ?? [];
-  const transactions = useLiveQuery(() => db.transactions.toArray(), []) ?? [];
-  const goals = useLiveQuery(() => db.goals.toArray(), []) ?? [];
+  const accountsAll = useLiveQuery(() => db.accounts.toArray(), []) ?? [];
+  const transactionsAll = useLiveQuery(() => db.transactions.toArray(), []) ?? [];
+  const goalsAll = useLiveQuery(() => db.goals.toArray(), []) ?? [];
   const categories = useLiveQuery(() => db.categories.toArray(), []) ?? [];
+  const spaceId = useSpaceId();
+  // AI 聚合用当前空间的数据（sid=0 不过滤）
+  const accounts = useMemo(() => filterBySpace(accountsAll, spaceId), [accountsAll, spaceId]);
+  const transactions = useMemo(() => filterBySpace(transactionsAll, spaceId), [transactionsAll, spaceId]);
+  const goals = useMemo(() => filterBySpace(goalsAll, spaceId), [goalsAll, spaceId]);
 
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);

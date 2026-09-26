@@ -18,7 +18,8 @@ import {
   IconShare,
 } from '@tabler/icons-react';
 import { PageHeader, Button, EmptyState, Tabs } from '@/components/ui';
-import { db, type Transaction } from '@/db';
+import { db, type Transaction, useSpaceId } from '@/db';
+import { filterBySpace } from '@/space';
 import TransactionListView from './TransactionListView';
 import TransactionFilterBar from './TransactionFilterBar';
 import TransactionFormModal from './TransactionFormModal';
@@ -44,9 +45,18 @@ export default function TransactionList() {
     }
   }, [params]);
 
-  const totalCount = useLiveQuery(() => db.transactions.count(), [], 0);
+  const spaceId = useSpaceId();
+  const allTx = useLiveQuery(
+    () => db.transactions.toArray(),
+    [],
+    [] as Transaction[],
+  );
+  const scopedCount = useMemo(
+    () => filterBySpace(allTx, spaceId).length,
+    [allTx, spaceId],
+  );
 
-  const showEmpty = totalCount === 0 && view === 'list';
+  const showEmpty = scopedCount === 0 && view === 'list';
 
   function openCreate() {
     setEditing(null);
@@ -87,7 +97,7 @@ export default function TransactionList() {
         actions={headerActions}
       />
 
-      <div className="p-8 space-y-5 max-w-[1200px] mx-auto">
+      <div className="p-4 lg:p-8 space-y-5 max-w-[1200px] mx-auto">
         <div className="flex items-center justify-between">
           <Tabs
             variant="line"

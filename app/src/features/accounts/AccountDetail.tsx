@@ -94,7 +94,7 @@ export default function AccountDetail() {
             </Button>
           }
         />
-        <div className="p-8 text-sm text-text-muted">加载中…</div>
+        <div className="p-4 lg:p-8 text-sm text-text-muted">加载中…</div>
       </div>
     );
   }
@@ -115,7 +115,7 @@ export default function AccountDetail() {
             </Button>
           }
         />
-        <div className="p-8 text-sm text-text-muted">该账户已被删除或不存在。</div>
+        <div className="p-4 lg:p-8 text-sm text-text-muted">该账户已被删除或不存在。</div>
       </div>
     );
   }
@@ -160,7 +160,7 @@ export default function AccountDetail() {
         }
       />
 
-      <div className="p-8 max-w-[1100px] space-y-6">
+      <div className="p-4 lg:p-8 max-w-[1100px] space-y-6">
         {/* 摘要卡 */}
         <div className="card !p-6">
           <div className="flex items-start justify-between gap-6 flex-wrap">

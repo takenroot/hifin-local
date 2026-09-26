@@ -20,6 +20,8 @@ import {
   PageHeader,
 } from '@/components/ui';
 import { db, type Account } from '@/db';
+import { useSpaceId } from '@/db';
+import { filterBySpace } from '@/space';
 import { formatMoney } from './format';
 import {
   ACCOUNT_TONE_BG,
@@ -33,10 +35,17 @@ import { AccountFormModal } from './AccountFormModal';
 export default function AccountList() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [createOpen, setCreateOpen] = useState(false);
+  const spaceId = useSpaceId();
 
   const accounts = useLiveQuery(
     () => db.accounts.orderBy('createdAt').toArray(),
     [],
+  );
+
+  // 按当前空间过滤；sid=0 不过滤
+  const scopedAccounts = useMemo(
+    () => filterBySpace(accounts ?? [], spaceId),
+    [accounts, spaceId],
   );
 
   // ?create=1 自动打开新建模态
@@ -51,7 +60,7 @@ export default function AccountList() {
   }, [searchParams]);
 
   const { assets, debts, assetSum, debtSum } = useMemo(() => {
-    const list = accounts ?? [];
+    const list = scopedAccounts;
     const a = list.filter((x) => (ASSET_TYPES as readonly string[]).includes(x.type));
     const d = list.filter((x) => (DEBT_TYPES as readonly string[]).includes(x.type));
     let assetSumAcc = 0;
@@ -64,9 +73,9 @@ export default function AccountList() {
       assetSum: assetSumAcc,
       debtSum: debtSumAcc,
     };
-  }, [accounts]);
+  }, [scopedAccounts]);
 
-  const isEmpty = (accounts?.length ?? 0) === 0;
+  const isEmpty = scopedAccounts.length === 0;
 
   return (
     <div className="min-h-full bg-bg dark:bg-bg-dark">
@@ -86,7 +95,7 @@ export default function AccountList() {
         }
       />
 
-      <div className="p-8 max-w-[1400px]">
+      <div className="p-4 lg:p-8 max-w-[1400px]">
         {isEmpty ? (
           <Card>
             <EmptyState
