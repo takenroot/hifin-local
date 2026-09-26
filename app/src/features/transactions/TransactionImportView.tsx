@@ -7,7 +7,7 @@
  * - 解析按钮 → 解析 + 预览
  * - 确认导入（在事务内写 transactions + 更新 balance）
  */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import dayjs from 'dayjs';
 import { useLiveQuery } from 'dexie-react-hooks';
 import {
@@ -16,13 +16,16 @@ import {
   IconCloudDownload,
   IconCircleCheck,
   IconAlertCircle,
+  IconBolt,
+  IconWand,
 } from '@tabler/icons-react';
 import clsx from 'clsx';
 import { Tabs, Button, Select, Badge } from '@/components/ui';
-import { db, type Account, type Transaction } from '@/db';
+import { db, type Account, type Category, type Transaction, type TxRule } from '@/db';
 import { PLATFORMS, parseCsvText, type ParsedTx } from './csv';
 import { deltasOf } from './balance';
 import { formatMoney } from './format';
+import { applyRules } from '@/features/rules/engine';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const IMPORT_HISTORY_KEY = 'transaction:import-history';
@@ -67,11 +70,19 @@ export function TransactionImportView() {
 
 function ImportPanel() {
   const accounts = useLiveQuery(() => db.accounts.toArray(), [], [] as Account[]);
+  const rules = useLiveQuery(() => db.rules.toArray(), [], [] as TxRule[]);
+  const categories = useLiveQuery(
+    () => db.categories.toArray(),
+    [],
+    [] as Category[],
+  );
 
   const [file, setFile] = useState<File | null>(null);
   const [platform, setPlatform] = useState<string>('alipay');
   const [accountId, setAccountId] = useState<number | undefined>(undefined);
   const [items, setItems] = useState<ParsedTx[]>([]);
+  const [suggestions, setSuggestions] = useState<Record<number, number>>({});
+  const [overrides, setOverrides] = useState<Record<number, number>>({});
   const [parsing, setParsing] = useState(false);
   const [parseError, setParseError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -86,9 +97,19 @@ function ImportPanel() {
     if (!accountId && accounts[0]?.id) setAccountId(accounts[0].id);
   }, [accounts, accountId]);
 
+  const categoryMap = useMemo(() => {
+    const m = new Map<number, Category>();
+    for (const c of categories) {
+      if (c.id != null) m.set(c.id, c);
+    }
+    return m;
+  }, [categories]);
+
   function onFiles(list: FileList | null) {
     setParseError(null);
     setItems([]);
+    setSuggestions({});
+    setOverrides({});
     setImportResult(null);
     if (!list || list.length === 0) return;
     const f = list[0];
@@ -114,12 +135,62 @@ function ImportPanel() {
       const text = await readFileText(file);
       const result = parseCsvText(text, platform);
       setItems(result.items);
+      // 自动套用规则：仅对有效行（无 rawLine）给出建议
+      const next: Record<number, number> = {};
+      result.items.forEach((it, idx) => {
+        if (it.rawLine || !it.date || it.amount <= 0) return;
+        const suggested = applyRules(
+          { name: it.merchant, merchant: it.merchant, remark: it.remark },
+          rules,
+        );
+        if (suggested != null) next[idx] = suggested;
+      });
+      setSuggestions(next);
+      setOverrides({});
       if (result.error) setParseError(result.error);
     } catch (e) {
       setParseError((e as Error).message ?? '解析失败');
     } finally {
       setParsing(false);
     }
+  }
+
+  /** 当前有效分类（手动覆盖优先于规则建议） */
+  function resolvedCategory(idx: number): number | undefined {
+    if (idx in overrides) return overrides[idx];
+    return suggestions[idx];
+  }
+
+  function acceptSuggestion(idx: number) {
+    const v = suggestions[idx];
+    if (v == null) return;
+    setOverrides((prev) => ({ ...prev, [idx]: v }));
+  }
+
+  function acceptAll() {
+    const next: Record<number, number> = { ...overrides };
+    for (const k of Object.keys(suggestions)) {
+      const i = Number(k);
+      if (!(i in next)) next[i] = suggestions[i];
+    }
+    setOverrides(next);
+  }
+
+  function clearOverride(idx: number) {
+    setOverrides((prev) => {
+      const n = { ...prev };
+      delete n[idx];
+      return n;
+    });
+  }
+
+  function overrideCategory(idx: number, catId: number | undefined) {
+    setOverrides((prev) => {
+      const n = { ...prev };
+      if (catId == null) delete n[idx];
+      else n[idx] = catId;
+      return n;
+    });
   }
 
   async function doImport() {
@@ -137,7 +208,10 @@ function ImportPanel() {
     try {
       await db.transaction('rw', db.transactions, db.accounts, db.kv, async () => {
         const now = Date.now();
-        for (const it of valid) {
+        for (let i = 0; i < items.length; i++) {
+          const it = items[i];
+          if (it.rawLine || !it.date || it.amount <= 0) continue;
+          const catId = resolvedCategory(i);
           const tx: Transaction = {
             type: it.type,
             name: it.merchant || (it.type === 'transfer' ? '转账' : '导入流水'),
@@ -145,7 +219,11 @@ function ImportPanel() {
             date: it.date,
             accountId,
             toAccountId: undefined,
-            categoryId: undefined,
+            // 仅在 支出/收入 类型下保留分类
+            categoryId:
+              catId != null && (it.type === 'expense' || it.type === 'income')
+                ? catId
+                : undefined,
             remark: it.remark,
             includeInAsset: true,
             createdAt: now,
@@ -179,6 +257,8 @@ function ImportPanel() {
         skipped: items.length - valid.length,
       });
       setItems([]);
+      setSuggestions({});
+      setOverrides({});
       setFile(null);
     } catch (e) {
       setParseError((e as Error).message ?? '导入失败');
@@ -291,6 +371,24 @@ function ImportPanel() {
           title={`解析结果（${items.filter((x) => !x.rawLine).length} / ${items.length} 有效）`}
           flush
         >
+          <div className="px-4 py-2 border-b border-border dark:border-border-dark flex items-center justify-between text-xs text-text-muted">
+            <div className="flex items-center gap-2">
+              <IconBolt size={12} className="text-brand" />
+              {Object.keys(suggestions).length > 0
+                ? `规则已为 ${Object.keys(suggestions).length} 条流水建议分类`
+                : '未匹配到任何规则建议'}
+            </div>
+            {Object.keys(suggestions).length > 0 && (
+              <Button
+                size="sm"
+                variant="secondary"
+                icon={<IconWand size={12} />}
+                onClick={acceptAll}
+              >
+                全部接受建议
+              </Button>
+            )}
+          </div>
           <div className="max-h-[420px] overflow-auto">
             <table className="w-full text-sm">
               <thead className="text-xs text-text-muted sticky top-0 bg-bg-card dark:bg-bg-card-dark">
@@ -300,6 +398,7 @@ function ImportPanel() {
                   <th className="text-left px-4 py-2 font-medium">类型</th>
                   <th className="text-right px-4 py-2 font-medium">金额</th>
                   <th className="text-left px-4 py-2 font-medium">备注</th>
+                  <th className="text-left px-4 py-2 font-medium">分类（规则）</th>
                 </tr>
               </thead>
               <tbody>
@@ -307,6 +406,11 @@ function ImportPanel() {
                   const ok = !it.rawLine && it.date && it.amount > 0;
                   const tone =
                     it.type === 'income' ? 'income' : it.type === 'expense' ? 'expense' : 'neutral';
+                  const suggestedId = suggestions[i];
+                  const effectiveId = i in overrides ? overrides[i] : suggestedId;
+                  const effectiveCat =
+                    effectiveId != null ? categoryMap.get(effectiveId) : undefined;
+                  const showSuggestColumn = ok && (it.type === 'expense' || it.type === 'income');
                   return (
                     <tr
                       key={i}
@@ -333,6 +437,44 @@ function ImportPanel() {
                         {it.amount ? formatMoney(it.amount) : '—'}
                       </td>
                       <td className="px-4 py-2 truncate max-w-[200px]">{it.remark || '—'}</td>
+                      <td className="px-4 py-2">
+                        {showSuggestColumn ? (
+                          effectiveCat ? (
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="inline-flex items-center gap-1 rounded-full bg-brand-soft text-brand px-2 py-0.5 text-xs">
+                                {effectiveCat.icon && <span>{effectiveCat.icon}</span>}
+                                <span>{effectiveCat.name}</span>
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => clearOverride(i)}
+                                className="text-xs text-text-muted hover:text-expense"
+                                title="清除分类"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ) : suggestedId != null ? (
+                            <button
+                              type="button"
+                              onClick={() => acceptSuggestion(i)}
+                              className="inline-flex items-center gap-1 rounded-full border border-border dark:border-border-dark px-2 py-0.5 text-xs text-text-muted hover:text-text dark:hover:text-text-dark"
+                              title="应用规则建议"
+                            >
+                              <IconWand size={12} />
+                              应用建议
+                            </button>
+                          ) : (
+                            <CategoryPicker
+                              categories={categories}
+                              value={undefined}
+                              onChange={(v) => overrideCategory(i, v)}
+                            />
+                          )
+                        ) : (
+                          <span className="text-text-muted">—</span>
+                        )}
+                      </td>
                     </tr>
                   );
                 })}
@@ -342,6 +484,49 @@ function ImportPanel() {
         </Card>
       )}
     </div>
+  );
+}
+
+/* ────────── 单元格内的小型分类选择器 ────────── */
+function CategoryPicker({
+  categories,
+  value,
+  onChange,
+}: {
+  categories: Category[];
+  value: number | undefined;
+  onChange: (v: number | undefined) => void;
+}) {
+  // 仅展示支出/收入两类分组
+  const opts = useMemo(() => {
+    const groups = new Map<string, Category[]>();
+    for (const c of categories) {
+      const arr = groups.get(c.group) ?? [];
+      arr.push(c);
+      groups.set(c.group, arr);
+    }
+    const list: Array<{ label: string; value: string }> = [];
+    for (const [g, cats] of groups.entries()) {
+      list.push({ label: `— ${g} —`, value: `_${g}` });
+      for (const c of cats) {
+        list.push({
+          label: `${c.icon ? `${c.icon} ` : ''}${c.name}`,
+          value: String(c.id),
+        });
+      }
+    }
+    return list;
+  }, [categories]);
+
+  return (
+    <Select
+      placeholder="选择分类"
+      value={value === undefined ? '' : String(value)}
+      options={opts}
+      onChange={(e) =>
+        onChange(e.target.value === '' ? undefined : Number(e.target.value))
+      }
+    />
   );
 }
 

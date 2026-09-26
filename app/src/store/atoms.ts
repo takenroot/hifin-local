@@ -37,7 +37,7 @@ export const menuVisibilityAtom = atomWithStorage<MenuVisibility>(
   'hifin:menuVisibility',
   {
     home: true,
-    budget: false, // 预算 / 发现 当前是占位，默认关闭
+    budget: true, // 预算模块已实装
     goal: true,
     report: true,
     discover: false,

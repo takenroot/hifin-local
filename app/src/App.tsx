@@ -1,8 +1,10 @@
 import { useEffect } from 'react';
 import { Navigate, Route, Routes, useRoutes } from 'react-router-dom';
 import type { RouteObject } from 'react-router-dom';
+import { useAtomValue } from 'jotai';
 import { AppLayout } from '@/layout';
 import { ensureSeed } from '@/db';
+import { defaultPageAtom } from '@/store/atoms';
 
 /**
  * Feature 路由自动注册
@@ -31,6 +33,32 @@ function FeatureRoutes() {
   return useRoutes(featureRoutes);
 }
 
+/**
+ * 根据 defaultPageAtom 解析默认页的目标路由。
+ * 合法值：home | account | transaction | goal | report
+ * 兜底：'/home'。
+ */
+function resolveDefaultPath(defaultPage: string | undefined): string {
+  switch (defaultPage) {
+    case 'account':
+      return '/account/list';
+    case 'transaction':
+      return '/transaction';
+    case 'goal':
+      return '/goal/list';
+    case 'report':
+      return '/report/list';
+    case 'home':
+    default:
+      return '/home';
+  }
+}
+
+function RootIndexRedirect() {
+  const defaultPage = useAtomValue(defaultPageAtom);
+  return <Navigate to={resolveDefaultPath(defaultPage)} replace />;
+}
+
 export default function App() {
   useEffect(() => {
     // 应用启动时确保默认数据已 seed
@@ -40,7 +68,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<AppLayout />}>
-        <Route index element={<Navigate to="/home" replace />} />
+        <Route index element={<RootIndexRedirect />} />
         {/* feature routes mounted via useRoutes for dynamic discovery */}
         <Route path="*" element={<FeatureRoutes />} />
       </Route>

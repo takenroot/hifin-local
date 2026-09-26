@@ -60,7 +60,7 @@ export default function AppLayout() {
     { key: 'home', label: '看板', icon: <IconLayoutDashboard size={18} />, to: '/home' },
     { key: 'home', label: '账户', icon: <IconWallet size={18} />, to: '/account/list' },
     { key: 'home', label: '交易', icon: <IconArrowsLeftRight size={18} />, to: '/transaction' },
-    { key: 'budget', label: '预算', icon: <IconCirclePlus size={18} />, to: '/home' },
+    { key: 'budget', label: '预算', icon: <IconCirclePlus size={18} />, to: '/budget' },
     { key: 'goal', label: '目标', icon: <IconTarget size={18} />, to: '/goal/list' },
     { key: 'report', label: '报表', icon: <IconChartBar size={18} />, to: '/report/list' },
     { key: 'discover', label: '发现', icon: <IconSparkles size={18} />, to: '/home' },

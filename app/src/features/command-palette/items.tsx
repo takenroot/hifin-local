@@ -47,7 +47,6 @@ export const CMD_ITEMS: CmdItem[] = [
     group: '快捷操作',
     to: '/account/list?create=1',
     icon: <IconPlus size={14} />,
-    shortcut: 'a',
   },
   {
     id: 'new-cat',
@@ -56,6 +55,15 @@ export const CMD_ITEMS: CmdItem[] = [
     to: '/settings?section=categories',
     icon: <IconCategory size={14} />,
     shortcut: 'c',
+  },
+  {
+    id: 'open-ai',
+    label: 'AI 助手',
+    group: '快捷操作',
+    to: '/ai',
+    icon: <IconSparkles size={14} />,
+    shortcut: 'a',
+    description: '打开 AI 助手（需先在设置中配置模型）',
   },
   // ── 打开目录 ──
   {

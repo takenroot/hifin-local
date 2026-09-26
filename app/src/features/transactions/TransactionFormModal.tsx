@@ -17,10 +17,12 @@ import {
   IconEyeOff,
   IconCategory,
   IconBuildingStore,
+  IconWand,
 } from '@tabler/icons-react';
-import { db, type Account, type Category, type Tag, type Merchant, type Transaction, type TransactionType } from '@/db';
+import { db, type Account, type Category, type Tag, type Merchant, type Transaction, type TransactionType, type TxRule } from '@/db';
 import { deltasOf } from './balance';
 import { toDatetimeLocal } from './format';
+import { applyRules } from '@/features/rules/engine';
 import clsx from 'clsx';
 
 interface Props {
@@ -60,6 +62,10 @@ export function TransactionFormModal({ open, onClose, editing }: Props) {
   const categories = useLiveQuery(() => db.categories.toArray(), [], [] as Category[]);
   const tags = useLiveQuery(() => db.tags.toArray(), [], [] as Tag[]);
   const merchants = useLiveQuery(() => db.merchants.toArray(), [], [] as Merchant[]);
+  const rules = useLiveQuery(() => db.rules.toArray(), [], [] as TxRule[]);
+
+  /** 规则建议的 categoryId（name 失焦后计算，用户接受后清空） */
+  const [suggestedCategoryId, setSuggestedCategoryId] = useState<number | undefined>();
 
   const [type, setType] = useState<TypeTab>('expense');
   const [name, setName] = useState('');
@@ -103,6 +109,7 @@ export function TransactionFormModal({ open, onClose, editing }: Props) {
       setMerchantId(undefined);
       setIncludeInAsset(true);
     }
+    setSuggestedCategoryId(undefined);
     setError(null);
   }, [open, editing, accounts]);
 
@@ -160,6 +167,34 @@ export function TransactionFormModal({ open, onClose, editing }: Props) {
     () => merchants.map((m) => ({ label: m.name, value: String(m.id) })),
     [merchants],
   );
+
+  /* -------- 规则建议（name 失焦时触发） -------- */
+
+  function recomputeSuggestion() {
+    // 仅在 支出/收入 + 未选分类 + 名称非空 时给出建议
+    if ((type !== 'expense' && type !== 'income') || categoryId !== undefined) {
+      setSuggestedCategoryId(undefined);
+      return;
+    }
+    const trimmed = name.trim();
+    if (!trimmed) {
+      setSuggestedCategoryId(undefined);
+      return;
+    }
+    const catId = applyRules({ name: trimmed, remark: remark }, rules);
+    setSuggestedCategoryId(catId === null ? undefined : catId);
+  }
+
+  function applySuggestion() {
+    if (suggestedCategoryId === undefined) return;
+    setCategoryId(suggestedCategoryId);
+    setSuggestedCategoryId(undefined);
+  }
+
+  const suggestedCategory =
+    suggestedCategoryId !== undefined
+      ? categories.find((c) => c.id === suggestedCategoryId)
+      : undefined;
 
   /* -------- validate & save -------- */
 
@@ -299,6 +334,7 @@ export function TransactionFormModal({ open, onClose, editing }: Props) {
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
+              onBlur={recomputeSuggestion}
               placeholder={type === 'excluded' ? '可选备注' : '购物，餐饮等支出'}
               block
             />
@@ -335,12 +371,34 @@ export function TransactionFormModal({ open, onClose, editing }: Props) {
             <Select
               placeholder="请选择分类"
               value={categoryId === undefined ? '' : String(categoryId)}
-              onChange={(e) =>
-                setCategoryId(e.target.value === '' ? undefined : Number(e.target.value))
-              }
+              onChange={(e) => {
+                setCategoryId(e.target.value === '' ? undefined : Number(e.target.value));
+                setSuggestedCategoryId(undefined);
+              }}
               options={categoryOptions}
               block
             />
+            {suggestedCategory && categoryId === undefined && (
+              <div className="mt-2 flex items-center justify-between gap-2 rounded-xl bg-brand-soft px-3 py-2 text-xs">
+                <div className="flex items-center gap-1.5 text-brand">
+                  <IconWand size={12} />
+                  <span>
+                    根据规则建议使用分类：
+                    <span className="font-medium">
+                      {suggestedCategory.icon ? `${suggestedCategory.icon} ` : ''}
+                      {suggestedCategory.name}
+                    </span>
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={applySuggestion}
+                  className="rounded-lg border border-brand text-brand px-2 h-7 hover:bg-brand hover:text-white transition"
+                >
+                  应用
+                </button>
+              </div>
+            )}
           </Field>
         )}
 

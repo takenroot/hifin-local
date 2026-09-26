@@ -2,16 +2,24 @@
  * 设置 → AI 配置（aiModels 表 CRUD）
  *
  * - 列表 + 空态（"本地版本默认关闭"）
+ * - 每个模型可「设为默认」+「测试连接」
  * - 新建 / 编辑模态：名称 / 模型 / 地址
  * - 删除二次确认
+ *
+ * 默认模型 id 写入 kv:ai.defaultModelId；
+ * 测试连接：发一条最小 ping 到 endpoint，显示延迟或错误归因。
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import {
   IconPlus,
   IconPencil,
   IconTrash,
   IconRobot,
+  IconCheck,
+  IconBolt,
+  IconClock,
+  IconAlertTriangle,
 } from '@tabler/icons-react';
 import clsx from 'clsx';
 import {
@@ -23,13 +31,19 @@ import {
   Modal,
 } from '@/components/ui';
 import { db, type AiModel } from '@/db';
-import { formatDate } from '../format';
+import { ping, describeAiError } from '@/features/ai-assistant/client';
+import { setDefaultModelId } from '@/features/ai-assistant/storage';
 
 export function AiSection() {
   const models = useLiveQuery(
     () => db.aiModels.orderBy('name').toArray(),
     [],
   );
+  const defaultKv = useLiveQuery(() => db.kv.get('ai.defaultModelId'), []);
+  const defaultId =
+    typeof (defaultKv?.value as unknown) === 'number'
+      ? (defaultKv?.value as number)
+      : undefined;
 
   const [editing, setEditing] = useState<AiModel | null>(null);
   const [creating, setCreating] = useState(false);
@@ -77,6 +91,7 @@ export function AiSection() {
         ) : (
           <ModelsTable
             models={models ?? []}
+            defaultId={defaultId}
             onEdit={(m) => setEditing(m)}
             onDelete={(m) => setDeleting(m)}
           />
@@ -100,6 +115,10 @@ export function AiSection() {
         onConfirm={async () => {
           if (!deleting?.id) return;
           await db.aiModels.delete(deleting.id);
+          // 若删除的是默认模型，则清空默认 id
+          if (defaultId != null && deleting.id === defaultId) {
+            await setDefaultModelId(undefined);
+          }
           setDeleting(null);
         }}
       />
@@ -107,15 +126,69 @@ export function AiSection() {
   );
 }
 
+interface TestState {
+  status: 'idle' | 'loading' | 'ok' | 'error';
+  latencyMs?: number;
+  message?: string;
+}
+
 function ModelsTable({
   models,
+  defaultId,
   onEdit,
   onDelete,
 }: {
   models: AiModel[];
+  defaultId: number | undefined;
   onEdit: (m: AiModel) => void;
   onDelete: (m: AiModel) => void;
 }) {
+  // 每个模型的测试状态；key 为模型 id
+  const [testState, setTestState] = useState<Record<number, TestState>>({});
+  // 用 ref 取消正在进行的测试
+  const abortRef = useRef<Record<number, AbortController>>({});
+
+  useEffect(() => {
+    return () => {
+      // 卸载时取消全部
+      Object.values(abortRef.current).forEach((c) => c.abort());
+    };
+  }, []);
+
+  async function runTest(model: AiModel) {
+    if (model.id == null) return;
+    abortRef.current[model.id]?.abort();
+    const ctrl = new AbortController();
+    abortRef.current[model.id] = ctrl;
+
+    setTestState((s) => ({ ...s, [model.id!]: { status: 'loading' } }));
+    try {
+      const res = await ping(model, { signal: ctrl.signal });
+      setTestState((s) => ({
+        ...s,
+        [model.id!]: {
+          status: 'ok',
+          latencyMs: res.latencyMs,
+        },
+      }));
+    } catch (e) {
+      setTestState((s) => ({
+        ...s,
+        [model.id!]: {
+          status: 'error',
+          message: describeAiError(e),
+        },
+      }));
+    } finally {
+      delete abortRef.current[model.id!];
+    }
+  }
+
+  async function setDefault(model: AiModel) {
+    if (model.id == null) return;
+    await setDefaultModelId(model.id);
+  }
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
@@ -124,54 +197,127 @@ function ModelsTable({
             <th className="py-2.5 pr-4 font-medium">名称</th>
             <th className="py-2.5 pr-4 font-medium">模型</th>
             <th className="py-2.5 pr-4 font-medium">地址</th>
-            <th className="py-2.5 pr-4 font-medium">创建</th>
-            <th className="py-2.5 pr-4 font-medium w-24">操作</th>
+            <th className="py-2.5 pr-4 font-medium">测试</th>
+            <th className="py-2.5 pr-4 font-medium w-72">操作</th>
           </tr>
         </thead>
         <tbody>
-          {models.map((m) => (
-            <tr
-              key={m.id}
-              className="border-b border-border dark:border-border-dark last:border-b-0"
-            >
-              <td className="py-3 pr-4">
-                <div className="flex items-center gap-2">
-                  <IconRobot size={14} className="text-text-muted" />
-                  <span className="font-medium">{m.name || '—'}</span>
-                </div>
-              </td>
-              <td className="py-3 pr-4 text-text-muted">{m.model || '—'}</td>
-              <td className="py-3 pr-4 text-text-muted truncate max-w-[360px]">
-                {m.endpoint || '—'}
-              </td>
-              <td className="py-3 pr-4 text-text-muted">
-                {formatDate(Date.now())}
-              </td>
-              <td className="py-3 pr-4">
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => onEdit(m)}
-                    className="p-1.5 rounded-lg text-text-muted hover:bg-bg dark:hover:bg-bg-card-dark hover:text-text dark:hover:text-text-dark"
-                    title="编辑"
-                  >
-                    <IconPencil size={14} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onDelete(m)}
-                    className="p-1.5 rounded-lg text-text-muted hover:bg-expense-soft hover:text-expense"
-                    title="删除"
-                  >
-                    <IconTrash size={14} />
-                  </button>
-                </div>
-              </td>
-            </tr>
-          ))}
+          {models.map((m) => {
+            const isDefault = m.id != null && m.id === defaultId;
+            const state = m.id != null ? testState[m.id] : undefined;
+            return (
+              <tr
+                key={m.id}
+                className="border-b border-border dark:border-border-dark last:border-b-0"
+              >
+                <td className="py-3 pr-4 align-top">
+                  <div className="flex items-center gap-2">
+                    <IconRobot size={14} className="text-text-muted" />
+                    <span className="font-medium">{m.name || '—'}</span>
+                    {isDefault && (
+                      <Badge tone="brand" className="ml-1">
+                        <span className="inline-flex items-center gap-1">
+                          <IconCheck size={10} /> 默认
+                        </span>
+                      </Badge>
+                    )}
+                  </div>
+                </td>
+                <td className="py-3 pr-4 text-text-muted align-top">
+                  {m.model || '—'}
+                </td>
+                <td className="py-3 pr-4 text-text-muted truncate max-w-[320px] align-top">
+                  {m.endpoint || '—'}
+                </td>
+                <td className="py-3 pr-4 align-top">
+                  <TestBadge state={state} />
+                </td>
+                <td className="py-3 pr-4 align-top">
+                  <div className="flex flex-wrap items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => void setDefault(m)}
+                      disabled={isDefault}
+                      className={clsx(
+                        'inline-flex items-center gap-1 px-2 h-8 rounded-lg text-xs',
+                        isDefault
+                          ? 'bg-brand-soft text-brand cursor-default'
+                          : 'border border-border dark:border-border-dark text-text-muted hover:bg-bg dark:hover:bg-bg-card-dark hover:text-text dark:hover:text-text-dark',
+                      )}
+                      title={isDefault ? '当前默认模型' : '设为默认'}
+                    >
+                      <IconCheck size={12} />
+                      {isDefault ? '已默认' : '设为默认'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void runTest(m)}
+                      disabled={state?.status === 'loading'}
+                      className={clsx(
+                        'inline-flex items-center gap-1 px-2 h-8 rounded-lg text-xs',
+                        'border border-border dark:border-border-dark text-text-muted hover:bg-bg dark:hover:bg-bg-card-dark hover:text-text dark:hover:text-text-dark',
+                        'disabled:opacity-50 disabled:cursor-not-allowed',
+                      )}
+                      title="测试连接"
+                    >
+                      <IconBolt size={12} />
+                      测试连接
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onEdit(m)}
+                      className="p-1.5 rounded-lg text-text-muted hover:bg-bg dark:hover:bg-bg-card-dark hover:text-text dark:hover:text-text-dark"
+                      title="编辑"
+                    >
+                      <IconPencil size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onDelete(m)}
+                      className="p-1.5 rounded-lg text-text-muted hover:bg-expense-soft hover:text-expense"
+                      title="删除"
+                    >
+                      <IconTrash size={14} />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
+  );
+}
+
+function TestBadge({ state }: { state?: TestState }) {
+  if (!state || state.status === 'idle') {
+    return <span className="text-xs text-text-muted">未测试</span>;
+  }
+  if (state.status === 'loading') {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs text-text-muted">
+        <IconBolt size={12} className="animate-pulse" />
+        测试中…
+      </span>
+    );
+  }
+  if (state.status === 'ok') {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs text-income">
+        <IconClock size={12} />
+        {state.latencyMs} ms
+      </span>
+    );
+  }
+  return (
+    <span
+      className="inline-flex items-center gap-1 text-xs text-expense max-w-[200px]"
+      title={state.message}
+    >
+      <IconAlertTriangle size={12} />
+      <span className="truncate">{state.message || '失败'}</span>
+    </span>
   );
 }
 
@@ -226,8 +372,16 @@ function AiModelFormModal({ open, model, onClose, onSaved }: AiModelFormModalPro
       } else {
         await db.aiModels.add({
           ...payload,
-          // AiModel 没有 createdAt 字段，但保留兼容写法；不写也不会有类型问题
         } as AiModel);
+        // 新建后自动设为默认（首个有效模型）
+        const total = await db.aiModels.count();
+        if (total === 1) {
+          const inserted = await db.aiModels.toArray();
+          const fresh = inserted[inserted.length - 1];
+          if (fresh?.id != null) {
+            await setDefaultModelId(fresh.id);
+          }
+        }
       }
       onSaved();
     } catch (e) {

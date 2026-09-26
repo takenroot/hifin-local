@@ -98,6 +98,19 @@ export interface Report {
   createdAt: number;
 }
 
+/** 预算周期 */
+export type BudgetPeriod = 'monthly' | 'yearly';
+
+export interface Budget {
+  id?: number;
+  name: string;
+  /** 关联分类 id；undefined 表示"总预算"（覆盖全部支出） */
+  categoryId?: number;
+  amount: number;
+  period: BudgetPeriod;
+  createdAt: number;
+}
+
 export interface AiModel {
   id?: number;
   name: string;
@@ -111,6 +124,25 @@ export interface KvItem {
   value: unknown;
 }
 
+/** 规则匹配字段：name 流水名称 / merchant 商户（导入时对应 ParsedTx.merchant）/ remark 备注 */
+export type RuleMatchField = 'name' | 'merchant' | 'remark';
+
+/**
+ * 交易自动分类规则
+ * - keyword：不区分大小写包含匹配
+ * - priority：越大越优先；同 priority 取第一条
+ * - enabled：false 的规则跳过
+ */
+export interface TxRule {
+  id?: number;
+  keyword: string;
+  matchField: RuleMatchField;
+  categoryId: number;
+  priority: number;
+  enabled: boolean;
+  createdAt: number;
+}
+
 // ─────────────────────────── Dexie 数据库 ───────────────────────────
 
 export class HiFinDB extends Dexie {
@@ -122,6 +154,8 @@ export class HiFinDB extends Dexie {
   merchants!: Table<Merchant, number>;
   reports!: Table<Report, number>;
   aiModels!: Table<AiModel, number>;
+  budgets!: Table<Budget, number>;
+  rules!: Table<TxRule, number>;
   kv!: Table<KvItem, string>;
 
   constructor() {
@@ -135,6 +169,33 @@ export class HiFinDB extends Dexie {
       merchants: '++id, name',
       reports: '++id, createdAt',
       aiModels: '++id, name',
+      kv: '&key',
+    });
+    // v2：新增 budgets 表（保留 v1 定义，Dexie 增量迁移）
+    this.version(2).stores({
+      accounts: '++id, type, name, includeInNetAsset, createdAt',
+      transactions: '++id, type, date, accountId, toAccountId, categoryId, merchantId, createdAt',
+      goals: '++id, kind, subtype, deadline, createdAt',
+      categories: '++id, type, group, name',
+      tags: '++id, name',
+      merchants: '++id, name',
+      reports: '++id, createdAt',
+      aiModels: '++id, name',
+      budgets: '++id, categoryId, period, createdAt',
+      kv: '&key',
+    });
+    // v3：新增 rules 表（自动归类规则）
+    this.version(3).stores({
+      accounts: '++id, type, name, includeInNetAsset, createdAt',
+      transactions: '++id, type, date, accountId, toAccountId, categoryId, merchantId, createdAt',
+      goals: '++id, kind, subtype, deadline, createdAt',
+      categories: '++id, type, group, name',
+      tags: '++id, name',
+      merchants: '++id, name',
+      reports: '++id, createdAt',
+      aiModels: '++id, name',
+      budgets: '++id, categoryId, period, createdAt',
+      rules: '++id, priority',
       kv: '&key',
     });
   }

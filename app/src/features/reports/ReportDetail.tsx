@@ -12,6 +12,7 @@
 import { useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
+import clsx from 'clsx';
 import {
   IconArrowLeft,
   IconChartBar,
@@ -593,20 +594,309 @@ function DistributionTemplate() {
   );
 }
 
-/* ─────────────────── 预算执行（占位） ─────────────────── */
+/* ─────────────────── 预算执行 ─────────────────── */
 
 function BudgetTemplate() {
+  const budgets = useLiveQuery(
+    () => db.budgets.toArray(),
+    [],
+  ) ?? [];
+  const categories = useLiveQuery(() => db.categories.toArray(), []) ?? [];
+  const transactions = useLiveQuery(
+    () => db.transactions.toArray(),
+    [],
+  ) ?? [];
+  const navigate = useNavigate();
+
+  const now = new Date();
+  const monthRange = periodRangeOf('monthly', now);
+
+  // 仅展示"当月生效"的预算：period==='monthly'，或 yearly（覆盖全年）
+  const monthlyBudgets = budgets.filter((b) => b.period === 'monthly');
+  const yearlyBudgets = budgets.filter((b) => b.period === 'yearly');
+
+  type Row = {
+    id: number;
+    name: string;
+    categoryLabel: string;
+    budgetAmount: number;
+    actual: number;
+    pct: number;
+    overspent: boolean;
+    remaining: number;
+  };
+
+  const rows: Row[] = useMemo(() => {
+    const catMap = new Map<number, string>();
+    for (const c of categories) {
+      if (c.id != null) catMap.set(c.id, `${c.group} · ${c.name}`);
+    }
+
+    const spentByKey = new Map<string, number>();
+    for (const t of transactions) {
+      if (t.type !== 'expense') continue;
+      if (t.date < monthRange.from || t.date >= monthRange.to) continue;
+      // 总预算：categoryId=undefined 累计全部 expense
+      // 分类预算：仅匹配对应 categoryId
+      for (const b of budgets) {
+        if (b.categoryId != null && t.categoryId !== b.categoryId) continue;
+        const k = `${b.id}`;
+        spentByKey.set(k, (spentByKey.get(k) ?? 0) + t.amount);
+      }
+    }
+
+    const list: Row[] = [];
+    // monthly 优先
+    for (const b of monthlyBudgets) {
+      const actual = spentByKey.get(`${b.id}`) ?? 0;
+      const budgetAmount = b.amount;
+      const pct = budgetAmount > 0 ? (actual / budgetAmount) * 100 : 0;
+      list.push({
+        id: b.id!,
+        name: b.name,
+        categoryLabel: b.categoryId != null ? (catMap.get(b.categoryId) ?? '未知分类') : '总预算（全部支出）',
+        budgetAmount,
+        actual,
+        pct,
+        overspent: actual > budgetAmount && budgetAmount > 0,
+        remaining: budgetAmount - actual,
+      });
+    }
+    // 年度预算作为补充；用于"年度预算 vs 当月已花"展示
+    for (const b of yearlyBudgets) {
+      const actual = spentByKey.get(`${b.id}`) ?? 0;
+      const budgetAmount = b.amount;
+      const pct = budgetAmount > 0 ? (actual / budgetAmount) * 100 : 0;
+      list.push({
+        id: b.id!,
+        name: b.name,
+        categoryLabel: b.categoryId != null ? (catMap.get(b.categoryId) ?? '未知分类') : '总预算（全部支出）',
+        budgetAmount,
+        actual,
+        pct,
+        overspent: actual > budgetAmount && budgetAmount > 0,
+        remaining: budgetAmount - actual,
+      });
+    }
+    return list;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [budgets, categories, transactions]);
+
+  if (rows.length === 0) {
+    return (
+      <Card>
+        <div className="py-10 flex flex-col items-center justify-center text-center">
+          <div className="w-16 h-16 rounded-full bg-bg dark:bg-bg-card-dark flex items-center justify-center text-text-muted mb-4">
+            <IconCircleDashed size={28} />
+          </div>
+          <div className="text-base font-medium">请先在预算页创建预算</div>
+          <div className="text-sm text-text-muted mt-2 max-w-sm">
+            前往预算管理页创建月度或年度预算，这里会自动汇总当月预算与实际支出对比
+          </div>
+          <Button
+            variant="primary"
+            className="mt-5"
+            icon={<IconCircleDashed size={16} />}
+            onClick={() => navigate('/budget?create=1')}
+          >
+            去创建预算
+          </Button>
+        </div>
+      </Card>
+    );
+  }
+
+  const chartData = rows.map((r) => ({
+    name: r.name,
+    预算: r.budgetAmount,
+    实际: r.actual,
+  }));
+  const totalBudget = rows.reduce((s, r) => s + r.budgetAmount, 0);
+  const totalActual = rows.reduce((s, r) => s + r.actual, 0);
+  const totalOverspent = totalActual > totalBudget && totalBudget > 0;
+
   return (
-    <Card>
-      <div className="py-8 flex flex-col items-center justify-center text-center">
-        <div className="w-16 h-16 rounded-full bg-bg dark:bg-bg-card-dark flex items-center justify-center text-text-muted mb-4">
-          <IconCircleDashed size={28} />
-        </div>
-        <div className="text-base font-medium">预算功能尚未开启</div>
-        <div className="text-sm text-text-muted mt-2">
-          预算模块正在规划中，敬请期待。
-        </div>
+    <div className="space-y-6">
+      {/* 汇总卡 */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Card className="!p-5">
+          <div className="flex items-center justify-between">
+            <div className="text-xs text-text-muted">当月预算合计</div>
+          </div>
+          <div className="mt-2 text-2xl font-medium tabular-nums text-text dark:text-text-dark">
+            {formatMoney(totalBudget, false)}
+          </div>
+        </Card>
+        <Card className="!p-5">
+          <div className="flex items-center justify-between">
+            <div className="text-xs text-text-muted">当月实际支出</div>
+          </div>
+          <div
+            className={
+              totalOverspent
+                ? 'mt-2 text-2xl font-medium tabular-nums text-expense'
+                : 'mt-2 text-2xl font-medium tabular-nums text-text dark:text-text-dark'
+            }
+          >
+            {formatMoney(totalActual, false)}
+          </div>
+        </Card>
+        <Card className="!p-5">
+          <div className="flex items-center justify-between">
+            <div className="text-xs text-text-muted">
+              {totalOverspent ? '超支金额' : '剩余预算'}
+            </div>
+          </div>
+          <div
+            className={
+              totalOverspent
+                ? 'mt-2 text-2xl font-medium tabular-nums text-expense'
+                : 'mt-2 text-2xl font-medium tabular-nums text-income'
+            }
+          >
+            {formatMoney(Math.abs(totalBudget - totalActual), false)}
+          </div>
+        </Card>
       </div>
-    </Card>
+
+      {/* 柱状对比图 */}
+      <Card title="预算 vs 实际（当月）">
+        <div className="h-80 -mx-2">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={chartData}
+              margin={{ top: 10, right: 12, left: 0, bottom: 0 }}
+            >
+              <CartesianGrid
+                strokeDasharray="3 3"
+                className="text-border dark:text-border-dark"
+                stroke="currentColor"
+              />
+              <XAxis
+                dataKey="name"
+                tick={{ fontSize: 11, fill: 'currentColor' }}
+                className="text-text-muted"
+              />
+              <YAxis
+                tick={{ fontSize: 11, fill: 'currentColor' }}
+                className="text-text-muted"
+                tickFormatter={(v: number) => formatAxis(v)}
+                width={60}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#fff',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: 12,
+                  fontSize: 12,
+                }}
+                formatter={(v: number | string, name: string) => [
+                  formatMoney(Number(v)),
+                  name === '预算' ? '预算' : '实际',
+                ]}
+              />
+              <Legend
+                wrapperStyle={{ fontSize: 12 }}
+                formatter={(v) => (v === '预算' ? '预算' : '实际')}
+              />
+              <Bar dataKey="预算" fill="#6366f1" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="实际" fill="#ef4444" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </Card>
+
+      {/* 明细表 */}
+      <Card title="预算执行明细">
+        <div className="overflow-x-auto -mx-2">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-text-muted border-b border-border dark:border-border-dark">
+                <th className="px-2 py-2 font-normal">预算名称</th>
+                <th className="px-2 py-2 font-normal">关联分类</th>
+                <th className="px-2 py-2 font-normal text-right">预算金额</th>
+                <th className="px-2 py-2 font-normal text-right">实际支出</th>
+                <th className="px-2 py-2 font-normal">进度</th>
+                <th className="px-2 py-2 font-normal text-right">
+                  {totalOverspent ? '差额' : '剩余'}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr
+                  key={r.id}
+                  className="border-b border-border dark:border-border-dark last:border-b-0"
+                >
+                  <td className="px-2 py-3 font-medium">{r.name}</td>
+                  <td className="px-2 py-3 text-text-muted">{r.categoryLabel}</td>
+                  <td className="px-2 py-3 text-right tabular-nums">
+                    {formatMoney(r.budgetAmount, false)}
+                  </td>
+                  <td
+                    className={clsx(
+                      'px-2 py-3 text-right tabular-nums',
+                      r.overspent ? 'text-expense' : 'text-text dark:text-text-dark',
+                    )}
+                  >
+                    {formatMoney(r.actual, false)}
+                  </td>
+                  <td className="px-2 py-3 w-40">
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-1.5 rounded-full bg-bg dark:bg-bg-card-dark overflow-hidden">
+                        <div
+                          className={clsx(
+                            'h-full rounded-full',
+                            r.overspent ? 'bg-expense' : 'bg-income',
+                          )}
+                          style={{
+                            width: `${Math.max(0, Math.min(100, r.pct))}%`,
+                          }}
+                        />
+                      </div>
+                      <span
+                        className={clsx(
+                          'text-xs tabular-nums w-10 text-right',
+                          r.overspent ? 'text-expense' : 'text-text-muted',
+                        )}
+                      >
+                        {r.pct.toFixed(0)}%
+                      </span>
+                    </div>
+                  </td>
+                  <td
+                    className={clsx(
+                      'px-2 py-3 text-right tabular-nums',
+                      r.overspent ? 'text-expense' : 'text-income',
+                    )}
+                  >
+                    {formatMoney(Math.abs(r.remaining), false)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
   );
+}
+
+/* 当月时间范围 [from, to) */
+function periodRangeOf(
+  period: 'monthly' | 'yearly',
+  at: Date,
+): { from: number; to: number } {
+  const y = at.getFullYear();
+  const m = at.getMonth();
+  if (period === 'monthly') {
+    return {
+      from: new Date(y, m, 1, 0, 0, 0, 0).getTime(),
+      to: new Date(y, m + 1, 1, 0, 0, 0, 0).getTime(),
+    };
+  }
+  return {
+    from: new Date(y, 0, 1, 0, 0, 0, 0).getTime(),
+    to: new Date(y + 1, 0, 1, 0, 0, 0, 0).getTime(),
+  };
 }
