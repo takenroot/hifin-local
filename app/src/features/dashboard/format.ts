@@ -1,0 +1,53 @@
+/**
+ * 格式化辅助函数（仅供 dashboard 模块内部使用）
+ */
+import type { Dayjs } from 'dayjs';
+
+/** 金额格式化：保留 2 位小数 + 千分位；负数前加 "-" */
+export function formatMoney(value: number, withSymbol = true): string {
+  const sign = value < 0 ? '-' : '';
+  const abs = Math.abs(value);
+  const fixed = abs.toFixed(2);
+  const [intPart, decPart] = fixed.split('.');
+  const withCommas = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const body = `${withCommas}.${decPart}`;
+  return `${withSymbol ? '¥ ' : ''}${sign}${body}`;
+}
+
+/** 百分比格式化：保留 2 位小数 + %；无穷/NaN 归零 */
+export function formatPercent(value: number): string {
+  if (!Number.isFinite(value)) return '0.00%';
+  const sign = value > 0 ? '+' : value < 0 ? '-' : '';
+  return `${sign}${Math.abs(value).toFixed(2)}%`;
+}
+
+/** 同上月环比。base 为本月值，prev 为上月值 */
+export function monthOverMonth(base: number, prev: number): number {
+  if (prev === 0) {
+    return base === 0 ? 0 : 100;
+  }
+  return ((base - prev) / Math.abs(prev)) * 100;
+}
+
+/** 颜色：根据涨跌返回绿/红/灰 */
+export function trendToneClass(delta: number, expenseMode = false): string {
+  if (delta === 0) return 'text-text-muted';
+  // 支出场景下"减少"算好事（绿色），收入场景下"增加"算好事
+  const positive = expenseMode ? delta < 0 : delta > 0;
+  return positive ? 'text-income' : 'text-expense';
+}
+
+/** 按时段返回问候语 */
+export function greetingByHour(hour: number): string {
+  if (hour < 5) return '凌晨好';
+  if (hour < 11) return '上午好';
+  if (hour < 14) return '中午好';
+  if (hour < 18) return '下午好';
+  return '晚上好';
+}
+
+/** 中文星期 */
+const WEEKDAY_CN = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+export function weekdayCn(day: Dayjs): string {
+  return WEEKDAY_CN[day.day()];
+}

@@ -1,0 +1,416 @@
+/**
+ * 批量导入视图
+ * ---------------------------------------------------------------
+ * - Tabs：账单导入 / 历史记录
+ * - 拖拽 / 点击上传 CSV，文件大小校验
+ * - 平台选择（支付宝 / 微信 / 银行 / 通用）
+ * - 解析按钮 → 解析 + 预览
+ * - 确认导入（在事务内写 transactions + 更新 balance）
+ */
+import { useEffect, useRef, useState } from 'react';
+import dayjs from 'dayjs';
+import { useLiveQuery } from 'dexie-react-hooks';
+import {
+  IconUpload,
+  IconFileSpreadsheet,
+  IconCloudDownload,
+  IconCircleCheck,
+  IconAlertCircle,
+} from '@tabler/icons-react';
+import clsx from 'clsx';
+import { Tabs, Button, Select, Badge } from '@/components/ui';
+import { db, type Account, type Transaction } from '@/db';
+import { PLATFORMS, parseCsvText, type ParsedTx } from './csv';
+import { deltasOf } from './balance';
+import { formatMoney } from './format';
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const IMPORT_HISTORY_KEY = 'transaction:import-history';
+
+interface ImportBatch {
+  id: string;
+  platform: string;
+  fileName: string;
+  total: number;
+  imported: number;
+  at: number;
+}
+
+function readFileText(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('读取失败'));
+    reader.onload = () => resolve(String(reader.result ?? ''));
+    reader.readAsText(file, 'utf-8');
+  });
+}
+
+export function TransactionImportView() {
+  const [activeTab, setActiveTab] = useState<'import' | 'history'>('import');
+
+  return (
+    <div className="space-y-4">
+      <Tabs
+        variant="line"
+        activeKey={activeTab}
+        onChange={(k) => setActiveTab(k as 'import' | 'history')}
+        items={[
+          { key: 'import', label: '账单导入', content: <ImportPanel /> },
+          { key: 'history', label: '历史记录', content: <HistoryPanel /> },
+        ]}
+      />
+    </div>
+  );
+}
+
+/* -------- 导入面板 -------- */
+
+function ImportPanel() {
+  const accounts = useLiveQuery(() => db.accounts.toArray(), [], [] as Account[]);
+
+  const [file, setFile] = useState<File | null>(null);
+  const [platform, setPlatform] = useState<string>('alipay');
+  const [accountId, setAccountId] = useState<number | undefined>(undefined);
+  const [items, setItems] = useState<ParsedTx[]>([]);
+  const [parsing, setParsing] = useState(false);
+  const [parseError, setParseError] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{
+    imported: number;
+    skipped: number;
+  } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (!accountId && accounts[0]?.id) setAccountId(accounts[0].id);
+  }, [accounts, accountId]);
+
+  function onFiles(list: FileList | null) {
+    setParseError(null);
+    setItems([]);
+    setImportResult(null);
+    if (!list || list.length === 0) return;
+    const f = list[0];
+    if (f.size > MAX_FILE_SIZE) {
+      setParseError(`文件大小 ${(f.size / 1024 / 1024).toFixed(2)} MB 超过 10 MB 限制`);
+      return;
+    }
+    if (!/\.(csv|txt|tsv)$/i.test(f.name)) {
+      setParseError('仅支持 CSV / TXT / TSV 文件');
+      return;
+    }
+    setFile(f);
+  }
+
+  async function doParse() {
+    if (!file) {
+      setParseError('请先选择文件');
+      return;
+    }
+    setParsing(true);
+    setParseError(null);
+    try {
+      const text = await readFileText(file);
+      const result = parseCsvText(text, platform);
+      setItems(result.items);
+      if (result.error) setParseError(result.error);
+    } catch (e) {
+      setParseError((e as Error).message ?? '解析失败');
+    } finally {
+      setParsing(false);
+    }
+  }
+
+  async function doImport() {
+    if (!accountId) {
+      setParseError('请先选择目标账户');
+      return;
+    }
+    const valid = items.filter((it) => !it.rawLine && it.date && it.amount > 0);
+    if (valid.length === 0) {
+      setParseError('没有可导入的有效行');
+      return;
+    }
+    setImporting(true);
+    setParseError(null);
+    try {
+      await db.transaction('rw', db.transactions, db.accounts, db.kv, async () => {
+        const now = Date.now();
+        for (const it of valid) {
+          const tx: Transaction = {
+            type: it.type,
+            name: it.merchant || (it.type === 'transfer' ? '转账' : '导入流水'),
+            amount: it.amount,
+            date: it.date,
+            accountId,
+            toAccountId: undefined,
+            categoryId: undefined,
+            remark: it.remark,
+            includeInAsset: true,
+            createdAt: now,
+          };
+          const id = await db.transactions.add(tx);
+          // 应用余额影响
+          const finalTx = { ...tx, id };
+          for (const d of deltasOf(finalTx)) {
+            const acc = await db.accounts.get(d.accountId);
+            if (acc) {
+              acc.balance = Number((acc.balance + d.delta).toFixed(2));
+              acc.updatedAt = Date.now();
+              await db.accounts.put(acc);
+            }
+          }
+        }
+        // 写历史
+        const batch: ImportBatch = {
+          id: `imp-${now}-${Math.random().toString(36).slice(2, 6)}`,
+          platform,
+          fileName: file?.name ?? '',
+          total: items.length,
+          imported: valid.length,
+          at: now,
+        };
+        const prev = ((await db.kv.get(IMPORT_HISTORY_KEY))?.value as ImportBatch[] | undefined) ?? [];
+        await db.kv.put({ key: IMPORT_HISTORY_KEY, value: [batch, ...prev].slice(0, 50) });
+      });
+      setImportResult({
+        imported: valid.length,
+        skipped: items.length - valid.length,
+      });
+      setItems([]);
+      setFile(null);
+    } catch (e) {
+      setParseError((e as Error).message ?? '导入失败');
+    } finally {
+      setImporting(false);
+    }
+  }
+
+  const platformOpts = PLATFORMS.map((p) => ({ label: p.name, value: p.id }));
+  const accountOpts = accounts.map((a) => ({ label: a.name, value: String(a.id) }));
+
+  return (
+    <div className="space-y-5">
+      <Card title="上传账单文件">
+        <div
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragOver(true);
+          }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragOver(false);
+            onFiles(e.dataTransfer.files);
+          }}
+          onClick={() => fileInputRef.current?.click()}
+          className={clsx(
+            'border-2 border-dashed rounded-2xl py-12 text-center cursor-pointer transition',
+            dragOver
+              ? 'border-brand bg-brand-soft/30'
+              : 'border-border dark:border-border-dark hover:border-text-muted',
+          )}
+        >
+          <div className="flex flex-col items-center gap-2 text-text-muted">
+            <IconUpload size={28} />
+            <div className="text-sm">点击 / 拖入文件</div>
+            <div className="text-xs">支持 CSV / TXT / TSV，最大 10MB</div>
+            {file && (
+              <div className="mt-2 flex items-center gap-2 text-text dark:text-text-dark">
+                <IconFileSpreadsheet size={16} className="text-income" />
+                <span className="text-sm font-medium">{file.name}</span>
+                <Badge tone="neutral">{(file.size / 1024).toFixed(1)} KB</Badge>
+              </div>
+            )}
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv,.txt,.tsv"
+            className="hidden"
+            onChange={(e) => onFiles(e.target.files)}
+          />
+        </div>
+      </Card>
+
+      {parseError && (
+        <div className="text-sm text-expense bg-expense-soft dark:bg-expense-soft-dark rounded-xl px-3 py-2 flex items-start gap-2">
+          <IconAlertCircle size={14} className="mt-0.5 flex-none" /> {parseError}
+        </div>
+      )}
+      {importResult && (
+        <div className="text-sm text-income bg-income-soft dark:bg-income-soft-dark rounded-xl px-3 py-2 flex items-start gap-2">
+          <IconCircleCheck size={14} className="mt-0.5 flex-none" />
+          成功导入 {importResult.imported} 条流水
+          {importResult.skipped > 0 && `，跳过 ${importResult.skipped} 条无效行`}
+        </div>
+      )}
+
+      <Card title="选择平台与账户">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <div className="text-sm text-text-muted mb-1.5">导入平台</div>
+            <Select
+              options={platformOpts}
+              value={platform}
+              onChange={(e) => setPlatform(e.target.value)}
+              block
+            />
+          </div>
+          <div>
+            <div className="text-sm text-text-muted mb-1.5">入账账户</div>
+            <Select
+              placeholder="请选择账户"
+              options={accountOpts}
+              value={accountId === undefined ? '' : String(accountId)}
+              onChange={(e) =>
+                setAccountId(e.target.value === '' ? undefined : Number(e.target.value))
+              }
+              block
+            />
+          </div>
+        </div>
+        <div className="mt-4 flex items-center justify-between">
+          <div className="text-xs text-text-muted">
+            支持平台：{PLATFORMS.map((p) => p.name).join(' / ')}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" onClick={doParse} disabled={!file || parsing}>
+              {parsing ? '解析中…' : '解析账单'}
+            </Button>
+            <Button onClick={doImport} disabled={items.length === 0 || importing}>
+              {importing ? '导入中…' : '确认导入'}
+            </Button>
+          </div>
+        </div>
+      </Card>
+
+      {items.length > 0 && (
+        <Card
+          title={`解析结果（${items.filter((x) => !x.rawLine).length} / ${items.length} 有效）`}
+          flush
+        >
+          <div className="max-h-[420px] overflow-auto">
+            <table className="w-full text-sm">
+              <thead className="text-xs text-text-muted sticky top-0 bg-bg-card dark:bg-bg-card-dark">
+                <tr>
+                  <th className="text-left px-4 py-2 font-medium">日期</th>
+                  <th className="text-left px-4 py-2 font-medium">商户</th>
+                  <th className="text-left px-4 py-2 font-medium">类型</th>
+                  <th className="text-right px-4 py-2 font-medium">金额</th>
+                  <th className="text-left px-4 py-2 font-medium">备注</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((it, i) => {
+                  const ok = !it.rawLine && it.date && it.amount > 0;
+                  const tone =
+                    it.type === 'income' ? 'income' : it.type === 'expense' ? 'expense' : 'neutral';
+                  return (
+                    <tr
+                      key={i}
+                      className={clsx(
+                        'border-t border-border dark:divide-border-dark',
+                        !ok && 'opacity-50 line-through',
+                      )}
+                    >
+                      <td className="px-4 py-2 text-text-muted">
+                        {it.date ? dayjs(it.date).format('YYYY-MM-DD HH:mm') : it.rawLine ? '无法解析' : '—'}
+                      </td>
+                      <td className="px-4 py-2 truncate max-w-[200px]">{it.merchant || '—'}</td>
+                      <td className="px-4 py-2">
+                        <Badge tone={tone as 'income' | 'expense' | 'neutral'}>
+                          {labelOf(it.type)}
+                        </Badge>
+                      </td>
+                      <td
+                        className={clsx(
+                          'px-4 py-2 text-right tabular-nums',
+                          it.type === 'income' ? 'text-income' : it.type === 'expense' ? 'text-expense' : '',
+                        )}
+                      >
+                        {it.amount ? formatMoney(it.amount) : '—'}
+                      </td>
+                      <td className="px-4 py-2 truncate max-w-[200px]">{it.remark || '—'}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+/* -------- 历史面板 -------- */
+
+function HistoryPanel() {
+  const kv = useLiveQuery(() => db.kv.get(IMPORT_HISTORY_KEY), []);
+  const batches = (kv?.value as ImportBatch[] | undefined) ?? [];
+
+  if (batches.length === 0) {
+    return (
+      <div className="card">
+        <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+          <IconCloudDownload size={36} className="text-text-muted mb-3" />
+          <div className="text-base font-medium">暂无导入记录</div>
+          <div className="mt-2 text-sm text-text-muted">
+            导入账单成功后会在此显示历史记录
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="card !p-0 divide-y divide-border dark:divide-border-dark">
+      {batches.map((b) => {
+        const p = PLATFORMS.find((x) => x.id === b.platform);
+        return (
+          <div key={b.id} className="px-4 py-3 flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <div className="text-sm font-medium truncate">{p?.name ?? b.platform} · {b.fileName}</div>
+              <div className="text-xs text-text-muted mt-0.5">
+                {dayjs(b.at).format('YYYY-MM-DD HH:mm')} · 共 {b.total} 条，导入 {b.imported} 条
+              </div>
+            </div>
+            <Badge tone={b.imported === b.total ? 'income' : 'neutral'}>
+              {b.imported === b.total ? '成功' : '部分成功'}
+            </Badge>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function Card({ title, children, flush }: { title: React.ReactNode; children: React.ReactNode; flush?: boolean }) {
+  return (
+    <div className={clsx('card', !flush && 'p-6')}>
+      <div className="mb-4 flex items-center justify-between">
+        <div className="text-base font-medium text-text dark:text-text-dark">{title}</div>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function labelOf(t: string) {
+  switch (t) {
+    case 'expense':
+      return '支出';
+    case 'income':
+      return '收入';
+    case 'transfer':
+      return '转账';
+    case 'excluded':
+      return '不计收支';
+    default:
+      return '其他';
+  }
+}
+
+export default TransactionImportView;

@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-family: theme('fontFamily.sans');
+  }
+
+  /* 滚动条极简化 */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.12);
+    border-radius: 4px;
+  }
+  .dark ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.14);
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl bg-bg-card dark:bg-bg-card-dark shadow-soft dark:shadow-soft-dark border border-border dark:border-border-dark;
+  }
+
+  .section-title {
+    @apply text-sm font-medium text-text dark:text-text-dark;
+  }
+}
