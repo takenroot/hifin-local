@@ -1,4 +1,28 @@
+# Node
 node_modules/
 dist/
 *.log
+npm-debug.log*
+
+# 构建/编辑器
 .DS_Store
+.vscode/
+.idea/
+*.tsbuildinfo
+
+# 测试/E2E
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+# 环境/凭据（若有）
+.env
+.env.local
+.env.*.local
+
+# Vite 缓存
+.vite/
+
+# 临时/本地服务日志
+/tmp/
