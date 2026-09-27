@@ -21,7 +21,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   IconLayoutDashboard,
   IconEye,
-  IconShare,
+  IconEyeClosed,
   IconPlus,
   IconWallet,
   IconTargetArrow,
@@ -96,11 +96,43 @@ const PIE_COLORS = [
   '#14b8a6',
 ];
 
+/* 隐藏金额时显示的占位字符（与币种符号宽度接近） */
+const AMOUNT_HIDDEN_PREFIX = '¥ ';
+const AMOUNT_HIDDEN_BODY = '••••••';
+
+/**
+ * 读取/写入看板顶栏"隐藏金额"开关的 localStorage key。
+ * - 浏览器禁用 localStorage 时静默回退为 false。
+ */
+function readHideAmounts(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return window.localStorage.getItem('hifin:hideAmounts') === 'true';
+  } catch {
+    return false;
+  }
+}
+
+function writeHideAmounts(value: boolean): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem('hifin:hideAmounts', String(value));
+  } catch {
+    // ignore: 隐私模式 / 配额耗尽等场景下不可写
+  }
+}
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const today = useMemo(() => dayjs(), []);
   const currentMonth = useMemo(() => today.startOf('month'), [today]);
   const prevMonth = useMemo(() => today.subtract(1, 'month').startOf('month'), [today]);
+
+  // 顶栏"隐藏金额"开关：默认显示金额（false），持久化到 hifin:hideAmounts
+  const [hideAmounts, setHideAmounts] = useState<boolean>(() => readHideAmounts());
+  useEffect(() => {
+    writeHideAmounts(hideAmounts);
+  }, [hideAmounts]);
 
   // 天气（Open-Meteo，失败静默隐藏）
   const [weather, setWeather] = useState<WeatherInfo | null>(null);
@@ -221,8 +253,16 @@ export default function Dashboard() {
         icon={<IconLayoutDashboard size={18} />}
         actions={
           <div className="flex items-center gap-2 text-text-muted">
-            <IconEye size={18} className="cursor-pointer hover:text-text dark:hover:text-text-dark" />
-            <IconShare size={18} className="cursor-pointer hover:text-text dark:hover:text-text-dark" />
+            <button
+              type="button"
+              onClick={() => setHideAmounts((v) => !v)}
+              aria-pressed={hideAmounts}
+              aria-label={hideAmounts ? '显示金额' : '隐藏金额'}
+              title={hideAmounts ? '显示金额' : '隐藏金额'}
+              className="inline-flex items-center justify-center rounded-md p-1 text-text-muted hover:text-text dark:hover:text-text-dark hover:bg-bg-card dark:hover:bg-bg-card-dark transition-colors cursor-pointer"
+            >
+              {hideAmounts ? <IconEyeClosed size={18} /> : <IconEye size={18} />}
+            </button>
           </div>
         }
       />
@@ -271,6 +311,7 @@ export default function Dashboard() {
                   tone="income"
                   amount={netAsset}
                   delta={netAssetMoM}
+                  hide={hideAmounts}
                 />
                 <StatCard
                   label="本月收入"
@@ -278,6 +319,7 @@ export default function Dashboard() {
                   tone="income"
                   amount={monthIncome}
                   delta={incomeMoM}
+                  hide={hideAmounts}
                 />
                 <StatCard
                   label="本月支出"
@@ -286,6 +328,7 @@ export default function Dashboard() {
                   amount={monthExpense}
                   delta={expenseMoM}
                   expenseMode
+                  hide={hideAmounts}
                 />
               </div>
             </section>
@@ -469,7 +512,7 @@ export default function Dashboard() {
                         </div>
                       </div>
                       <span className="text-expense tabular-nums font-medium">
-                        {formatMoney(a.balance, false)}
+                        <MaskMoney value={a.balance} hide={hideAmounts} withSymbol={false} />
                       </span>
                     </div>
                   ))}
@@ -508,7 +551,7 @@ export default function Dashboard() {
                   <div className="flex items-baseline justify-between">
                     <span className="text-xs text-text-muted">共 {accounts.length} 个账户</span>
                     <span className="text-income tabular-nums font-medium">
-                      {formatMoney(accountTotal, false)}
+                      <MaskMoney value={accountTotal} hide={hideAmounts} withSymbol={false} />
                     </span>
                   </div>
                   <Button
@@ -638,8 +681,14 @@ export default function Dashboard() {
                           </div>
                         </div>
                         <span className={clsx('tabular-nums font-medium', tone)}>
-                          {sign}
-                          {formatMoney(t.amount, false)}
+                          {hideAmounts ? (
+                            <MaskMoney value={t.amount} hide withSymbol={false} />
+                          ) : (
+                            <>
+                              {sign}
+                              {formatMoney(t.amount, false)}
+                            </>
+                          )}
                         </span>
                       </div>
                     );
@@ -747,9 +796,11 @@ interface StatCardProps {
   amount: number;
   delta: number;
   expenseMode?: boolean;
+  /** 看板顶栏"隐藏金额"开关：true 时用圆点占位金额 */
+  hide?: boolean;
 }
 
-function StatCard({ label, icon, tone, amount, delta, expenseMode }: StatCardProps) {
+function StatCard({ label, icon, tone, amount, delta, expenseMode, hide }: StatCardProps) {
   const valueClass = tone === 'income' ? 'text-income' : 'text-expense';
   const sign = delta > 0 ? '+' : '';
   return (
@@ -769,13 +820,38 @@ function StatCard({ label, icon, tone, amount, delta, expenseMode }: StatCardPro
         </Badge>
       </div>
       <div className={clsx('mt-3 text-2xl font-medium tabular-nums', valueClass)}>
-        {formatMoney(amount)}
+        <MaskMoney value={amount} hide={!!hide} />
       </div>
       <div className="mt-1 text-xs text-text-muted">
         较上月 <span className={trendToneClass(delta, !!expenseMode)}>{formatPercent(delta)}</span>
       </div>
     </Card>
   );
+}
+
+/* ───────────────── 金额掩码组件 ───────────────── */
+
+interface MaskMoneyProps {
+  value: number;
+  hide: boolean;
+  withSymbol?: boolean;
+  className?: string;
+}
+
+/**
+ * 根据 hide 开关决定显示真实金额或圆点占位。
+ *  - hide=true  时：渲染 "¥ ••••••"（与带符号的金额宽度相近，避免布局抖动）。
+ *  - hide=false 时：走原有 formatMoney。
+ */
+function MaskMoney({ value, hide, withSymbol = true, className }: MaskMoneyProps) {
+  if (hide) {
+    return (
+      <span className={className} aria-label="已隐藏金额">
+        {withSymbol ? `${AMOUNT_HIDDEN_PREFIX}${AMOUNT_HIDDEN_BODY}` : AMOUNT_HIDDEN_BODY}
+      </span>
+    );
+  }
+  return <span className={className}>{formatMoney(value, withSymbol)}</span>;
 }
 
 /* ───────────────── 月历组件 ───────────────── */

@@ -100,8 +100,9 @@ export function ProfileSection() {
                 variant="primary"
                 onClick={saveNickname}
                 disabled={!nickname.trim() || saving}
+                className="flex-none whitespace-nowrap min-w-[80px] disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                保存
+                {saving ? '保存中…' : '保存'}
               </Button>
             </div>
             <div className="mt-1 text-xs text-text-muted">

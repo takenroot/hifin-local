@@ -131,7 +131,12 @@ export function CategoriesSection() {
       {/* 分组 + 分类 */}
       <div className="grid grid-cols-1 md:grid-cols-[240px,1fr] gap-4">
         <Card
-          title="分组"
+          title={
+            <div className="flex items-center gap-2 text-sm font-medium text-text dark:text-text-dark">
+              <IconCategory size={14} className="flex-none text-text-muted" />
+              <span>分组</span>
+            </div>
+          }
           flush
         >
           <div className="p-3">

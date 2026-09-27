@@ -25,34 +25,46 @@ export function Tabs({
   variant = 'line',
   className,
 }: TabsProps) {
+  const activeItem = items.find((it) => it.key === activeKey);
+  const hasContent = items.some((it) => it.content != null);
   return (
-    <div className={clsx('flex items-center gap-1', className)}>
-      {items.map((it) => {
-        const active = it.key === activeKey;
-        return (
-          <button
-            key={it.key}
-            type="button"
-            disabled={it.disabled}
-            onClick={() => !it.disabled && onChange(it.key)}
-            className={clsx(
-              'h-8 px-3 text-sm rounded-lg transition',
-              variant === 'pill'
-                ? active
-                  ? 'bg-text text-bg-card dark:bg-bg-card-dark dark:text-text-dark'
-                  : 'text-text-muted hover:bg-bg dark:hover:bg-bg-card-dark'
-                : 'border-b-2 -mb-px',
-              variant === 'line' &&
-                (active
-                  ? 'border-text dark:border-bg-card text-text dark:text-text-dark'
-                  : 'border-transparent text-text-muted hover:text-text dark:hover:text-text-dark'),
-              it.disabled && 'opacity-40 cursor-not-allowed',
-            )}
-          >
-            {it.label}
-          </button>
-        );
-      })}
+    <div
+      className={clsx(
+        hasContent ? 'flex flex-col gap-4' : 'flex items-center gap-1',
+        className,
+      )}
+    >
+      <div className="flex items-center gap-1">
+        {items.map((it) => {
+          const active = it.key === activeKey;
+          return (
+            <button
+              key={it.key}
+              type="button"
+              disabled={it.disabled}
+              onClick={() => !it.disabled && onChange(it.key)}
+              className={clsx(
+                'h-8 px-3 text-sm rounded-lg transition',
+                variant === 'pill'
+                  ? active
+                    ? 'bg-text text-bg-card dark:bg-bg-card-dark dark:text-text-dark'
+                    : 'text-text-muted hover:bg-bg dark:hover:bg-bg-card-dark'
+                  : 'border-b-2 -mb-px',
+                variant === 'line' &&
+                  (active
+                    ? 'border-text dark:border-bg-card text-text dark:text-text-dark'
+                    : 'border-transparent text-text-muted hover:text-text dark:hover:text-text-dark'),
+                it.disabled && 'opacity-40 cursor-not-allowed',
+              )}
+            >
+              {it.label}
+            </button>
+          );
+        })}
+      </div>
+      {hasContent && activeItem?.content != null && (
+        <div className="min-w-0">{activeItem.content}</div>
+      )}
     </div>
   );
 }

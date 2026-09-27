@@ -30,6 +30,12 @@ import {
 
 type MenuKey = 'budget' | 'goal' | 'report' | 'discover';
 
+const THEME_OPTIONS: { value: Theme; label: string }[] = [
+  { value: 'light', label: '浅色' },
+  { value: 'dark', label: '暗黑' },
+  { value: 'system', label: '跟随系统' },
+];
+
 const MENU_ROWS: { key: MenuKey; label: string; icon: React.ReactNode }[] = [
   { key: 'budget', label: '预算', icon: <IconCirclePlus size={16} /> },
   { key: 'goal', label: '目标', icon: <IconTarget size={16} /> },
@@ -65,16 +71,33 @@ export function PreferencesSection() {
                 选择您的主题，切换纯白、暗黑模式或跟随系统
               </div>
             </div>
-            <div className="w-[180px] flex-none">
-              <Select
-                value={theme}
-                options={[
-                  { label: '浅色', value: 'light' },
-                  { label: '暗黑', value: 'dark' },
-                  { label: '跟随系统', value: 'system' },
-                ]}
-                onChange={(e) => setTheme(e.target.value as Theme)}
-              />
+            <div className="flex-none">
+              <div
+                role="radiogroup"
+                aria-label="主题"
+                className="inline-flex p-0.5 rounded-xl bg-bg dark:bg-bg-card-dark border border-border dark:border-border-dark"
+              >
+                {THEME_OPTIONS.map((opt) => {
+                  const active = theme === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      role="radio"
+                      aria-checked={active}
+                      onClick={() => setTheme(opt.value)}
+                      className={clsx(
+                        'h-8 px-3 text-sm rounded-lg transition whitespace-nowrap',
+                        active
+                          ? 'bg-text text-bg-card dark:bg-text-dark dark:text-bg-dark font-medium shadow-sm'
+                          : 'text-text-muted hover:text-text dark:hover:text-text-dark',
+                      )}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
