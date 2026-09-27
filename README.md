@@ -112,6 +112,20 @@ export { routes };
 ### 暗黑模式
 必须写全 `dark:` 变体。色板约定：`text-text dark:text-text-dark`；`bg-bg dark:bg-bg-dark`；`border-border dark:border-border-dark`。所有 token 在 `app/tailwind.config.js`。
 
+## 路线图
+
+按重要性与依赖关系排序：
+
+- 📧 **定时邮箱账单自动接入** — 用户配置 IMAP 邮箱与定时周期（每天/每周），后台拉取银行/支付平台的账单邮件，用交易规则引擎解析后批量导入；首次接入需要授权一次性 OAuth 或 IMAP 密码；本地实现，无云端
+- 🛠️ **AI 可调用的 CLI 工具** — 暴露 `hifin` 命令（`add-tx`、`list-accounts`、`query`、`summary`、`import-csv` 等），直接读写本地数据快照（SQLite 镜像或 IndexedDB 导出），让外部 AI Agent 通过 shell 完成「帮我记一笔 XXX 流水」类任务；MCP server 模式作为加分项
+- 📱 **原生 App 封装** — 用 [Tauri](https://tauri.app/)（推荐，体积小）把 Web 打包成 macOS / Windows / Linux 桌面 App；移动端走 PWA 或 [Capacitor](https://capacitorjs.com/)
+
+技术债与可选方向：
+- i18n 全量翻译
+- 报表可视化编辑器（拖拽组件）
+- E2E 测试固化进 `tests/`
+- `vendor-recharts` 按路由懒加载
+
 ## 不做（明确划界）
 
 按 [`hifin-features.md`](./hifin-features.md) 第十二章约定：

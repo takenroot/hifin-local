@@ -9,6 +9,26 @@
 - 新增根 `README.md`、`app/README.md`、`CHANGELOG.md`（本文档）
 - `accept/` 重组：脚本与截图按类型分目录，移除端口重命名重复件
 - `.gitignore` 补全（`*.tsbuildinfo`、`.vite/`、`.env*` 等）
+- GitHub 仓库建立：`takenroot/hifin-local`（首次推送）
+- 新增 R7（眼睛切换/设置样式/交易导入空白）与 R8（Select 组件彻底自写）迭代
+
+### 路线图（计划中，未开始）
+- 📧 **定时邮箱账单自动接入**：通过 IMAP 周期性拉取指定邮箱的账单邮件，解析（依赖交易规则引擎）后批量导入，零人工干预
+- 📱 **原生 App 封装**：用 Tauri/Electron 把 Web 打包成 macOS/Windows/Linux 桌面 App，移动端可考虑 PWA 或 Capacitor
+- 🛠️ **CLI 工具（AI 可调用）**：暴露 `hifin` CLI 子命令（`add-tx` / `list-accounts` / `query` / `summary` 等），直接读写本地 SQLite 镜像或 IndexedDB 导出文件，供 AI Agent 通过 shell 调用项目能力
+
+---
+
+## [0.3.1] - R7/R8 UI 打磨 - 2026-09-27
+
+提交：`ad1b92a`、`da348e4`
+
+### 新增 / 变更
+- **R7**：看板顶栏眼睛图标改为切换金额显隐（localStorage 持久化，MaskMoney 组件覆盖三卡/还款提醒/账户卡/最近交易）；分享图标删除
+- **R7**：设置页「保存」按钮竖排文字修复（`whitespace-nowrap` + `min-w-[80px]` + disabled 灰化）
+- **R7**：主题选择改 3 个 pill 选项；「分组」标题样式强化
+- **R7**：`Tabs` 组件修复 `items[].content` 不渲染的 bug（交易导入空白页根因）
+- **R8**：`Select` 组件彻底重写为自定义弹层（告别原生 `<select>`），API 完全向后兼容；卡片式圆角弹层 + 内部滚动 + 键盘导航 + 暗黑模式全套
 
 ---
 
