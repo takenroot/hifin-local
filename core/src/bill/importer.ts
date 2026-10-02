@@ -10,6 +10,8 @@
  *
  * 整个第 4 步再包一层事务：importTransactions 内部已经是事务（better-sqlite3
  * 嵌套事务走 SAVEPOINT），外层这层保证"CSV 解析结果 → 落库"整体原子。
+ *
+ * 可选的 onProgress 在事务提交后回调一次已写入行数，供 poller 推进度提示。
  */
 
 import type Database from 'better-sqlite3';
@@ -122,6 +124,8 @@ function toCoreTxs(items: AppParseResult['items']): { txs: ParsedTx[]; dropped: 
  * @param password  解压密码（每次申请账单时不同，必须显式传入）
  * @param accountId 导入到哪个账户（必须已存在）
  * @param spaceId   空间 ID，默认 1
+ * @param onProgress 入库完成后回调一次已写入行数（poller 用它把"正在解压…"换成"已导入 N 笔"）。
+ *                   可选、纯旁路：抛错会被吞掉，绝不影响导入结果。
  */
 export async function importBillZip(
   db: Database.Database,
@@ -130,6 +134,7 @@ export async function importBillZip(
   password: string,
   accountId: number,
   spaceId?: number,
+  onProgress?: (imported: number) => void,
 ): Promise<ImportBillResult> {
   if (!Number.isFinite(accountId) || accountId <= 0) {
     throw new Error('accountId 必须是正整数');
@@ -174,6 +179,13 @@ export async function importBillZip(
     const res = db.transaction(() =>
       importTransactions(db, txs, accountId, { spaceId: spaceId ?? 1 }),
     )();
+
+    // 进度回调是纯旁路：用户的 UI 回调挂了不该让整笔导入算失败
+    try {
+      onProgress?.(res.imported);
+    } catch {
+      /* ignore */
+    }
 
     return {
       imported: res.imported,

@@ -30,6 +30,8 @@ import { reportsRouter } from './routes/reports.js';
 import { spacesRouter } from './routes/spaces.js';
 import { kvRouter } from './routes/kv.js';
 import { aiModelsRouter } from './routes/ai-models.js';
+import { notificationsRouter } from './routes/notifications.js';
+import { billsRouter } from './routes/bills.js';
 
 export interface CreateAppOptions {
   /** 已连接的 db 实例；若不传，则视为外部已通过 setDb/openDatabase 准备好 */
@@ -61,6 +63,8 @@ export function createApp(opts: CreateAppOptions = {}): Express {
   app.use('/api/spaces', spacesRouter);
   app.use('/api/kv', kvRouter);
   app.use('/api/ai-models', aiModelsRouter);
+  app.use('/api/notifications', notificationsRouter);
+  app.use('/api/bills', billsRouter);
 
   // 404
   app.use((req: Request, res: Response) => {

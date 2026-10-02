@@ -121,7 +121,21 @@ CREATE TABLE IF NOT EXISTS kv (
   value TEXT                 -- JSON
 );
 
+CREATE TABLE IF NOT EXISTS notifications (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  type TEXT NOT NULL CHECK(type IN ('need_password','password_error','import_success','import_failed')),
+  title TEXT NOT NULL,
+  message TEXT,
+  bill_uid INTEGER,
+  platform TEXT,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','resolved','dismissed','failed')),
+  retry_count INTEGER NOT NULL DEFAULT 0,
+  createdAt INTEGER NOT NULL,
+  updatedAt INTEGER NOT NULL
+);
+
 -- 常用索引
+CREATE INDEX IF NOT EXISTS idx_notif_status ON notifications(status);
 CREATE INDEX IF NOT EXISTS idx_tx_date ON transactions(date);
 CREATE INDEX IF NOT EXISTS idx_tx_account ON transactions(accountId);
 CREATE INDEX IF NOT EXISTS idx_tx_category ON transactions(categoryId);
@@ -151,4 +165,7 @@ export interface ReportRow { id?: number; name: string; description?: string; te
 export interface AiModelRow { id?: number; name: string; model: string; endpoint: string; apiKey?: string; }
 export interface BudgetRow { id?: number; name: string; categoryId?: number; amount: number; period: BudgetPeriod; spaceId?: number; createdAt: number; }
 export interface RuleRow { id?: number; keyword: string; matchField: RuleMatchField; categoryId: number; priority: number; enabled: number; createdAt: number; }
+export type NotificationType = 'need_password' | 'password_error' | 'import_success' | 'import_failed';
+export type NotificationStatus = 'pending' | 'resolved' | 'dismissed' | 'failed';
+export interface NotificationRow { id?: number; type: NotificationType; title: string; message?: string; bill_uid?: number; platform?: string; status: NotificationStatus; retry_count: number; createdAt: number; updatedAt: number; }
 export interface KvRow { key: string; value?: string; }

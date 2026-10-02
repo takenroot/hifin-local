@@ -17,8 +17,25 @@
  *   2. 通知型邮件（正文只有"账单已生成"）→ 真正的数据在加密 ZIP 附件里，
  *      用 bodyStructure 找 application/zip / application/octet-stream 部件，
  *      client.download() 存临时文件后交给 bill/importer.ts 自动入库。
- *      附件也没找到的（只有下载链接）→ 标记已读并提示用户手动下载。
- *      注：QQ 邮箱的 IMAP 对 fetchOne 经常返回空 list，故改用 fetch 迭代器取 envelope。
+ *      微信这类"无附件、只有下载链接"的邮件 → 先从正文抽 URL，HTTP 下载 ZIP，
+ *      之后同样走解压密码流程。
+ *
+ * 解压密码是"一次性"的（每次申请账单都不同），所以账单处理被建模成一个
+ * 最多重试 3 次的状态机，状态存在 notifications 表里：
+ *
+ *      无密码 ──► need_password（不标记已读，下轮轮询还会来看一眼）
+ *        │用户提交密码（存进内存，见 bill/password-store.ts）
+ *        ▼
+ *      有密码 ──解压成功──► import_success + 标记已读 + 清掉内存密码
+ *        │
+ *        └─解压失败──► password_error（retry_count+1，附"还剩 N 次"）
+ *                        retry_count >= 3 ──► 通知转 failed + 标记已读，不再自动尝试
+ *
+ * 通知与 URL 提取器都是"可选依赖"：默认在运行时去 ../notifications/store.js 与
+ * ./url-extractor.js 软加载（那两个文件由别的模块提供），加载不到就降级为 no-op /
+ * 旧版 no-attachment 提示，轮询本身照常跑完。测试则直接注入假实现，不碰磁盘。
+ *
+ * 注：QQ 邮箱的 IMAP 对 fetchOne 经常返回空 list，故改用 fetch 迭代器取 envelope。
  *
  * 本文件除 MailPoller 外，还提供两段"编排"能力，供 CLI 复用（避免 cli.ts 变成一坨）：
  *   1. 凭证存储：saveMailConfig / loadMailConfig / readMaskedMailConfig
@@ -30,7 +47,7 @@
 import type Database from 'better-sqlite3';
 import { ImapFlow, type ImapFlowOptions } from 'imapflow';
 import type { MessageStructureObject } from 'imapflow';
-import { createWriteStream, mkdtempSync, rmSync } from 'node:fs';
+import { createWriteStream, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
 import { pipeline } from 'node:stream/promises';
@@ -38,7 +55,8 @@ import type { ParsedTx } from './parsers/base.js';
 import { detectParser } from './parsers/index.js';
 import { importTransactions } from './importer.js';
 import { importBillZip } from '../bill/importer.js';
-import { unzipBill, findBillCsv, cleanupBillDir, BillCsvNotFoundError } from '../bill/unzip.js';
+import { unzipBill, findBillCsv, cleanupBillDir, BillCsvNotFoundError, BillPasswordError } from '../bill/unzip.js';
+import { getBillPasswordMap } from '../bill/password-store.js';
 
 export interface MailPollerConfig {
   host: string;
@@ -174,8 +192,9 @@ export function findBillAttachments(bodyStructure: unknown): BillAttachment[] {
 export interface MailBillOutcome {
   from: string;
   subject: string;
-  /** imported=附件已入库；no-attachment=只有下载链接；no-password=检测到账单附件但未提供解压密码；error=附件下载或导入失败 */
-  status: 'imported' | 'no-attachment' | 'no-password' | 'error';
+  /** imported=附件已入库；no-attachment=只有下载链接；no-password=检测到账单附件但未提供解压密码；
+   *  error=附件下载或导入失败（含密码错误）；exhausted=密码连错达到上限，本封不再自动尝试 */
+  status: 'imported' | 'no-attachment' | 'no-password' | 'error' | 'exhausted';
   platform?: string;
   /** imported 时为实际写入行数 */
   imported?: number;
@@ -183,7 +202,238 @@ export interface MailBillOutcome {
   hint?: string;
   /** error 时的原因 */
   message?: string;
+  /** error 且属于"密码错误"时为 true（与下载/格式失败区分开） */
+  passwordError?: boolean;
+  /** error(密码错误) 时"还剩几次机会"；exhausted 时为 0 */
+  remainingRetries?: number;
+  /** exhausted 时为 true：已标记已读，后续轮询不会再碰这封邮件 */
+  exhausted?: boolean;
 }
+
+// ── 通知存储（可注入） ────────────────────────────────────────
+
+/** 通知类型；与 notifications 表 CHECK 约束一一对应 */
+export type BillNotificationType =
+  | 'need_password'
+  | 'password_error'
+  | 'import_success'
+  | 'import_failed';
+
+export type BillNotificationStatus = 'pending' | 'resolved' | 'dismissed' | 'failed';
+
+/** 落库前的通知内容（字段名与 notifications 表列名一致） */
+export interface BillNotificationInput {
+  type: BillNotificationType;
+  title: string;
+  message?: string;
+  bill_uid?: number;
+  platform?: string;
+}
+
+/** 读回来的通知（只声明 poller 真正用到的字段） */
+export interface BillNotification {
+  id?: number;
+  type: string;
+  title?: string;
+  message?: string;
+  bill_uid?: number;
+  platform?: string;
+  status: string;
+  retry_count: number;
+}
+
+export interface BillNotificationFilter {
+  status?: BillNotificationStatus;
+  type?: BillNotificationType;
+  bill_uid?: number;
+}
+
+/**
+ * poller 需要的通知能力子集。
+ * 默认接 ../notifications/store.js；测试注入内存假实现，不碰 SQLite。
+ */
+export interface BillNotificationStore {
+  createNotification(input: BillNotificationInput): BillNotification | undefined;
+  listNotifications(filter?: BillNotificationFilter): BillNotification[];
+  incrementRetry(id: number): number | undefined;
+  resolveNotification(id: number): void;
+  /**
+   * 改状态。可选：真实 store 若不提供，poller 会退化成"只清 retry_count 不改状态"，
+   * 逻辑本身照常跑完（通知留在 pending，用户仍能手动 resolve）。
+   */
+  setNotificationStatus?(id: number, status: BillNotificationStatus): void;
+}
+
+/** 通知相关调用一律包一层 try/catch：通知挂了不能连累账单导入 */
+function safeCall<T>(fn: () => T, fallback: T): T {
+  try {
+    return fn();
+  } catch {
+    return fallback;
+  }
+}
+
+/**
+ * 把任意形状的通知模块适配成 BillNotificationStore。
+ *
+ * 为什么要"适配"而不是直接 import：notifications/store.js 由另一个模块提供，
+ * 它的具体签名可能微调；这里只依赖"能用即可"的最小契约，并对返回值做归一化
+ * （id 可能是 number、undefined，甚至只返回 boolean）。
+ */
+export function adaptNotificationStore(mod: unknown): BillNotificationStore | null {
+  if (!mod || typeof mod !== 'object') return null;
+  const m = mod as Record<string, unknown>;
+  const create = m.createNotification;
+  const list = m.listNotifications;
+  if (typeof create !== 'function' || typeof list !== 'function') return null;
+
+  const toRow = (raw: unknown): BillNotification | null => {
+    if (!raw || typeof raw !== 'object') return null;
+    const r = raw as Record<string, unknown>;
+    const num = (v: unknown): number => (typeof v === 'number' ? v : Number(v) || 0);
+    return {
+      id: typeof r.id === 'number' ? r.id : undefined,
+      type: String(r.type ?? ''),
+      message: r.message === null || r.message === undefined ? undefined : String(r.message),
+      bill_uid: r.bill_uid === null || r.bill_uid === undefined ? undefined : num(r.bill_uid),
+      platform: r.platform === null || r.platform === undefined ? undefined : String(r.platform),
+      status: String(r.status ?? 'pending'),
+      retry_count: num(r.retry_count),
+    };
+  };
+
+  const store: BillNotificationStore = {
+    createNotification(input) {
+      return toRow(safeCall(() => (create as (i: BillNotificationInput) => unknown)(input), undefined));
+    },
+    listNotifications(filter) {
+      const rows = safeCall(
+        () => (list as (f?: BillNotificationFilter) => unknown)(filter),
+        [],
+      );
+      if (!Array.isArray(rows)) return [];
+      return rows.map(toRow).filter((r): r is BillNotification => r !== null);
+    },
+    incrementRetry(id) {
+      const r = safeCall(() => {
+        const fn = m.incrementRetry;
+        return typeof fn === 'function'
+          ? (fn as (i: number) => unknown)(id)
+          : undefined;
+      }, undefined);
+      const n = typeof r === 'number' ? r : undefined;
+      return n !== undefined && Number.isFinite(n) ? n : undefined;
+    },
+    resolveNotification(id) {
+      safeCall(() => {
+        const fn = m.resolveNotification;
+        if (typeof fn === 'function') (fn as (i: number) => unknown)(id);
+      }, undefined);
+    },
+  };
+  if (typeof m.setNotificationStatus === 'function') {
+    store.setNotificationStatus = (id, status) => {
+      safeCall(() => {
+        (m.setNotificationStatus as (i: number, s: string) => unknown)(id, status);
+      }, undefined);
+    };
+  }
+  return store;
+}
+
+/**
+ * 运行时软加载一个"可能还没落地/尚未打包"的同级模块。
+ *
+ * 用变量拼 specifier 是刻意的：这样 tsc 不会在编译期去解析这个文件，
+ * 通知模块缺席时 tsc 依旧通过，运行时则安静地降级（返回 null）。
+ */
+async function loadOptionalModule(specifier: string): Promise<unknown | null> {
+  try {
+    const mod = (await import(specifier)) as unknown;
+    return mod ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// ── 微信下载链接提取 / ZIP 下载（可注入） ──────────────────────
+
+/** 从账单邮件正文（HTML 原文）里抽出"立即下载"链接；抽不出返回 null */
+export type WechatUrlExtractor = (html: string) => string | null;
+
+/** 按 URL 下载账单 ZIP，返回 ZIP 字节；失败抛错 */
+export type BillZipDownloader = (url: string) => Promise<Buffer>;
+
+/** 默认 URL 提取器：软加载 ./url-extractor.js，模块缺席时返回 null（退化成旧提示） */
+async function defaultUrlExtractor(): Promise<WechatUrlExtractor | null> {
+  const mod = await loadOptionalModule('./url-extractor.js');
+  if (!mod || typeof mod !== 'object') return null;
+  const fn = (mod as Record<string, unknown>).extractWechatDownloadUrl;
+  return typeof fn === 'function' ? (fn as WechatUrlExtractor) : null;
+}
+
+/** 下载体积上限：账单 ZIP 常见 20–50MB，200MB 足够挡住"点到钓鱼链接" */
+const MAX_BILL_ZIP_BYTES = 200 * 1024 * 1024;
+
+/** 单次下载超时；账单链接都是现成的，等太久没意义 */
+const BILL_DOWNLOAD_TIMEOUT_MS = 60_000;
+
+/**
+ * 默认 ZIP 下载器：走全局 fetch（Node 18+）。
+ * 只放行 http/https、写盘前的字节数有上限、响应不是 2xx 一律抛错。
+ */
+const defaultZipDownloader: BillZipDownloader = async (url) => {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw new Error(`账单下载链接非法: ${url}`);
+  }
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    throw new Error(`账单下载链接协议不支持: ${parsed.protocol}`);
+  }
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), BILL_DOWNLOAD_TIMEOUT_MS);
+  try {
+    const res = await fetch(parsed.href, { signal: ctrl.signal, redirect: 'follow' });
+    if (!res.ok) {
+      throw new Error(`账单 ZIP 下载失败: HTTP ${res.status}`);
+    }
+    const len = Number(res.headers.get('content-length') ?? '0');
+    if (Number.isFinite(len) && len > MAX_BILL_ZIP_BYTES) {
+      throw new Error(`账单 ZIP 过大: ${len} 字节`);
+    }
+    const buf = Buffer.from(await res.arrayBuffer());
+    if (buf.length > MAX_BILL_ZIP_BYTES) {
+      throw new Error(`账单 ZIP 过大: ${buf.length} 字节`);
+    }
+    if (buf.length === 0) {
+      throw new Error('账单 ZIP 下载为空');
+    }
+    return buf;
+  } finally {
+    clearTimeout(timer);
+  }
+};
+
+/** 把下载到的 ZIP 字节落到临时目录，返回 { file, dir } */
+function writeZipToTempDir(uid: number, zip: Buffer): { file: string; dir: string } {
+  const dir = mkdtempSync(join(tmpdir(), 'hifin-mail-'));
+  const file = join(dir, `bill-${uid}.zip`);
+  writeFileSync(file, zip);
+  return { file, dir };
+}
+
+// ── 密码重试状态机 ───────────────────────────────────────────
+
+/** 密码连错多少次就放弃自动尝试（设计文档 §七：防暴力破解 + 防用户反复输错烦） */
+export const MAX_BILL_PASSWORD_RETRIES = 3;
+
+/** 平台中文名，通知标题用 */
+function platformLabel(platform: string): string {
+  return platform === 'alipay' ? '支付宝' : platform === 'wechat' ? '微信' : platform;
+}
+
 
 /** MailPoller 的账单处理开关；不传 db 就完全不做附件导入 */
 export interface MailPollerOptions {
@@ -191,10 +441,25 @@ export interface MailPollerOptions {
   db?: Database.Database;
   accountId?: number;
   spaceId?: number;
-  /** 覆盖平台默认解压密码 */
-  billPasswords?: Record<string, string>;
+  /**
+   * 账单解压密码。
+   *   - `Map<uid, string>`：新语义，一封邮件一把一次性密码（推荐，见 bill/password-store.ts）
+   *   - `Record<platform, string>`：旧语义，CLI `--bill-password-alipay` 用的平台级兜底，保留兼容
+   * 省略时用 password-store 的共享 Map（"接口写入 → poller 读出"无需额外接线）。
+   */
+  billPasswords?: Map<number, string> | Record<string, string>;
   /** 每封账单邮件处理完回调一次（CLI 用它打印提示） */
   onBill?: (outcome: MailBillOutcome) => void;
+  /** 导入进度（importBillZip 提交后回调已写入行数） */
+  onBillProgress?: (info: { uid: number; platform: string; imported: number }) => void;
+  /** 通知存储；省略时软加载 ../notifications/store.js，加载不到则不产生通知 */
+  notifications?: BillNotificationStore;
+  /** 微信无附件邮件的 URL 提取器；省略时软加载 ./url-extractor.js */
+  extractWechatUrl?: WechatUrlExtractor;
+  /** 微信 ZIP 的 HTTP 下载器；省略时用内置 fetch 实现 */
+  downloadBillZip?: BillZipDownloader;
+  /** 密码连错上限，默认 MAX_BILL_PASSWORD_RETRIES(3) */
+  maxBillRetries?: number;
 }
 
 /** 下载附件到临时目录，返回 { file, dir }；失败抛错（调用方负责清 dir） */

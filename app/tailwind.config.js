@@ -22,15 +22,16 @@ export default {
           muted: '#6b7280',
           'muted-dark': '#9ca3af',
         },
+        // 收入=红色（用户直觉），支出=绿色
         income: {
-          DEFAULT: '#10b981',
-          soft: '#d1fae5',
-          'soft-dark': 'rgba(16,185,129,0.18)',
-        },
-        expense: {
           DEFAULT: '#ef4444',
           soft: '#fee2e2',
           'soft-dark': 'rgba(239,68,68,0.18)',
+        },
+        expense: {
+          DEFAULT: '#10b981',
+          soft: '#d1fae5',
+          'soft-dark': 'rgba(16,185,129,0.18)',
         },
         brand: {
           DEFAULT: '#6366f1',
