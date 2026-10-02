@@ -344,14 +344,14 @@ export default function Dashboard() {
         title="数据看板"
         icon={<IconLayoutDashboard size={18} />}
         actions={
-          <div className="flex items-center gap-2 text-text-muted">
+          <div className="flex items-center gap-2 text-text-muted dark:text-text-muted-dark">
             <button
               type="button"
               onClick={() => setHideAmounts((v) => !v)}
               aria-pressed={hideAmounts}
               aria-label={hideAmounts ? '显示金额' : '隐藏金额'}
               title={hideAmounts ? '显示金额' : '隐藏金额'}
-              className="inline-flex items-center justify-center rounded-md p-1 text-text-muted hover:text-text dark:hover:text-text-dark hover:bg-bg-card dark:hover:bg-bg-card-dark transition-colors cursor-pointer"
+              className="inline-flex items-center justify-center rounded-md p-1 text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark hover:bg-bg-card dark:hover:bg-bg-card-dark transition-colors cursor-pointer"
             >
               {hideAmounts ? <IconEyeClosed size={18} /> : <IconEye size={18} />}
             </button>
@@ -385,13 +385,13 @@ export default function Dashboard() {
                   你好，{nickname} 👋
                 </div>
               </div>
-              <div className="text-sm text-text-muted mt-1 flex items-center gap-2 flex-wrap">
+              <div className="text-sm text-text-muted dark:text-text-muted-dark mt-1 flex items-center gap-2 flex-wrap">
                 <span>
                   {greetingByHour(today.hour())}，今天是 {today.format('YYYY年MM月DD日')}，{weekdayCn(today)}
                 </span>
                 {/* 天气区：缓存（含超期）立即显示，回源成功后无感替换 —— 全程不空白 */}
                 <span
-                  className="inline-flex items-center gap-1 text-text-muted"
+                  className="inline-flex items-center gap-1 text-text-muted dark:text-text-muted-dark"
                   title={weather?.isStale ? '正在更新最新天气…' : undefined}
                   data-testid="weather-summary"
                 >
@@ -415,7 +415,7 @@ export default function Dashboard() {
                 <button
                   type="button"
                   onClick={() => setCityModalOpen(true)}
-                  className="inline-flex items-center text-text-muted hover:text-text dark:hover:text-text-dark transition-colors"
+                  className="inline-flex items-center text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark transition-colors"
                   title="切换城市"
                 >
                   <IconSettings size={14} />
@@ -457,7 +457,7 @@ export default function Dashboard() {
 
             {/* 资产趋势 */}
             <section>
-              <Card title="资产趋势" extra={<span className="text-xs text-text-muted">近 30 天</span>}>
+              <Card title="资产趋势" extra={<span className="text-xs text-text-muted dark:text-text-muted-dark">近 30 天</span>}>
                 {hasTrend ? (
                   <div className="h-64 -mx-2">
                     <ResponsiveContainer width="100%" height="100%">
@@ -472,13 +472,13 @@ export default function Dashboard() {
                         <XAxis
                           dataKey="date"
                           tick={{ fontSize: 11, fill: 'currentColor' }}
-                          className="text-text-muted"
+                          className="text-text-muted dark:text-text-muted-dark"
                           tickFormatter={(v: string) => dayjs(v).format('MM/DD')}
                           minTickGap={28}
                         />
                         <YAxis
                           tick={{ fontSize: 11, fill: 'currentColor' }}
-                          className="text-text-muted"
+                          className="text-text-muted dark:text-text-muted-dark"
                           width={60}
                           tickFormatter={(v: number) => {
                             if (Math.abs(v) >= 10000) return `${(v / 10000).toFixed(1)}万`;
@@ -570,7 +570,7 @@ export default function Dashboard() {
                               style={{ background: PIE_COLORS[i % PIE_COLORS.length] }}
                             />
                             <span className="flex-1 truncate">{d.name}</span>
-                            <span className="text-text-muted tabular-nums">{pct.toFixed(1)}%</span>
+                            <span className="text-text-muted dark:text-text-muted-dark tabular-nums">{pct.toFixed(1)}%</span>
                             <span className="font-medium tabular-nums w-24 text-right">
                               {formatMoney(d.value, false)}
                             </span>
@@ -597,7 +597,7 @@ export default function Dashboard() {
               <Card
                 title="收支日历"
                 extra={
-                  <span className="text-xs text-text-muted">{currentMonth.format('YYYY 年 MM 月')}</span>
+                  <span className="text-xs text-text-muted dark:text-text-muted-dark">{currentMonth.format('YYYY 年 MM 月')}</span>
                 }
               >
                 <MonthCalendar
@@ -629,7 +629,7 @@ export default function Dashboard() {
                         </span>
                         <div className="min-w-0">
                           <div className="truncate">{a.name}</div>
-                          <div className="text-xs text-text-muted">
+                          <div className="text-xs text-text-muted dark:text-text-muted-dark">
                             {a.type === 'credit' ? '信用卡' : '债务'}
                           </div>
                         </div>
@@ -651,7 +651,7 @@ export default function Dashboard() {
                   <button
                     type="button"
                     onClick={() => navigate('/account/list')}
-                    className="text-xs text-text-muted hover:text-text dark:hover:text-text-dark inline-flex items-center gap-1"
+                    className="text-xs text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark inline-flex items-center gap-1"
                   >
                     详情 <IconArrowRight size={12} />
                   </button>
@@ -662,7 +662,7 @@ export default function Dashboard() {
                 <button
                   type="button"
                   onClick={() => navigate('/account/list?create=1')}
-                  className="w-full flex flex-col items-center justify-center py-6 text-sm text-text-muted hover:text-text dark:hover:text-text-dark transition"
+                  className="w-full flex flex-col items-center justify-center py-6 text-sm text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark transition"
                 >
                   <span className="w-10 h-10 rounded-full bg-bg dark:bg-bg-card-dark flex items-center justify-center mb-2">
                     <IconWallet size={18} />
@@ -672,7 +672,7 @@ export default function Dashboard() {
               ) : (
                 <div>
                   <div className="flex items-baseline justify-between">
-                    <span className="text-xs text-text-muted">共 {accounts.length} 个账户</span>
+                    <span className="text-xs text-text-muted dark:text-text-muted-dark">共 {accounts.length} 个账户</span>
                     <span className={clsx('tabular-nums font-medium', accountTotal < 0 ? 'text-expense' : 'text-income')}>
                       <MaskMoney value={accountTotal} hide={hideAmounts} withSymbol={false} />
                     </span>
@@ -699,7 +699,7 @@ export default function Dashboard() {
                   <button
                     type="button"
                     onClick={() => navigate('/goal/list')}
-                    className="text-xs text-text-muted hover:text-text dark:hover:text-text-dark inline-flex items-center gap-1"
+                    className="text-xs text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark inline-flex items-center gap-1"
                   >
                     详情 <IconArrowRight size={12} />
                   </button>
@@ -710,7 +710,7 @@ export default function Dashboard() {
                 <button
                   type="button"
                   onClick={() => navigate('/goal/list?create=1')}
-                  className="w-full flex flex-col items-center justify-center py-6 text-sm text-text-muted hover:text-text dark:hover:text-text-dark transition"
+                  className="w-full flex flex-col items-center justify-center py-6 text-sm text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark transition"
                 >
                   <span className="w-10 h-10 rounded-full bg-bg dark:bg-bg-card-dark flex items-center justify-center mb-2">
                     <IconTargetArrow size={18} />
@@ -725,7 +725,7 @@ export default function Dashboard() {
                       <div key={g.id} className="text-sm">
                         <div className="flex items-center justify-between mb-1">
                           <span className="truncate flex-1">{g.name}</span>
-                          <span className="text-xs text-text-muted ml-2 tabular-nums">
+                          <span className="text-xs text-text-muted dark:text-text-muted-dark ml-2 tabular-nums">
                             {pct.toFixed(0)}%
                           </span>
                         </div>
@@ -748,7 +748,7 @@ export default function Dashboard() {
 
             {/* 预算管理 */}
             <Card title="预算管理">
-              <div className="flex flex-col items-center justify-center py-6 text-sm text-text-muted">
+              <div className="flex flex-col items-center justify-center py-6 text-sm text-text-muted dark:text-text-muted-dark">
                 <span className="w-10 h-10 rounded-full bg-bg dark:bg-bg-card-dark flex items-center justify-center mb-2">
                   <IconCircleDashed size={18} />
                 </span>
@@ -764,7 +764,7 @@ export default function Dashboard() {
                   <button
                     type="button"
                     onClick={() => navigate('/transaction')}
-                    className="text-xs text-text-muted hover:text-text dark:hover:text-text-dark inline-flex items-center gap-1"
+                    className="text-xs text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark inline-flex items-center gap-1"
                   >
                     详情 <IconArrowRight size={12} />
                   </button>
@@ -775,7 +775,7 @@ export default function Dashboard() {
                 <button
                   type="button"
                   onClick={() => navigate('/transaction?create=1')}
-                  className="w-full flex flex-col items-center justify-center py-6 text-sm text-text-muted hover:text-text dark:hover:text-text-dark transition"
+                  className="w-full flex flex-col items-center justify-center py-6 text-sm text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark transition"
                 >
                   <span className="w-10 h-10 rounded-full bg-bg dark:bg-bg-card-dark flex items-center justify-center mb-2">
                     <IconArrowUpRight size={18} />
@@ -788,7 +788,7 @@ export default function Dashboard() {
                     const cat = categories.find((c) => c.id === t.categoryId);
                     const sign = t.type === 'income' ? '+' : t.type === 'expense' ? '-' : '';
                     const tone =
-                      t.type === 'income' ? 'text-income' : t.type === 'expense' ? 'text-expense' : 'text-text-muted';
+                      t.type === 'income' ? 'text-income' : t.type === 'expense' ? 'text-expense' : 'text-text-muted dark:text-text-muted-dark';
                     return (
                       <div
                         key={t.id}
@@ -799,7 +799,7 @@ export default function Dashboard() {
                         </span>
                         <div className="flex-1 min-w-0">
                           <div className="truncate">{t.name || cat?.name || '未命名'}</div>
-                          <div className="text-xs text-text-muted">
+                          <div className="text-xs text-text-muted dark:text-text-muted-dark">
                             {dayjs(t.date).format('MM-DD')}
                           </div>
                         </div>
@@ -842,7 +842,7 @@ export default function Dashboard() {
                   ? 'text-income'
                   : t.type === 'expense'
                   ? 'text-expense'
-                  : 'text-text-muted';
+                  : 'text-text-muted dark:text-text-muted-dark';
               return (
                 <div key={t.id} className="flex items-center gap-3 px-2 py-3">
                   <span className="w-9 h-9 rounded-lg bg-bg dark:bg-bg-card-dark flex items-center justify-center text-lg flex-none">
@@ -852,7 +852,7 @@ export default function Dashboard() {
                     <div className="text-sm truncate">
                       {t.name || cat?.name || (t.type === 'transfer' ? '转账' : '未命名')}
                     </div>
-                    <div className="text-xs text-text-muted flex items-center gap-2 mt-0.5">
+                    <div className="text-xs text-text-muted dark:text-text-muted-dark flex items-center gap-2 mt-0.5">
                       <span>{dayjs(t.date).format('HH:mm')}</span>
                       {cat && <Badge tone="neutral">{cat.name}</Badge>}
                       {t.remark && <span className="truncate">· {t.remark}</span>}
@@ -877,7 +877,7 @@ export default function Dashboard() {
         width={400}
       >
         <div className="space-y-3">
-          <p className="text-xs text-text-muted">
+          <p className="text-xs text-text-muted dark:text-text-muted-dark">
             浏览器定位可用时优先使用当前位置；否则展示所选城市的天气。当前：
             <span className="text-text dark:text-text-dark font-medium">{currentCity || '未选择'}</span>
           </p>
@@ -892,7 +892,7 @@ export default function Dashboard() {
             placeholder="搜索城市，如“深”“杭州”"
             aria-label="搜索城市"
             data-testid="city-search"
-            className="w-full rounded-xl border border-border dark:border-border-dark bg-bg dark:bg-bg-card-dark px-3 py-2 text-sm outline-none focus:border-text dark:focus:border-text-dark transition-colors placeholder:text-text-muted"
+            className="w-full rounded-xl border border-border dark:border-border-dark bg-bg dark:bg-bg-card-dark px-3 py-2 text-sm outline-none focus:border-text dark:focus:border-text-dark transition-colors placeholder:text-text-muted dark:text-text-muted-dark"
           />
 
           <div
@@ -904,7 +904,7 @@ export default function Dashboard() {
             className="max-h-60 overflow-y-auto rounded-xl border border-border dark:border-border-dark p-1 outline-none focus:border-text dark:focus:border-text-dark"
           >
             {filteredCities.length === 0 ? (
-              <div className="py-6 text-center text-sm text-text-muted">没有匹配的城市</div>
+              <div className="py-6 text-center text-sm text-text-muted dark:text-text-muted-dark">没有匹配的城市</div>
             ) : (
               filteredCities.map((c, i) => {
                 const isCurrent = currentCity === c.name;
@@ -922,7 +922,7 @@ export default function Dashboard() {
                       'w-full flex items-center justify-between rounded-lg px-3 py-2 text-sm text-left transition-colors cursor-pointer',
                       isCurrent
                         ? 'bg-text text-bg-card dark:bg-bg-card-dark dark:text-text-dark font-medium'
-                        : 'text-text-muted hover:bg-bg dark:hover:bg-bg-card-dark',
+                        : 'text-text-muted dark:text-text-muted-dark hover:bg-bg dark:hover:bg-bg-card-dark',
                       isCursor && !isCurrent && 'ring-1 ring-inset ring-border dark:ring-border-dark',
                     )}
                   >
@@ -934,7 +934,7 @@ export default function Dashboard() {
             )}
           </div>
 
-          <p className="text-[11px] text-text-muted">
+          <p className="text-[11px] text-text-muted dark:text-text-muted-dark">
             共 {CITY_PRESETS.length} 个城市
             {cityQuery.trim() ? `，匹配 ${filteredCities.length} 个` : ''}（↑/↓ 选择，Enter 确认）
           </p>
@@ -971,7 +971,7 @@ function StatCard({ label, icon, tone, amount, delta, expenseMode, hide }: StatC
   return (
     <Card className="!p-5">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-text-muted text-sm">
+        <div className="flex items-center gap-2 text-text-muted dark:text-text-muted-dark text-sm">
           <span>{icon}</span>
           <span>{label}</span>
         </div>
@@ -987,7 +987,7 @@ function StatCard({ label, icon, tone, amount, delta, expenseMode, hide }: StatC
       <div className={clsx('mt-3 text-2xl font-medium tabular-nums', valueClass)}>
         <MaskMoney value={amount} hide={!!hide} />
       </div>
-      <div className="mt-1 text-xs text-text-muted">
+      <div className="mt-1 text-xs text-text-muted dark:text-text-muted-dark">
         较上月 <span className={trendToneClass(delta, !!expenseMode)}>{formatPercent(delta)}</span>
       </div>
     </Card>
@@ -1042,7 +1042,7 @@ function MonthCalendar({ month, days, onSelect }: MonthCalendarProps) {
 
   return (
     <div>
-      <div className="grid grid-cols-7 gap-1 text-center text-xs text-text-muted mb-2">
+      <div className="grid grid-cols-7 gap-1 text-center text-xs text-text-muted dark:text-text-muted-dark mb-2">
         {['日', '一', '二', '三', '四', '五', '六'].map((w) => (
           <div key={w} className="py-1">
             {w}
@@ -1073,7 +1073,7 @@ function MonthCalendar({ month, days, onSelect }: MonthCalendarProps) {
                 <span
                   className={clsx(
                     'text-xs tabular-nums',
-                    isToday ? 'font-medium text-text dark:text-text-dark' : 'text-text-muted',
+                    isToday ? 'font-medium text-text dark:text-text-dark' : 'text-text-muted dark:text-text-muted-dark',
                   )}
                 >
                   {day.date()}
@@ -1099,7 +1099,7 @@ function MonthCalendar({ month, days, onSelect }: MonthCalendarProps) {
         })}
       </div>
       {!hasAny && (
-        <div className="mt-4 text-center text-sm text-text-muted">暂无数据</div>
+        <div className="mt-4 text-center text-sm text-text-muted dark:text-text-muted-dark">暂无数据</div>
       )}
     </div>
   );

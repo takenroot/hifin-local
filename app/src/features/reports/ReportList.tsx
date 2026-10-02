@@ -59,7 +59,7 @@ export default function ReportList() {
         icon={<IconChartBar size={18} />}
         actions={
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 text-text-muted">
+            <div className="flex items-center gap-2 text-text-muted dark:text-text-muted-dark">
               <IconEye size={18} className="cursor-pointer hover:text-text dark:hover:text-text-dark" />
               <IconShare size={18} className="cursor-pointer hover:text-text dark:hover:text-text-dark" />
             </div>
@@ -77,7 +77,7 @@ export default function ReportList() {
 
       <div className="p-4 lg:p-8 max-w-[1200px]">
         {loading ? (
-          <div className="text-sm text-text-muted">加载中…</div>
+          <div className="text-sm text-text-muted dark:text-text-muted-dark">加载中…</div>
         ) : error ? (
           <div className="text-sm text-expense">加载失败：{error}</div>
         ) : isEmpty ? (
@@ -160,7 +160,7 @@ function ReportCard({
           </div>
           <div className="min-w-0">
             <div className="text-sm font-medium truncate">{report.name}</div>
-            <div className="mt-0.5 text-xs text-text-muted flex items-center gap-1.5">
+            <div className="mt-0.5 text-xs text-text-muted dark:text-text-muted-dark flex items-center gap-1.5">
               <span>{meta.label}</span>
               <span>·</span>
               <span>{dayjs(report.createdAt).format('YYYY-MM-DD')}</span>
@@ -173,7 +173,7 @@ function ReportCard({
             e.stopPropagation();
             onDelete();
           }}
-          className="p-1.5 rounded-lg text-text-muted hover:text-expense hover:bg-bg dark:hover:bg-bg-card-dark"
+          className="p-1.5 rounded-lg text-text-muted dark:text-text-muted-dark hover:text-expense hover:bg-bg dark:hover:bg-bg-card-dark"
           aria-label="删除"
         >
           <IconTrash size={14} />
@@ -181,7 +181,7 @@ function ReportCard({
       </div>
 
       {report.description && (
-        <div className="text-xs text-text-muted line-clamp-3 whitespace-pre-line min-h-[2.5rem]">
+        <div className="text-xs text-text-muted dark:text-text-muted-dark line-clamp-3 whitespace-pre-line min-h-[2.5rem]">
           {report.description}
         </div>
       )}
@@ -190,7 +190,7 @@ function ReportCard({
         <span
           className={clsx(
             'inline-flex items-center px-2 h-5 rounded-md text-xs',
-            'bg-bg dark:bg-bg-card-dark text-text-muted',
+            'bg-bg dark:bg-bg-card-dark text-text-muted dark:text-text-muted-dark',
           )}
         >
           {meta.label}
@@ -198,7 +198,7 @@ function ReportCard({
         <button
           type="button"
           onClick={onOpen}
-          className="text-xs text-text-muted hover:text-text dark:hover:text-text-dark inline-flex items-center gap-1"
+          className="text-xs text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark inline-flex items-center gap-1"
         >
           查看详情 <IconChevronRight size={12} />
         </button>

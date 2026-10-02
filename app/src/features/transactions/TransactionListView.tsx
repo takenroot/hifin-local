@@ -174,7 +174,7 @@ function SumCell({
 }) {
   return (
     <div className="card !p-4">
-      <div className="text-xs text-text-muted">{label}</div>
+      <div className="text-xs text-text-muted dark:text-text-muted-dark">{label}</div>
       <div
         className={clsx(
           'mt-1 text-xl font-medium tabular-nums',
@@ -228,10 +228,10 @@ function TxRow({
         <div className="flex items-center gap-1.5 text-sm font-medium truncate">
           {tx.name || (tx.type === 'transfer' ? '转账' : '不计收支')}
           {!tx.includeInAsset && (
-            <span className="text-xs text-text-muted">（不计资产）</span>
+            <span className="text-xs text-text-muted dark:text-text-muted-dark">（不计资产）</span>
           )}
         </div>
-        <div className="flex items-center gap-1.5 mt-0.5 text-xs text-text-muted truncate">
+        <div className="flex items-center gap-1.5 mt-0.5 text-xs text-text-muted dark:text-text-muted-dark truncate">
           {cat ? (
             <span style={{ color: cat.color }}>{cat.name}</span>
           ) : tx.type === 'transfer' ? (
@@ -261,7 +261,7 @@ function TxRow({
         </div>
         {tx.tagIds && tx.tagIds.length > 0 && (
           <div className="flex flex-wrap items-center gap-1 mt-1">
-            <IconTag size={10} className="text-text-muted" />
+            <IconTag size={10} className="text-text-muted dark:text-text-muted-dark" />
             {tx.tagIds.map((id) => {
               const t = tags.find((x) => x.id === id);
               if (!t) return null;
@@ -285,8 +285,8 @@ function TxRow({
           'tabular-nums text-base font-medium flex-none',
           tx.type === 'income' && 'text-income',
           tx.type === 'expense' && 'text-expense',
-          tx.type === 'transfer' && 'text-text-muted',
-          tx.type === 'excluded' && 'text-text-muted',
+          tx.type === 'transfer' && 'text-text-muted dark:text-text-muted-dark',
+          tx.type === 'excluded' && 'text-text-muted dark:text-text-muted-dark',
         )}
       >
         {tx.type === 'income' ? '+' : tx.type === 'expense' ? '-' : ''}
@@ -298,7 +298,7 @@ function TxRow({
         <button
           type="button"
           onClick={onEdit}
-          className="p-1.5 rounded-lg hover:bg-bg dark:hover:bg-bg-card-dark text-text-muted hover:text-text dark:hover:text-text-dark"
+          className="p-1.5 rounded-lg hover:bg-bg dark:hover:bg-bg-card-dark text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark"
           title="编辑"
         >
           <IconPencil size={14} />
@@ -306,7 +306,7 @@ function TxRow({
         <button
           type="button"
           onClick={onDelete}
-          className="p-1.5 rounded-lg hover:bg-expense-soft hover:text-expense text-text-muted"
+          className="p-1.5 rounded-lg hover:bg-expense-soft hover:text-expense text-text-muted dark:text-text-muted-dark"
           title="删除"
         >
           <IconTrash size={14} />
@@ -324,9 +324,9 @@ function typeIcon(tx: Transaction, cat?: Category) {
     case 'income':
       return <IconReceipt size={18} className="text-income" />;
     case 'transfer':
-      return <IconArrowsLeftRight size={18} className="text-text-muted" />;
+      return <IconArrowsLeftRight size={18} className="text-text-muted dark:text-text-muted-dark" />;
     case 'excluded':
-      return <IconEyeOff size={18} className="text-text-muted" />;
+      return <IconEyeOff size={18} className="text-text-muted dark:text-text-muted-dark" />;
   }
 }
 

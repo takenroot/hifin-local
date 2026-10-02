@@ -96,7 +96,7 @@ export default function AccountDetail() {
           icon={<IconWallet size={18} />}
           actions={headerActions}
         />
-        <div className="p-4 lg:p-8 text-sm text-text-muted">该账户已被删除或不存在。</div>
+        <div className="p-4 lg:p-8 text-sm text-text-muted dark:text-text-muted-dark">该账户已被删除或不存在。</div>
       </div>
     );
   }
@@ -122,7 +122,7 @@ export default function AccountDetail() {
           icon={<IconWallet size={18} />}
           actions={headerActions}
         />
-        <div className="p-4 lg:p-8 text-sm text-text-muted">
+        <div className="p-4 lg:p-8 text-sm text-text-muted dark:text-text-muted-dark">
           {account === null && !loadingAccount ? '该账户已被删除或不存在。' : '加载中…'}
         </div>
       </div>
@@ -184,7 +184,7 @@ export default function AccountDetail() {
         <div className="card !p-6">
           <div className="flex items-start justify-between gap-6 flex-wrap">
             <div>
-              <div className="text-xs text-text-muted">当前余额</div>
+              <div className="text-xs text-text-muted dark:text-text-muted-dark">当前余额</div>
               <div
                 className={clsx(
                   'mt-2 text-3xl font-medium tabular-nums',
@@ -198,7 +198,7 @@ export default function AccountDetail() {
                 {(account.tagIds ?? []).map((id) => (
                   <span
                     key={id}
-                    className="inline-flex items-center px-2 h-5 rounded-md text-xs bg-bg dark:bg-bg-card-dark text-text-muted"
+                    className="inline-flex items-center px-2 h-5 rounded-md text-xs bg-bg dark:bg-bg-card-dark text-text-muted dark:text-text-muted-dark"
                   >
                     {tagMap.get(id) ?? `#${id}`}
                   </span>
@@ -208,7 +208,7 @@ export default function AccountDetail() {
                 )}
               </div>
             </div>
-            <div className="text-xs text-text-muted min-w-[200px]">
+            <div className="text-xs text-text-muted dark:text-text-muted-dark min-w-[200px]">
               <div>
                 创建时间：
                 {dayjs(account.createdAt).format('YYYY-MM-DD HH:mm')}
@@ -222,7 +222,7 @@ export default function AccountDetail() {
 
           {account.remark && (
             <div className="mt-5 pt-5 border-t border-border dark:border-border-dark">
-              <div className="text-xs text-text-muted mb-1">备注</div>
+              <div className="text-xs text-text-muted dark:text-text-muted-dark mb-1">备注</div>
               <div className="text-sm whitespace-pre-wrap">{account.remark}</div>
             </div>
           )}
@@ -232,15 +232,15 @@ export default function AccountDetail() {
         <div className="card !p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="section-title">关联流水</h3>
-            <div className="text-xs text-text-muted">
+            <div className="text-xs text-text-muted dark:text-text-muted-dark">
               共 {loadingTx ? '…' : transactions.length} 条
             </div>
           </div>
 
           {loadingTx ? (
-            <div className="py-10 text-center text-sm text-text-muted">加载中…</div>
+            <div className="py-10 text-center text-sm text-text-muted dark:text-text-muted-dark">加载中…</div>
           ) : transactions.length === 0 ? (
-            <div className="py-10 text-center text-sm text-text-muted">
+            <div className="py-10 text-center text-sm text-text-muted dark:text-text-muted-dark">
               暂无关联流水
               <div className="mt-3">
                 <Button
@@ -323,7 +323,7 @@ function TransactionRow({
             ? 'bg-income-soft dark:bg-income-soft-dark text-income'
             : tone === 'expense'
               ? 'bg-expense-soft dark:bg-expense-soft-dark text-expense'
-              : 'bg-bg dark:bg-bg-card-dark text-text-muted',
+              : 'bg-bg dark:bg-bg-card-dark text-text-muted dark:text-text-muted-dark',
         )}
       >
         {isTransfer ? <IconArrowsLeftRight size={16} /> : isIncome ? <span>📥</span> : isExpense ? <span>📤</span> : <span>•</span>}
@@ -335,7 +335,7 @@ function TransactionRow({
             {TYPE_LABEL[tx.type]}
           </Badge>
         </div>
-        <div className="mt-1 text-xs text-text-muted flex items-center gap-2 flex-wrap">
+        <div className="mt-1 text-xs text-text-muted dark:text-text-muted-dark flex items-center gap-2 flex-wrap">
           <span>{dayjs(tx.date).format('YYYY-MM-DD HH:mm')}</span>
           {tagIds.length > 0 && (
             <span>
@@ -350,7 +350,7 @@ function TransactionRow({
           'text-sm font-medium tabular-nums flex-none',
           tone === 'income' && 'text-income',
           tone === 'expense' && 'text-expense',
-          tone === 'neutral' && 'text-text-muted',
+          tone === 'neutral' && 'text-text-muted dark:text-text-muted-dark',
         )}
       >
         {sign}

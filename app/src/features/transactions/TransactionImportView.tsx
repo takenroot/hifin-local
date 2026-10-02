@@ -313,7 +313,7 @@ function ImportPanel({ onImported }: { onImported?: () => void }) {
               : 'border-border dark:border-border-dark hover:border-text-muted',
           )}
         >
-          <div className="flex flex-col items-center gap-2 text-text-muted">
+          <div className="flex flex-col items-center gap-2 text-text-muted dark:text-text-muted-dark">
             <IconUpload size={28} />
             <div className="text-sm">点击 / 拖入文件</div>
             <div className="text-xs">支持 CSV / TXT / TSV，最大 10MB</div>
@@ -351,7 +351,7 @@ function ImportPanel({ onImported }: { onImported?: () => void }) {
       <Card title="选择平台与账户">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <div className="text-sm text-text-muted mb-1.5">导入平台</div>
+            <div className="text-sm text-text-muted dark:text-text-muted-dark mb-1.5">导入平台</div>
             <Select
               options={platformOpts}
               value={platform}
@@ -360,7 +360,7 @@ function ImportPanel({ onImported }: { onImported?: () => void }) {
             />
           </div>
           <div>
-            <div className="text-sm text-text-muted mb-1.5">入账账户</div>
+            <div className="text-sm text-text-muted dark:text-text-muted-dark mb-1.5">入账账户</div>
             <Select
               placeholder="请选择账户"
               options={accountOpts}
@@ -373,7 +373,7 @@ function ImportPanel({ onImported }: { onImported?: () => void }) {
           </div>
         </div>
         <div className="mt-4 flex items-center justify-between">
-          <div className="text-xs text-text-muted">
+          <div className="text-xs text-text-muted dark:text-text-muted-dark">
             支持平台：{PLATFORMS.map((p) => p.name).join(' / ')}
           </div>
           <div className="flex items-center gap-2">
@@ -392,7 +392,7 @@ function ImportPanel({ onImported }: { onImported?: () => void }) {
           title={`解析结果（${items.filter((x) => !x.rawLine).length} / ${items.length} 有效）`}
           flush
         >
-          <div className="px-4 py-2 border-b border-border dark:border-border-dark flex items-center justify-between text-xs text-text-muted">
+          <div className="px-4 py-2 border-b border-border dark:border-border-dark flex items-center justify-between text-xs text-text-muted dark:text-text-muted-dark">
             <div className="flex items-center gap-2">
               <IconBolt size={12} className="text-brand" />
               {Object.keys(suggestions).length > 0
@@ -412,7 +412,7 @@ function ImportPanel({ onImported }: { onImported?: () => void }) {
           </div>
           <div className="max-h-[420px] overflow-auto">
             <table className="w-full text-sm">
-              <thead className="text-xs text-text-muted sticky top-0 bg-bg-card dark:bg-bg-card-dark">
+              <thead className="text-xs text-text-muted dark:text-text-muted-dark sticky top-0 bg-bg-card dark:bg-bg-card-dark">
                 <tr>
                   <th className="text-left px-4 py-2 font-medium">日期</th>
                   <th className="text-left px-4 py-2 font-medium">商户</th>
@@ -440,7 +440,7 @@ function ImportPanel({ onImported }: { onImported?: () => void }) {
                         !ok && 'opacity-50 line-through',
                       )}
                     >
-                      <td className="px-4 py-2 text-text-muted">
+                      <td className="px-4 py-2 text-text-muted dark:text-text-muted-dark">
                         {it.date ? dayjs(it.date).format('YYYY-MM-DD HH:mm') : it.rawLine ? '无法解析' : '—'}
                       </td>
                       <td className="px-4 py-2 truncate max-w-[200px]">{it.merchant || '—'}</td>
@@ -469,7 +469,7 @@ function ImportPanel({ onImported }: { onImported?: () => void }) {
                               <button
                                 type="button"
                                 onClick={() => clearOverride(i)}
-                                className="text-xs text-text-muted hover:text-expense"
+                                className="text-xs text-text-muted dark:text-text-muted-dark hover:text-expense"
                                 title="清除分类"
                               >
                                 ×
@@ -479,7 +479,7 @@ function ImportPanel({ onImported }: { onImported?: () => void }) {
                             <button
                               type="button"
                               onClick={() => acceptSuggestion(i)}
-                              className="inline-flex items-center gap-1 rounded-full border border-border dark:border-border-dark px-2 py-0.5 text-xs text-text-muted hover:text-text dark:hover:text-text-dark"
+                              className="inline-flex items-center gap-1 rounded-full border border-border dark:border-border-dark px-2 py-0.5 text-xs text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark"
                               title="应用规则建议"
                             >
                               <IconWand size={12} />
@@ -493,7 +493,7 @@ function ImportPanel({ onImported }: { onImported?: () => void }) {
                             />
                           )
                         ) : (
-                          <span className="text-text-muted">—</span>
+                          <span className="text-text-muted dark:text-text-muted-dark">—</span>
                         )}
                       </td>
                     </tr>
@@ -562,9 +562,9 @@ function HistoryPanel() {
     return (
       <div className="card">
         <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
-          <IconCloudDownload size={36} className="text-text-muted mb-3" />
+          <IconCloudDownload size={36} className="text-text-muted dark:text-text-muted-dark mb-3" />
           <div className="text-base font-medium">暂无导入记录</div>
-          <div className="mt-2 text-sm text-text-muted">
+          <div className="mt-2 text-sm text-text-muted dark:text-text-muted-dark">
             导入账单成功后会在此显示历史记录
           </div>
         </div>
@@ -580,7 +580,7 @@ function HistoryPanel() {
           <div key={b.id} className="px-4 py-3 flex items-center justify-between gap-3">
             <div className="min-w-0">
               <div className="text-sm font-medium truncate">{p?.name ?? b.platform} · {b.fileName}</div>
-              <div className="text-xs text-text-muted mt-0.5">
+              <div className="text-xs text-text-muted dark:text-text-muted-dark mt-0.5">
                 {dayjs(b.at).format('YYYY-MM-DD HH:mm')} · 共 {b.total} 条，导入 {b.imported} 条
               </div>
             </div>

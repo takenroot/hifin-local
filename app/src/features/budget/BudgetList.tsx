@@ -155,7 +155,7 @@ export default function BudgetList() {
         icon={<IconCirclePlus size={18} />}
         actions={
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 text-text-muted">
+            <div className="flex items-center gap-2 text-text-muted dark:text-text-muted-dark">
               <IconEye size={18} className="cursor-pointer hover:text-text dark:hover:text-text-dark" />
               <IconShare size={18} className="cursor-pointer hover:text-text dark:hover:text-text-dark" />
             </div>
@@ -280,7 +280,7 @@ function BudgetCard({ budget, category, spent, onEdit, onDelete }: BudgetCardPro
           </div>
           <div className="min-w-0">
             <div className="text-sm font-medium truncate">{budget.name}</div>
-            <div className="mt-0.5 text-xs text-text-muted flex items-center gap-1.5 truncate">
+            <div className="mt-0.5 text-xs text-text-muted dark:text-text-muted-dark flex items-center gap-1.5 truncate">
               <span>{category ? category.name : '总预算'}</span>
               <span>·</span>
               <span>{periodLabel(budget.period)}</span>
@@ -291,7 +291,7 @@ function BudgetCard({ budget, category, spent, onEdit, onDelete }: BudgetCardPro
           <button
             type="button"
             onClick={onEdit}
-            className="p-1.5 rounded-lg text-text-muted hover:text-text dark:hover:text-text-dark hover:bg-bg dark:hover:bg-bg-card-dark"
+            className="p-1.5 rounded-lg text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark hover:bg-bg dark:hover:bg-bg-card-dark"
             aria-label="编辑"
           >
             <IconPencil size={14} />
@@ -299,7 +299,7 @@ function BudgetCard({ budget, category, spent, onEdit, onDelete }: BudgetCardPro
           <button
             type="button"
             onClick={onDelete}
-            className="p-1.5 rounded-lg text-text-muted hover:text-expense hover:bg-bg dark:hover:bg-bg-card-dark"
+            className="p-1.5 rounded-lg text-text-muted dark:text-text-muted-dark hover:text-expense hover:bg-bg dark:hover:bg-bg-card-dark"
             aria-label="删除"
           >
             <IconTrash size={14} />
@@ -319,14 +319,14 @@ function BudgetCard({ budget, category, spent, onEdit, onDelete }: BudgetCardPro
             >
               {formatMoney(spent, false)}
             </span>
-            <span className="ml-1 text-xs text-text-muted">
+            <span className="ml-1 text-xs text-text-muted dark:text-text-muted-dark">
               / {formatMoney(budget.amount, false)}
             </span>
           </div>
           <div
             className={clsx(
               'text-sm tabular-nums',
-              overspent ? 'text-expense' : 'text-text-muted',
+              overspent ? 'text-expense' : 'text-text-muted dark:text-text-muted-dark',
             )}
           >
             {pct.toFixed(0)}%
@@ -338,13 +338,13 @@ function BudgetCard({ budget, category, spent, onEdit, onDelete }: BudgetCardPro
       {/* 元信息 */}
       <div className="grid grid-cols-2 gap-3 text-xs">
         <div>
-          <div className="text-text-muted">关联分类</div>
+          <div className="text-text-muted dark:text-text-muted-dark">关联分类</div>
           <div className="mt-0.5 font-medium truncate">
             {category ? `${category.group} · ${category.name}` : '总预算（全部支出）'}
           </div>
         </div>
         <div>
-          <div className="text-text-muted">
+          <div className="text-text-muted dark:text-text-muted-dark">
             {overspent ? '已超支' : '剩余'}
           </div>
           <div

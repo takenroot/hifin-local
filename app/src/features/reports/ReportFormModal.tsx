@@ -173,7 +173,7 @@ export function ReportFormModal({ open, onClose, report, onSaved }: Props) {
       }
     >
       <div className="space-y-5">
-        <div className="text-sm text-text-muted">
+        <div className="text-sm text-text-muted dark:text-text-muted-dark">
           报表展示你的财务全貌
           <div className="mt-1">
             包括：月度收支、年度总结、资产分布、预算执行等
@@ -189,7 +189,7 @@ export function ReportFormModal({ open, onClose, report, onSaved }: Props) {
             <span
               className={clsx(
                 'text-xs tabular-nums',
-                nameTooLong ? 'text-expense' : 'text-text-muted',
+                nameTooLong ? 'text-expense' : 'text-text-muted dark:text-text-muted-dark',
               )}
             >
               {form.name.length}/{NAME_LIMIT}
@@ -214,7 +214,7 @@ export function ReportFormModal({ open, onClose, report, onSaved }: Props) {
             <span
               className={clsx(
                 'text-xs tabular-nums',
-                descTooLong ? 'text-expense' : 'text-text-muted',
+                descTooLong ? 'text-expense' : 'text-text-muted dark:text-text-muted-dark',
               )}
             >
               {form.description.length}/{DESC_LIMIT}
@@ -265,7 +265,7 @@ export function ReportFormModal({ open, onClose, report, onSaved }: Props) {
                     </span>
                     <span className="text-sm font-medium">{tpl.label}</span>
                   </div>
-                  <div className="text-xs text-text-muted">
+                  <div className="text-xs text-text-muted dark:text-text-muted-dark">
                     {tpl.description}
                   </div>
                 </button>
@@ -298,7 +298,7 @@ export function ReportFormModal({ open, onClose, report, onSaved }: Props) {
             <label className="text-sm">
               展示组件 <span className="text-expense">*</span>
             </label>
-            <span className="text-xs text-text-muted">
+            <span className="text-xs text-text-muted dark:text-text-muted-dark">
               已选 {form.config.components.length} 项
             </span>
           </div>
@@ -331,7 +331,7 @@ export function ReportFormModal({ open, onClose, report, onSaved }: Props) {
                     </span>
                     <span className="text-sm font-medium">{opt.label}</span>
                   </div>
-                  <div className="text-xs text-text-muted">
+                  <div className="text-xs text-text-muted dark:text-text-muted-dark">
                     {opt.description}
                   </div>
                 </button>
@@ -404,7 +404,7 @@ export function ReportFormModal({ open, onClose, report, onSaved }: Props) {
             <div className="text-sm font-medium truncate">
               {trimmedName || '报表预览'}
             </div>
-            <div className="text-xs text-text-muted">
+            <div className="text-xs text-text-muted dark:text-text-muted-dark">
               {
                 REPORT_TEMPLATES.find((t) => t.key === form.template)?.label
               }

@@ -191,7 +191,7 @@ function AccountSection({
       <div className="flex items-end justify-between mb-4">
         <h2 className="section-title">{title}</h2>
         <div className="flex items-baseline gap-2">
-          <span className="text-xs text-text-muted">{totalLabel}</span>
+          <span className="text-xs text-text-muted dark:text-text-muted-dark">{totalLabel}</span>
           <span
             className={clsx(
               'text-lg font-medium tabular-nums',
@@ -240,12 +240,12 @@ function AccountCard({ account, tags }: { account: Account; tags: Tag[] }) {
           </div>
           <div className="min-w-0">
             <div className="text-sm font-medium truncate">{account.name}</div>
-            <div className="text-xs text-text-muted mt-0.5">{meta.label}</div>
+            <div className="text-xs text-text-muted dark:text-text-muted-dark mt-0.5">{meta.label}</div>
           </div>
         </div>
         <IconChevronRight
           size={16}
-          className="text-text-muted opacity-0 group-hover:opacity-100 transition"
+          className="text-text-muted dark:text-text-muted-dark opacity-0 group-hover:opacity-100 transition"
         />
       </div>
 
@@ -265,7 +265,7 @@ function AccountCard({ account, tags }: { account: Account; tags: Tag[] }) {
           {accountTags.map((t) => (
             <span
               key={t.id}
-              className="inline-flex items-center px-2 h-5 rounded-md text-xs bg-bg dark:bg-bg-card-dark text-text-muted"
+              className="inline-flex items-center px-2 h-5 rounded-md text-xs bg-bg dark:bg-bg-card-dark text-text-muted dark:text-text-muted-dark"
             >
               {t.name}
             </span>
@@ -274,7 +274,7 @@ function AccountCard({ account, tags }: { account: Account; tags: Tag[] }) {
       )}
 
       {!account.includeInNetAsset && (
-        <div className="mt-2 text-xs text-text-muted">不计入净资产</div>
+        <div className="mt-2 text-xs text-text-muted dark:text-text-muted-dark">不计入净资产</div>
       )}
     </button>
   );

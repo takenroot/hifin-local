@@ -84,7 +84,7 @@ export default function TransactionList() {
 
   const headerActions = useMemo(
     () => (
-      <div className="flex items-center gap-2 text-text-muted">
+      <div className="flex items-center gap-2 text-text-muted dark:text-text-muted-dark">
         <IconEye size={18} className="cursor-pointer hover:text-text dark:hover:text-text-dark" />
         <IconShare size={18} className="cursor-pointer hover:text-text dark:hover:text-text-dark" />
       </div>

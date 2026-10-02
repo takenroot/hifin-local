@@ -97,7 +97,7 @@ export function CategoriesSection() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-xs text-text-muted border-b border-border dark:border-border-dark">
+              <tr className="text-left text-xs text-text-muted dark:text-text-muted-dark border-b border-border dark:border-border-dark">
                 <th className="py-2.5 pr-4 font-medium">配置名称</th>
                 <th className="py-2.5 pr-4 font-medium">当前启用</th>
                 <th className="py-2.5 pr-4 font-medium">分类数量</th>
@@ -114,16 +114,16 @@ export function CategoriesSection() {
                 <td className="py-3 pr-4">
                   <IconCheck size={16} className="text-income" />
                 </td>
-                <td className="py-3 pr-4 text-text-muted tabular-nums">
+                <td className="py-3 pr-4 text-text-muted dark:text-text-muted-dark tabular-nums">
                   {totalCategories}/{totalCategories}
                 </td>
-                <td className="py-3 pr-4 text-text-muted tabular-nums">
+                <td className="py-3 pr-4 text-text-muted dark:text-text-muted-dark tabular-nums">
                   {totalGroups}
                 </td>
-                <td className="py-3 pr-4 text-text-muted">
+                <td className="py-3 pr-4 text-text-muted dark:text-text-muted-dark">
                   {formatDate(Date.now())}
                 </td>
-                <td className="py-3 pr-4 text-text-muted">
+                <td className="py-3 pr-4 text-text-muted dark:text-text-muted-dark">
                   {formatDate(Date.now())}
                 </td>
               </tr>
@@ -137,7 +137,7 @@ export function CategoriesSection() {
         <Card
           title={
             <div className="flex items-center gap-2 text-sm font-medium text-text dark:text-text-dark">
-              <IconCategory size={14} className="flex-none text-text-muted" />
+              <IconCategory size={14} className="flex-none text-text-muted dark:text-text-muted-dark" />
               <span>分组</span>
             </div>
           }
@@ -145,9 +145,9 @@ export function CategoriesSection() {
         >
           <div className="p-3">
             {loading ? (
-              <div className="text-xs text-text-muted px-2 py-3">加载中…</div>
+              <div className="text-xs text-text-muted dark:text-text-muted-dark px-2 py-3">加载中…</div>
             ) : groups.length === 0 ? (
-              <div className="text-xs text-text-muted px-2 py-3">暂无分组</div>
+              <div className="text-xs text-text-muted dark:text-text-muted-dark px-2 py-3">暂无分组</div>
             ) : (
               <ul className="space-y-0.5">
                 {groups.map((g) => (
@@ -159,7 +159,7 @@ export function CategoriesSection() {
                         'w-full flex items-center justify-between gap-2 h-9 px-3 rounded-lg text-sm transition',
                         g.name === activeGroup
                           ? 'bg-bg dark:bg-bg-card-dark text-text dark:text-text-dark font-medium'
-                          : 'text-text-muted hover:bg-bg dark:hover:bg-bg-card-dark hover:text-text dark:hover:text-text-dark',
+                          : 'text-text-muted dark:text-text-muted-dark hover:bg-bg dark:hover:bg-bg-card-dark hover:text-text dark:hover:text-text-dark',
                       )}
                     >
                       <span className="flex items-center gap-2 min-w-0">
@@ -167,7 +167,7 @@ export function CategoriesSection() {
                         <span className="truncate">{g.name}</span>
                       </span>
                       <span className="flex items-center gap-1.5 flex-none">
-                        <span className="text-xs tabular-nums text-text-muted">
+                        <span className="text-xs tabular-nums text-text-muted dark:text-text-muted-dark">
                           {g.items.length}
                         </span>
                         <IconChevronRight
@@ -176,7 +176,7 @@ export function CategoriesSection() {
                             'transition',
                             g.name === activeGroup
                               ? 'text-text dark:text-text-dark'
-                              : 'text-text-muted',
+                              : 'text-text-muted dark:text-text-muted-dark',
                           )}
                         />
                       </span>
@@ -195,7 +195,7 @@ export function CategoriesSection() {
                 {currentGroup?.name ?? '分类'}
               </div>
               {currentGroup && (
-                <div className="text-xs text-text-muted mt-1">
+                <div className="text-xs text-text-muted dark:text-text-muted-dark mt-1">
                   {currentGroup.expenseCount} 个支出 · {currentGroup.incomeCount} 个收入
                 </div>
               )}
@@ -280,7 +280,7 @@ function CategoryTable({
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="text-left text-xs text-text-muted border-b border-border dark:border-border-dark">
+          <tr className="text-left text-xs text-text-muted dark:text-text-muted-dark border-b border-border dark:border-border-dark">
             <th className="py-2.5 pr-4 font-medium">图标</th>
             <th className="py-2.5 pr-4 font-medium">名称</th>
             <th className="py-2.5 pr-4 font-medium">类型</th>
@@ -317,7 +317,7 @@ function CategoryTable({
                     onClick={() => onEdit(c)}
                     disabled={!mutable}
                     className={clsx(
-                      'p-1.5 rounded-lg text-text-muted',
+                      'p-1.5 rounded-lg text-text-muted dark:text-text-muted-dark',
                       mutable &&
                         'hover:bg-bg dark:hover:bg-bg-card-dark hover:text-text dark:hover:text-text-dark',
                       !mutable && 'opacity-40 cursor-not-allowed',
@@ -331,7 +331,7 @@ function CategoryTable({
                     onClick={() => onDelete(c)}
                     disabled={!mutable}
                     className={clsx(
-                      'p-1.5 rounded-lg text-text-muted',
+                      'p-1.5 rounded-lg text-text-muted dark:text-text-muted-dark',
                       mutable && 'hover:bg-expense-soft hover:text-expense',
                       !mutable && 'opacity-40 cursor-not-allowed',
                     )}
@@ -549,7 +549,7 @@ function Row({
 }) {
   return (
     <div>
-      <label className="block text-xs text-text-muted mb-1.5">
+      <label className="block text-xs text-text-muted dark:text-text-muted-dark mb-1.5">
         {label}
         {required && <span className="text-expense ml-0.5">*</span>}
       </label>
@@ -585,7 +585,7 @@ function DeleteCategoryModal({
           确定要删除分类「
           <span className="font-medium">{category?.name || '—'}</span> 」吗？
         </div>
-        <div className="text-xs text-text-muted">
+        <div className="text-xs text-text-muted dark:text-text-muted-dark">
           该分类下的已有流水仍会保留，但「分类」字段将变为空。
         </div>
         <div className="text-xs text-expense">

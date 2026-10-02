@@ -128,7 +128,7 @@ export default function ReportDetail() {
             </Button>
           }
         />
-        <div className="p-4 lg:p-8 text-sm text-text-muted">加载中…</div>
+        <div className="p-4 lg:p-8 text-sm text-text-muted dark:text-text-muted-dark">加载中…</div>
       </div>
     );
   }
@@ -149,7 +149,7 @@ export default function ReportDetail() {
             </Button>
           }
         />
-        <div className="p-4 lg:p-8 text-sm text-text-muted">
+        <div className="p-4 lg:p-8 text-sm text-text-muted dark:text-text-muted-dark">
           {error ? `加载失败：${error}` : '该报表已被删除或不存在。'}
         </div>
       </div>
@@ -185,7 +185,7 @@ export default function ReportDetail() {
         }
         actions={
           <>
-            <div className="flex items-center gap-2 text-text-muted">
+            <div className="flex items-center gap-2 text-text-muted dark:text-text-muted-dark">
               <IconEye size={18} className="cursor-pointer hover:text-text dark:hover:text-text-dark" />
               <IconShare size={18} className="cursor-pointer hover:text-text dark:hover:text-text-dark" />
             </div>
@@ -210,7 +210,7 @@ export default function ReportDetail() {
       <div className="p-4 lg:p-8 max-w-[1200px] space-y-6">
         {report.description && (
           <Card>
-            <div className="text-sm whitespace-pre-wrap text-text-muted">
+            <div className="text-sm whitespace-pre-wrap text-text-muted dark:text-text-muted-dark">
               {report.description}
             </div>
           </Card>
@@ -287,7 +287,7 @@ function ConfigRenderer({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2 text-xs text-text-muted">
+      <div className="flex items-center gap-2 text-xs text-text-muted dark:text-text-muted-dark">
         <span className="inline-flex items-center px-2 h-5 rounded-md bg-bg dark:bg-bg-card-dark">
           数据范围 · {rangeLabel}
         </span>
@@ -366,11 +366,11 @@ function ConfigIncomeExpenseBar({
               <XAxis
                 dataKey="label"
                 tick={{ fontSize: 11, fill: 'currentColor' }}
-                className="text-text-muted"
+                className="text-text-muted dark:text-text-muted-dark"
               />
               <YAxis
                 tick={{ fontSize: 11, fill: 'currentColor' }}
-                className="text-text-muted"
+                className="text-text-muted dark:text-text-muted-dark"
                 tickFormatter={(v: number) => formatAxis(v)}
                 width={60}
               />
@@ -439,7 +439,7 @@ function ConfigAssetPie({
                 className={
                   mode === it.key
                     ? 'px-3 h-7 rounded-lg bg-text text-bg-card dark:bg-bg-card-dark dark:text-text-dark'
-                    : 'px-3 h-7 rounded-lg text-text-muted hover:text-text dark:hover:text-text-dark'
+                    : 'px-3 h-7 rounded-lg text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark'
                 }
               >
                 {it.label}
@@ -491,7 +491,7 @@ function ConfigAssetPie({
                   style={{ background: PIE_COLORS[i % PIE_COLORS.length] }}
                 />
                 <span className="flex-1 truncate">{d.name}</span>
-                <span className="text-text-muted tabular-nums">
+                <span className="text-text-muted dark:text-text-muted-dark tabular-nums">
                   {d.pct.toFixed(1)}%
                 </span>
                 <span className="font-medium tabular-nums w-28 text-right">
@@ -500,7 +500,7 @@ function ConfigAssetPie({
               </div>
             ))}
             <div className="mt-3 pt-3 border-t border-border dark:border-border-dark flex items-center justify-between text-sm">
-              <span className="text-text-muted">合计</span>
+              <span className="text-text-muted dark:text-text-muted-dark">合计</span>
               <span className="font-medium tabular-nums text-income">
                 {formatMoney(total, false)}
               </span>
@@ -546,11 +546,11 @@ function ConfigTrendArea({
               <XAxis
                 dataKey="label"
                 tick={{ fontSize: 11, fill: 'currentColor' }}
-                className="text-text-muted"
+                className="text-text-muted dark:text-text-muted-dark"
               />
               <YAxis
                 tick={{ fontSize: 11, fill: 'currentColor' }}
-                className="text-text-muted"
+                className="text-text-muted dark:text-text-muted-dark"
                 tickFormatter={(v: number) => formatAxis(v)}
                 width={60}
               />
@@ -604,7 +604,7 @@ function ConfigCategoryRank({
         <div className="overflow-x-auto -mx-2">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-text-muted border-b border-border dark:border-border-dark">
+              <tr className="text-left text-text-muted dark:text-text-muted-dark border-b border-border dark:border-border-dark">
                 <th className="px-2 py-2 font-normal">排名</th>
                 <th className="px-2 py-2 font-normal">分类</th>
                 <th className="px-2 py-2 font-normal text-right">金额</th>
@@ -617,7 +617,7 @@ function ConfigCategoryRank({
                   key={r.categoryId}
                   className="border-b border-border dark:border-border-dark last:border-b-0"
                 >
-                  <td className="px-2 py-3 text-text-muted tabular-nums w-12">
+                  <td className="px-2 py-3 text-text-muted dark:text-text-muted-dark tabular-nums w-12">
                     {idx + 1}
                   </td>
                   <td className="px-2 py-3 font-medium">{r.name}</td>
@@ -634,7 +634,7 @@ function ConfigCategoryRank({
                           }}
                         />
                       </div>
-                      <span className="text-xs tabular-nums w-10 text-right text-text-muted">
+                      <span className="text-xs tabular-nums w-10 text-right text-text-muted dark:text-text-muted-dark">
                         {r.pct.toFixed(0)}%
                       </span>
                     </div>
@@ -644,7 +644,7 @@ function ConfigCategoryRank({
             </tbody>
             <tfoot>
               <tr className="border-t border-border dark:border-border-dark">
-                <td className="px-2 py-3 text-text-muted">合计</td>
+                <td className="px-2 py-3 text-text-muted dark:text-text-muted-dark">合计</td>
                 <td className="px-2 py-3" />
                 <td className="px-2 py-3 text-right font-medium tabular-nums">
                   {formatMoney(total, false)}
@@ -703,11 +703,11 @@ function MonthlyTemplate() {
               <XAxis
                 dataKey="label"
                 tick={{ fontSize: 11, fill: 'currentColor' }}
-                className="text-text-muted"
+                className="text-text-muted dark:text-text-muted-dark"
               />
               <YAxis
                 tick={{ fontSize: 11, fill: 'currentColor' }}
-                className="text-text-muted"
+                className="text-text-muted dark:text-text-muted-dark"
                 tickFormatter={(v: number) => formatAxis(v)}
                 width={60}
               />
@@ -781,19 +781,19 @@ function YearlyTemplate() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="!p-5">
-          <div className="text-xs text-text-muted">当年交易笔数</div>
+          <div className="text-xs text-text-muted dark:text-text-muted-dark">当年交易笔数</div>
           <div className="mt-2 text-2xl font-medium tabular-nums text-text dark:text-text-dark">
             {summary.transactionCount}
           </div>
         </Card>
         <Card className="!p-5">
-          <div className="text-xs text-text-muted">当前净资产</div>
+          <div className="text-xs text-text-muted dark:text-text-muted-dark">当前净资产</div>
           <div className="mt-2 text-2xl font-medium text-income tabular-nums">
             {formatMoney(netAsset, false)}
           </div>
         </Card>
         <Card className="!p-5">
-          <div className="text-xs text-text-muted">年份</div>
+          <div className="text-xs text-text-muted dark:text-text-muted-dark">年份</div>
           <div className="mt-2 text-2xl font-medium tabular-nums">
             {summary.year}
           </div>
@@ -815,11 +815,11 @@ function YearlyTemplate() {
               <XAxis
                 dataKey="label"
                 tick={{ fontSize: 11, fill: 'currentColor' }}
-                className="text-text-muted"
+                className="text-text-muted dark:text-text-muted-dark"
               />
               <YAxis
                 tick={{ fontSize: 11, fill: 'currentColor' }}
-                className="text-text-muted"
+                className="text-text-muted dark:text-text-muted-dark"
                 tickFormatter={(v: number) => formatAxis(v)}
                 width={60}
               />
@@ -895,7 +895,7 @@ function SummaryCard({
   return (
     <Card className="!p-5">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-text-muted text-sm">
+        <div className="flex items-center gap-2 text-text-muted dark:text-text-muted-dark text-sm">
           <span>{icon}</span>
           <span>{label}</span>
         </div>
@@ -952,7 +952,7 @@ function DistributionTemplate() {
                   className={
                     mode === it.key
                       ? 'px-3 h-7 rounded-lg bg-text text-bg-card dark:bg-bg-card-dark dark:text-text-dark'
-                      : 'px-3 h-7 rounded-lg text-text-muted hover:text-text dark:hover:text-text-dark'
+                      : 'px-3 h-7 rounded-lg text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark'
                   }
                 >
                   {it.label}
@@ -1007,7 +1007,7 @@ function DistributionTemplate() {
                     style={{ background: PIE_COLORS[i % PIE_COLORS.length] }}
                   />
                   <span className="flex-1 truncate">{d.name}</span>
-                  <span className="text-text-muted tabular-nums">
+                  <span className="text-text-muted dark:text-text-muted-dark tabular-nums">
                     {d.pct.toFixed(1)}%
                   </span>
                   <span className="font-medium tabular-nums w-28 text-right">
@@ -1016,7 +1016,7 @@ function DistributionTemplate() {
                 </div>
               ))}
               <div className="mt-3 pt-3 border-t border-border dark:border-border-dark flex items-center justify-between text-sm">
-                <span className="text-text-muted">合计</span>
+                <span className="text-text-muted dark:text-text-muted-dark">合计</span>
                 <span className="font-medium tabular-nums text-income">
                   {formatMoney(total, false)}
                 </span>
@@ -1030,7 +1030,7 @@ function DistributionTemplate() {
           />
         )}
         {hasData && (
-          <div className="mt-4 text-xs text-text-muted">
+          <div className="mt-4 text-xs text-text-muted dark:text-text-muted-dark">
             数据更新于 {updatedAt.format('YYYY-MM-DD HH:mm')}
           </div>
         )}
@@ -1125,11 +1125,11 @@ function BudgetTemplate() {
     return (
       <Card>
         <div className="py-10 flex flex-col items-center justify-center text-center">
-          <div className="w-16 h-16 rounded-full bg-bg dark:bg-bg-card-dark flex items-center justify-center text-text-muted mb-4">
+          <div className="w-16 h-16 rounded-full bg-bg dark:bg-bg-card-dark flex items-center justify-center text-text-muted dark:text-text-muted-dark mb-4">
             <IconCircleDashed size={28} />
           </div>
           <div className="text-base font-medium">请先在预算页创建预算</div>
-          <div className="text-sm text-text-muted mt-2 max-w-sm">
+          <div className="text-sm text-text-muted dark:text-text-muted-dark mt-2 max-w-sm">
             前往预算管理页创建月度或年度预算，这里会自动汇总当月预算与实际支出对比
           </div>
           <Button
@@ -1160,7 +1160,7 @@ function BudgetTemplate() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card className="!p-5">
           <div className="flex items-center justify-between">
-            <div className="text-xs text-text-muted">当月预算合计</div>
+            <div className="text-xs text-text-muted dark:text-text-muted-dark">当月预算合计</div>
           </div>
           <div className="mt-2 text-2xl font-medium tabular-nums text-text dark:text-text-dark">
             {formatMoney(totalBudget, false)}
@@ -1168,7 +1168,7 @@ function BudgetTemplate() {
         </Card>
         <Card className="!p-5">
           <div className="flex items-center justify-between">
-            <div className="text-xs text-text-muted">当月实际支出</div>
+            <div className="text-xs text-text-muted dark:text-text-muted-dark">当月实际支出</div>
           </div>
           <div
             className={
@@ -1182,7 +1182,7 @@ function BudgetTemplate() {
         </Card>
         <Card className="!p-5">
           <div className="flex items-center justify-between">
-            <div className="text-xs text-text-muted">
+            <div className="text-xs text-text-muted dark:text-text-muted-dark">
               {totalOverspent ? '超支金额' : '剩余预算'}
             </div>
           </div>
@@ -1214,11 +1214,11 @@ function BudgetTemplate() {
               <XAxis
                 dataKey="name"
                 tick={{ fontSize: 11, fill: 'currentColor' }}
-                className="text-text-muted"
+                className="text-text-muted dark:text-text-muted-dark"
               />
               <YAxis
                 tick={{ fontSize: 11, fill: 'currentColor' }}
-                className="text-text-muted"
+                className="text-text-muted dark:text-text-muted-dark"
                 tickFormatter={(v: number) => formatAxis(v)}
                 width={60}
               />
@@ -1250,7 +1250,7 @@ function BudgetTemplate() {
         <div className="overflow-x-auto -mx-2">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-text-muted border-b border-border dark:border-border-dark">
+              <tr className="text-left text-text-muted dark:text-text-muted-dark border-b border-border dark:border-border-dark">
                 <th className="px-2 py-2 font-normal">预算名称</th>
                 <th className="px-2 py-2 font-normal">关联分类</th>
                 <th className="px-2 py-2 font-normal text-right">预算金额</th>
@@ -1268,7 +1268,7 @@ function BudgetTemplate() {
                   className="border-b border-border dark:border-border-dark last:border-b-0"
                 >
                   <td className="px-2 py-3 font-medium">{r.name}</td>
-                  <td className="px-2 py-3 text-text-muted">{r.categoryLabel}</td>
+                  <td className="px-2 py-3 text-text-muted dark:text-text-muted-dark">{r.categoryLabel}</td>
                   <td className="px-2 py-3 text-right tabular-nums">
                     {formatMoney(r.budgetAmount, false)}
                   </td>
@@ -1296,7 +1296,7 @@ function BudgetTemplate() {
                       <span
                         className={clsx(
                           'text-xs tabular-nums w-10 text-right',
-                          r.overspent ? 'text-expense' : 'text-text-muted',
+                          r.overspent ? 'text-expense' : 'text-text-muted dark:text-text-muted-dark',
                         )}
                       >
                         {r.pct.toFixed(0)}%

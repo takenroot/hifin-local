@@ -114,7 +114,7 @@ export default function GoalList() {
         icon={<IconTarget size={18} />}
         actions={
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 text-text-muted">
+            <div className="flex items-center gap-2 text-text-muted dark:text-text-muted-dark">
               <IconEye size={18} className="cursor-pointer hover:text-text dark:hover:text-text-dark" />
               <IconShare size={18} className="cursor-pointer hover:text-text dark:hover:text-text-dark" />
             </div>
@@ -255,7 +255,7 @@ function GoalCard({
           </div>
           <div className="min-w-0">
             <div className="text-sm font-medium truncate">{goal.name}</div>
-            <div className="mt-0.5 text-xs text-text-muted flex items-center gap-1.5">
+            <div className="mt-0.5 text-xs text-text-muted dark:text-text-muted-dark flex items-center gap-1.5">
               {goal.subtype && <span>{goal.subtype}</span>}
               {goal.subtype && <span>·</span>}
               <span>{kindLabel(goal.kind)}</span>
@@ -266,7 +266,7 @@ function GoalCard({
           <button
             type="button"
             onClick={onEdit}
-            className="p-1.5 rounded-lg text-text-muted hover:text-text dark:hover:text-text-dark hover:bg-bg dark:hover:bg-bg-card-dark"
+            className="p-1.5 rounded-lg text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark hover:bg-bg dark:hover:bg-bg-card-dark"
             aria-label="编辑"
           >
             <IconPencil size={14} />
@@ -274,7 +274,7 @@ function GoalCard({
           <button
             type="button"
             onClick={onDelete}
-            className="p-1.5 rounded-lg text-text-muted hover:text-expense hover:bg-bg dark:hover:bg-bg-card-dark"
+            className="p-1.5 rounded-lg text-text-muted dark:text-text-muted-dark hover:text-expense hover:bg-bg dark:hover:bg-bg-card-dark"
             aria-label="删除"
           >
             <IconTrash size={14} />
@@ -294,11 +294,11 @@ function GoalCard({
             >
               {formatMoney(goal.currentAmount, false)}
             </span>
-            <span className="ml-1 text-xs text-text-muted">
+            <span className="ml-1 text-xs text-text-muted dark:text-text-muted-dark">
               / {formatMoney(goal.targetAmount, false)}
             </span>
           </div>
-          <div className="text-sm text-text-muted tabular-nums">
+          <div className="text-sm text-text-muted dark:text-text-muted-dark tabular-nums">
             {pct.toFixed(0)}%
           </div>
         </div>
@@ -308,7 +308,7 @@ function GoalCard({
       {/* 元信息 */}
       <div className="grid grid-cols-2 gap-3 text-xs">
         <div>
-          <div className="text-text-muted">截止</div>
+          <div className="text-text-muted dark:text-text-muted-dark">截止</div>
           <div
             className={clsx(
               'mt-0.5 font-medium',
@@ -319,7 +319,7 @@ function GoalCard({
           </div>
         </div>
         <div>
-          <div className="text-text-muted">关联账户</div>
+          <div className="text-text-muted dark:text-text-muted-dark">关联账户</div>
           <div className="mt-0.5 font-medium truncate">
             {account?.name ?? '未关联'}
           </div>

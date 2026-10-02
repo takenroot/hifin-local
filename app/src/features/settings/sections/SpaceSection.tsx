@@ -36,7 +36,7 @@ export function SpaceSection() {
         title={
           <div>
             <div className="text-base font-medium">空间配置</div>
-            <div className="text-xs text-text-muted mt-1">
+            <div className="text-xs text-text-muted dark:text-text-muted-dark mt-1">
               多空间可独立隔离账户 / 流水 / 目标 / 预算
             </div>
           </div>
@@ -44,23 +44,23 @@ export function SpaceSection() {
       >
         <div className="space-y-3 max-w-[560px]">
           <div>
-            <label className="block text-xs text-text-muted mb-1.5">
+            <label className="block text-xs text-text-muted dark:text-text-muted-dark mb-1.5">
               当前空间
             </label>
             <div className="h-10 px-3 rounded-xl border border-border dark:border-border-dark bg-bg dark:bg-bg-dark flex items-center text-sm">
               {label}
             </div>
-            <div className="mt-1 text-xs text-text-muted">
+            <div className="mt-1 text-xs text-text-muted dark:text-text-muted-dark">
               切换空间请使用侧边栏顶部空间切换器；选择"全部空间"则不过滤。
             </div>
           </div>
 
           <div>
-            <div className="text-xs text-text-muted mb-1.5">已有空间（{spaces.length}）</div>
+            <div className="text-xs text-text-muted dark:text-text-muted-dark mb-1.5">已有空间（{spaces.length}）</div>
             <ul className="divide-y divide-border dark:divide-border-dark rounded-xl border border-border dark:border-border-dark overflow-hidden">
               <li className="flex items-center justify-between px-3 py-2 text-sm bg-bg dark:bg-bg-dark">
                 <span>全部空间</span>
-                <span className="text-xs text-text-muted">不过滤</span>
+                <span className="text-xs text-text-muted dark:text-text-muted-dark">不过滤</span>
               </li>
               {spaces.map((s) => (
                 <li
@@ -68,20 +68,20 @@ export function SpaceSection() {
                   className="flex items-center justify-between px-3 py-2 text-sm"
                 >
                   <span className="truncate">{s.name}</span>
-                  <span className="text-xs text-text-muted">
+                  <span className="text-xs text-text-muted dark:text-text-muted-dark">
                     {s.id != null ? `id ${s.id}` : ''}
                   </span>
                 </li>
               ))}
               {spaces.length === 0 && (
-                <li className="px-3 py-2 text-xs text-text-muted">
+                <li className="px-3 py-2 text-xs text-text-muted dark:text-text-muted-dark">
                   （暂无空间，请通过侧边栏顶部"添加空间"创建）
                 </li>
               )}
             </ul>
           </div>
 
-          <div className="text-xs text-text-muted">
+          <div className="text-xs text-text-muted dark:text-text-muted-dark">
             空间切换 / 创建 / 删除均在侧边栏顶部完成；本设置页仅展示当前状态。
           </div>
         </div>

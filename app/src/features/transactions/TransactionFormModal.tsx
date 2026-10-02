@@ -316,7 +316,7 @@ export function TransactionFormModal({ open, onClose, editing, version = 0, onSa
                   'flex items-center gap-1.5 h-8 px-3 text-sm rounded-lg transition',
                   active
                     ? 'bg-text text-bg-card dark:bg-bg-card-dark dark:text-text-dark shadow'
-                    : 'text-text-muted hover:text-text dark:hover:text-text-dark',
+                    : 'text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark',
                 )}
               >
                 {meta.icon}
@@ -440,7 +440,7 @@ export function TransactionFormModal({ open, onClose, editing, version = 0, onSa
               placeholder="添加备注（最多 200 字）"
               className="pb-6"
             />
-            <div className="absolute right-3 bottom-2 text-xs text-text-muted pointer-events-none">
+            <div className="absolute right-3 bottom-2 text-xs text-text-muted dark:text-text-muted-dark pointer-events-none">
               {remark.length}/200
             </div>
           </div>
@@ -483,7 +483,7 @@ export function TransactionFormModal({ open, onClose, editing, version = 0, onSa
         {(merchants?.length ?? 0) > 0 && (
           <Field label="商户">
             <div className="flex items-center gap-2">
-              <IconBuildingStore size={16} className="text-text-muted" />
+              <IconBuildingStore size={16} className="text-text-muted dark:text-text-muted-dark" />
               <Select
                 placeholder="选择商户（可选）"
                 value={merchantId === undefined ? '' : String(merchantId)}
@@ -501,10 +501,10 @@ export function TransactionFormModal({ open, onClose, editing, version = 0, onSa
         <div className="flex items-center justify-between">
           <div>
             <div className="text-sm flex items-center gap-1.5">
-              <IconCategory size={14} className="text-text-muted" />
+              <IconCategory size={14} className="text-text-muted dark:text-text-muted-dark" />
               计入资产
             </div>
-            <div className="text-xs text-text-muted mt-0.5">
+            <div className="text-xs text-text-muted dark:text-text-muted-dark mt-0.5">
               关闭后将不计入净资产统计
             </div>
           </div>
@@ -521,7 +521,7 @@ export function TransactionFormModal({ open, onClose, editing, version = 0, onSa
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <div className="text-sm text-text-muted mb-1.5">{label}</div>
+      <div className="text-sm text-text-muted dark:text-text-muted-dark dark:text-text-muted-dark mb-1.5">{label}</div>
       {children}
     </div>
   );
@@ -532,7 +532,7 @@ function selectedAccountBadge(id: number | undefined, accounts: Account[]) {
   const a = accounts.find((x) => x.id === id);
   if (!a) return null;
   return (
-    <div className="flex items-center gap-2 text-xs text-text-muted">
+    <div className="flex items-center gap-2 text-xs text-text-muted dark:text-text-muted-dark">
       <Badge tone="neutral">当前账户余额</Badge>
       <span className="tabular-nums">
         ¥ {a.balance.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}

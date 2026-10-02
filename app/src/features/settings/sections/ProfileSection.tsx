@@ -76,7 +76,7 @@ export function ProfileSection() {
       <Card title="基础信息">
         <div className="space-y-4 max-w-[560px]">
           <div>
-            <label className="block text-xs text-text-muted mb-2">
+            <label className="block text-xs text-text-muted dark:text-text-muted-dark mb-2">
               <IconUser size={12} className="inline mr-1 -mt-0.5" />
               昵称
             </label>
@@ -97,13 +97,13 @@ export function ProfileSection() {
                 {saving ? '保存中…' : '保存'}
               </Button>
             </div>
-            <div className="mt-1 text-xs text-text-muted">
+            <div className="mt-1 text-xs text-text-muted dark:text-text-muted-dark">
               {nickname.length}/20
             </div>
           </div>
 
           <div>
-            <label className="block text-xs text-text-muted mb-2">
+            <label className="block text-xs text-text-muted dark:text-text-muted-dark mb-2">
               <IconMail size={12} className="inline mr-1 -mt-0.5" />
               邮箱（占位）
             </label>
@@ -112,7 +112,7 @@ export function ProfileSection() {
               placeholder="本地版本不进行云端同步，邮箱仅展示"
               readOnly
             />
-            <div className="mt-1 text-xs text-text-muted">
+            <div className="mt-1 text-xs text-text-muted dark:text-text-muted-dark">
               本地复刻版不会上传邮箱；此字段仅为 UI 兼容占位。
             </div>
           </div>
@@ -121,7 +121,7 @@ export function ProfileSection() {
 
       <Card title="本地用户 ID">
         <div className="space-y-2 max-w-[560px]">
-          <div className="text-xs text-text-muted">
+          <div className="text-xs text-text-muted dark:text-text-muted-dark">
             本 ID 在首次访问时自动生成并保存在本机，用于本地识别不同浏览器档案。
           </div>
           <div className="flex items-center gap-2">

@@ -229,7 +229,7 @@ function TypePicker({
 }) {
   return (
     <div className="space-y-5">
-      <div className="text-sm text-text-muted">选择账户类型</div>
+      <div className="text-sm text-text-muted dark:text-text-muted-dark">选择账户类型</div>
 
       <Group title="资产" icon={<IconTrendingUp size={14} className="text-income" />}>
         {ASSET_TYPES.map((t) => (
@@ -267,7 +267,7 @@ function Group({
 }) {
   return (
     <div>
-      <div className="flex items-center gap-1.5 mb-2 text-xs text-text-muted">
+      <div className="flex items-center gap-1.5 mb-2 text-xs text-text-muted dark:text-text-muted-dark">
         {icon}
         <span>{title}</span>
       </div>
@@ -312,7 +312,7 @@ function TypeOption({
             <IconCircleCheckFilled size={14} className="text-income" />
           )}
         </div>
-        <div className="mt-1 text-xs text-text-muted">{meta.description}</div>
+        <div className="mt-1 text-xs text-text-muted dark:text-text-muted-dark">{meta.description}</div>
       </div>
     </button>
   );
@@ -423,7 +423,7 @@ function FormStep({
       <div className="flex items-center justify-between">
         <div>
           <div className="text-sm">计入资产</div>
-          <div className="text-xs text-text-muted mt-0.5">
+          <div className="text-xs text-text-muted dark:text-text-muted-dark mt-0.5">
             关闭后将不计入净资产计算
           </div>
         </div>
@@ -466,7 +466,7 @@ function Field({
           {label}
           {required && <span className="text-expense ml-0.5">*</span>}
         </label>
-        {hint && <span className="text-xs text-text-muted">{hint}</span>}
+        {hint && <span className="text-xs text-text-muted dark:text-text-muted-dark">{hint}</span>}
       </div>
       {children}
     </div>
@@ -486,10 +486,10 @@ function Counter({
 }) {
   return (
     <div className="flex justify-between text-xs">
-      <span className={invalid ? 'text-expense' : 'text-text-muted'}>
+      <span className={invalid ? 'text-expense' : 'text-text-muted dark:text-text-muted-dark'}>
         {errorHint ?? ''}
       </span>
-      <span className={invalid ? 'text-expense tabular-nums' : 'text-text-muted tabular-nums'}>
+      <span className={invalid ? 'text-expense tabular-nums' : 'text-text-muted dark:text-text-muted-dark tabular-nums'}>
         {current}/{max}
       </span>
     </div>
@@ -532,7 +532,7 @@ function TagMultiSelect({
                 className="inline-flex items-center gap-1 h-7 px-2 rounded-lg bg-bg dark:bg-bg-card-dark border border-border dark:border-border-dark text-xs hover:border-text dark:hover:border-bg-card transition"
               >
                 <span>{opt.label}</span>
-                <span className="text-text-muted">×</span>
+                <span className="text-text-muted dark:text-text-muted-dark">×</span>
               </button>
             );
           })}
@@ -560,12 +560,12 @@ function TagMultiSelect({
               </option>
             ))}
         </select>
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted text-xs pointer-events-none">
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted dark:text-text-muted-dark text-xs pointer-events-none">
           ▾
         </span>
       </div>
       {options.length === 0 && (
-        <div className="text-xs text-text-muted">暂无标签，可在「设置 → 标签」中添加</div>
+        <div className="text-xs text-text-muted dark:text-text-muted-dark">暂无标签，可在「设置 → 标签」中添加</div>
       )}
     </div>
   );

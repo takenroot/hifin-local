@@ -86,7 +86,7 @@ export function AiSection() {
         title={
           <div>
             <div className="text-base font-medium">AI 模型</div>
-            <div className="text-xs text-text-muted mt-1">
+            <div className="text-xs text-text-muted dark:text-text-muted-dark mt-1">
               配置 AI 模型参数。本地版本默认关闭，仅在您主动添加模型后才会触发调用。
             </div>
           </div>
@@ -220,7 +220,7 @@ function ModelsTable({
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="text-left text-xs text-text-muted border-b border-border dark:border-border-dark">
+          <tr className="text-left text-xs text-text-muted dark:text-text-muted-dark border-b border-border dark:border-border-dark">
             <th className="py-2.5 pr-4 font-medium">名称</th>
             <th className="py-2.5 pr-4 font-medium">模型</th>
             <th className="py-2.5 pr-4 font-medium">地址</th>
@@ -239,7 +239,7 @@ function ModelsTable({
               >
                 <td className="py-3 pr-4 align-top">
                   <div className="flex items-center gap-2">
-                    <IconRobot size={14} className="text-text-muted" />
+                    <IconRobot size={14} className="text-text-muted dark:text-text-muted-dark" />
                     <span className="font-medium">{m.name || '—'}</span>
                     {isDefault && (
                       <Badge tone="brand" className="ml-1">
@@ -250,10 +250,10 @@ function ModelsTable({
                     )}
                   </div>
                 </td>
-                <td className="py-3 pr-4 text-text-muted align-top">
+                <td className="py-3 pr-4 text-text-muted dark:text-text-muted-dark align-top">
                   {m.model || '—'}
                 </td>
-                <td className="py-3 pr-4 text-text-muted truncate max-w-[320px] align-top">
+                <td className="py-3 pr-4 text-text-muted dark:text-text-muted-dark truncate max-w-[320px] align-top">
                   {m.endpoint || '—'}
                 </td>
                 <td className="py-3 pr-4 align-top">
@@ -269,7 +269,7 @@ function ModelsTable({
                         'inline-flex items-center gap-1 px-2 h-8 rounded-lg text-xs',
                         isDefault
                           ? 'bg-brand-soft text-brand cursor-default'
-                          : 'border border-border dark:border-border-dark text-text-muted hover:bg-bg dark:hover:bg-bg-card-dark hover:text-text dark:hover:text-text-dark',
+                          : 'border border-border dark:border-border-dark text-text-muted dark:text-text-muted-dark hover:bg-bg dark:hover:bg-bg-card-dark hover:text-text dark:hover:text-text-dark',
                       )}
                       title={isDefault ? '当前默认模型' : '设为默认'}
                     >
@@ -282,7 +282,7 @@ function ModelsTable({
                       disabled={state?.status === 'loading'}
                       className={clsx(
                         'inline-flex items-center gap-1 px-2 h-8 rounded-lg text-xs',
-                        'border border-border dark:border-border-dark text-text-muted hover:bg-bg dark:hover:bg-bg-card-dark hover:text-text dark:hover:text-text-dark',
+                        'border border-border dark:border-border-dark text-text-muted dark:text-text-muted-dark hover:bg-bg dark:hover:bg-bg-card-dark hover:text-text dark:hover:text-text-dark',
                         'disabled:opacity-50 disabled:cursor-not-allowed',
                       )}
                       title="测试连接"
@@ -293,7 +293,7 @@ function ModelsTable({
                     <button
                       type="button"
                       onClick={() => onEdit(m)}
-                      className="p-1.5 rounded-lg text-text-muted hover:bg-bg dark:hover:bg-bg-card-dark hover:text-text dark:hover:text-text-dark"
+                      className="p-1.5 rounded-lg text-text-muted dark:text-text-muted-dark hover:bg-bg dark:hover:bg-bg-card-dark hover:text-text dark:hover:text-text-dark"
                       title="编辑"
                     >
                       <IconPencil size={14} />
@@ -301,7 +301,7 @@ function ModelsTable({
                     <button
                       type="button"
                       onClick={() => onDelete(m)}
-                      className="p-1.5 rounded-lg text-text-muted hover:bg-expense-soft hover:text-expense"
+                      className="p-1.5 rounded-lg text-text-muted dark:text-text-muted-dark hover:bg-expense-soft hover:text-expense"
                       title="删除"
                     >
                       <IconTrash size={14} />
@@ -319,11 +319,11 @@ function ModelsTable({
 
 function TestBadge({ state }: { state?: TestState }) {
   if (!state || state.status === 'idle') {
-    return <span className="text-xs text-text-muted">未测试</span>;
+    return <span className="text-xs text-text-muted dark:text-text-muted-dark">未测试</span>;
   }
   if (state.status === 'loading') {
     return (
-      <span className="inline-flex items-center gap-1 text-xs text-text-muted">
+      <span className="inline-flex items-center gap-1 text-xs text-text-muted dark:text-text-muted-dark">
         <IconBolt size={12} className="animate-pulse" />
         测试中…
       </span>
@@ -479,7 +479,7 @@ function AiModelFormModal({
             {error}
           </div>
         )}
-        <div className="text-xs text-text-muted">
+        <div className="text-xs text-text-muted dark:text-text-muted-dark">
           所有字段仅保存在本地服务（core / SQLite），不会上传到任何远端。提示：
           <Badge tone="brand" className="ml-1 align-middle">本地</Badge>
         </div>
@@ -499,7 +499,7 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-xs text-text-muted mb-1.5">
+      <label className="block text-xs text-text-muted dark:text-text-muted-dark mb-1.5">
         {label}
         {required && <span className="text-expense ml-0.5">*</span>}
       </label>

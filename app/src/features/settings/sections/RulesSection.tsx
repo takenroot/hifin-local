@@ -75,7 +75,7 @@ export function RulesSection() {
       title={
         <div>
           <div className="text-base font-medium">交易规则</div>
-          <div className="text-xs text-text-muted mt-1">
+          <div className="text-xs text-text-muted dark:text-text-muted-dark mt-1">
             按关键词自动归类流水，导入或新建时自动套用
           </div>
         </div>
@@ -110,7 +110,7 @@ export function RulesSection() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-xs text-text-muted border-b border-border dark:border-border-dark">
+              <tr className="text-left text-xs text-text-muted dark:text-text-muted-dark border-b border-border dark:border-border-dark">
                 <th className="py-2.5 pr-4 font-medium">关键词</th>
                 <th className="py-2.5 pr-4 font-medium">匹配字段</th>
                 <th className="py-2.5 pr-4 font-medium">目标分类</th>
@@ -136,7 +136,7 @@ export function RulesSection() {
                         <span className="truncate max-w-[200px]">{r.keyword}</span>
                       </div>
                     </td>
-                    <td className="py-3 pr-4 text-text-muted">
+                    <td className="py-3 pr-4 text-text-muted dark:text-text-muted-dark">
                       {MATCH_FIELD_LABEL[r.matchField]}
                     </td>
                     <td className="py-3 pr-4">
@@ -144,17 +144,17 @@ export function RulesSection() {
                         <span className="inline-flex items-center gap-1.5">
                           {cat.icon && <span>{cat.icon}</span>}
                           <span>{cat.name}</span>
-                          <span className="text-xs text-text-muted">
+                          <span className="text-xs text-text-muted dark:text-text-muted-dark">
                             ({cat.group})
                           </span>
                         </span>
                       ) : (
-                        <span className="text-text-muted text-xs">
+                        <span className="text-text-muted dark:text-text-muted-dark text-xs">
                           分类已删除
                         </span>
                       )}
                     </td>
-                    <td className="py-3 pr-4 tabular-nums text-text-muted">
+                    <td className="py-3 pr-4 tabular-nums text-text-muted dark:text-text-muted-dark">
                       {r.priority}
                     </td>
                     <td className="py-3 pr-4">
@@ -169,7 +169,7 @@ export function RulesSection() {
                         <button
                           type="button"
                           onClick={() => setEditing(r)}
-                          className="p-1.5 rounded-lg text-text-muted hover:bg-bg dark:hover:bg-bg-card-dark hover:text-text dark:hover:text-text-dark"
+                          className="p-1.5 rounded-lg text-text-muted dark:text-text-muted-dark hover:bg-bg dark:hover:bg-bg-card-dark hover:text-text dark:hover:text-text-dark"
                           title="编辑"
                         >
                           <IconPencil size={14} />
@@ -177,7 +177,7 @@ export function RulesSection() {
                         <button
                           type="button"
                           onClick={() => setDeleting(r)}
-                          className="p-1.5 rounded-lg text-text-muted hover:bg-expense-soft hover:text-expense"
+                          className="p-1.5 rounded-lg text-text-muted dark:text-text-muted-dark hover:bg-expense-soft hover:text-expense"
                           title="删除"
                         >
                           <IconTrash size={14} />
@@ -368,7 +368,7 @@ function RuleFormModal({
         <Row label="启用">
           <div className="flex items-center gap-2 h-10">
             <Switch checked={enabled} onChange={setEnabled} size="sm" />
-            <span className="text-sm text-text-muted">
+            <span className="text-sm text-text-muted dark:text-text-muted-dark">
               {enabled ? '启用' : '停用'}
             </span>
           </div>
@@ -437,7 +437,7 @@ function DeleteRuleModal({
           确定要删除规则「
           <span className="font-medium">{rule?.keyword || '—'}</span> 」吗？
         </div>
-        <div className="text-xs text-text-muted">
+        <div className="text-xs text-text-muted dark:text-text-muted-dark">
           删除后，已应用该规则的流水不会自动还原。
         </div>
         {error && (
@@ -461,7 +461,7 @@ function Row({
 }) {
   return (
     <div>
-      <label className="block text-xs text-text-muted mb-1.5">
+      <label className="block text-xs text-text-muted dark:text-text-muted-dark mb-1.5">
         {label}
         {required && <span className="text-expense ml-0.5">*</span>}
       </label>

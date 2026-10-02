@@ -212,7 +212,7 @@ export function SecuritySection() {
     <div className="space-y-4">
       <Card title="导出数据">
         <div className="space-y-3 max-w-[560px]">
-          <div className="text-sm text-text-muted">
+          <div className="text-sm text-text-muted dark:text-text-muted-dark">
             逐个拉取本地 REST 服务（core）上的全部资源，聚合为一份 JSON 文件（含账户、流水、目标、分类、标签、商户、预算、规则、报表、AI
             模型、空间与偏好设置），便于备份或迁移。
           </div>
@@ -226,7 +226,7 @@ export function SecuritySection() {
               {exporting ? '导出中…' : '导出全部为 JSON'}
             </Button>
             {exportToast && (
-              <span className="text-xs text-text-muted">{exportToast}</span>
+              <span className="text-xs text-text-muted dark:text-text-muted-dark">{exportToast}</span>
             )}
           </div>
         </div>
@@ -252,7 +252,7 @@ export function SecuritySection() {
             清空数据库
           </Button>
           {clearResult && (
-            <div className="text-xs text-text-muted break-words">{clearResult}</div>
+            <div className="text-xs text-text-muted dark:text-text-muted-dark break-words">{clearResult}</div>
           )}
         </div>
       </Card>

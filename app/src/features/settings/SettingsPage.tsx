@@ -78,7 +78,7 @@ export default function SettingsPage() {
               <h1 className="text-xl font-medium text-text dark:text-text-dark truncate">
                 {currentMeta.label}
               </h1>
-              <div className="text-xs text-text-muted mt-0.5">
+              <div className="text-xs text-text-muted dark:text-text-muted-dark mt-0.5">
                 {currentMeta.groupLabel}
               </div>
             </div>

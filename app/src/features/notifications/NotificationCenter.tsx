@@ -355,7 +355,7 @@ export function NotificationCenter() {
                   <div className="text-sm font-medium text-text dark:text-text-dark">
                     {platformLabel(active.platform)}账单
                   </div>
-                  <p className="mt-1 text-xs leading-relaxed text-text-muted">
+                  <p className="mt-1 text-xs leading-relaxed text-text-muted dark:text-text-muted-dark">
                     {active.message ||
                       `已从邮箱下载到一封「${platformLabel(active.platform)}」账单，解压需要账单密码，导入后即可自动更新交易。`}
                   </p>
@@ -364,7 +364,7 @@ export function NotificationCenter() {
 
               {exhausted ? (
                 <p
-                  className="mt-4 rounded-xl bg-bg dark:bg-bg-card-dark px-3 py-2.5 text-xs leading-relaxed text-text-muted"
+                  className="mt-4 rounded-xl bg-bg dark:bg-bg-card-dark px-3 py-2.5 text-xs leading-relaxed text-text-muted dark:text-text-muted-dark"
                   role="status"
                 >
                   {EXHAUSTED_MESSAGE}
@@ -373,7 +373,7 @@ export function NotificationCenter() {
                 <form className="mt-4" onSubmit={(e) => void handleSubmit(e)}>
                   <label
                     htmlFor="notification-bill-password"
-                    className="mb-1.5 block text-xs text-text-muted"
+                    className="mb-1.5 block text-xs text-text-muted dark:text-text-muted-dark"
                   >
                     解压密码
                   </label>
@@ -390,7 +390,7 @@ export function NotificationCenter() {
                       if (localError) setLocalError(null);
                     }}
                   />
-                  <p className="mt-1.5 text-xs text-text-muted">还可尝试 {left} 次</p>
+                  <p className="mt-1.5 text-xs text-text-muted dark:text-text-muted-dark">还可尝试 {left} 次</p>
                 </form>
               )}
 
@@ -433,7 +433,7 @@ function PlatformBadge({ platform }: { platform: string }) {
     );
   }
   return (
-    <div className="w-14 h-14 rounded-2xl bg-bg dark:bg-bg-card-dark flex-none flex items-center justify-center text-text-muted">
+    <div className="w-14 h-14 rounded-2xl bg-bg dark:bg-bg-card-dark flex-none flex items-center justify-center text-text-muted dark:text-text-muted-dark">
       <IconWallet size={28} />
     </div>
   );
@@ -447,10 +447,10 @@ function ProcessingBody({ platform, message }: { platform: string; message: stri
         <IconLoader2 size={28} className="text-brand animate-spin" />
       </div>
       <div className="text-sm font-medium text-text dark:text-text-dark">正在解压导入…</div>
-      <p className="text-xs leading-relaxed text-text-muted">
+      <p className="text-xs leading-relaxed text-text-muted dark:text-text-muted-dark">
         正在解压「{platformLabel(platform)}」账单并导入交易，预计需要几十秒，请稍候…
       </p>
-      {message && <p className="text-[11px] text-text-muted/80">{message}</p>}
+      {message && <p className="text-[11px] text-text-muted dark:text-text-muted-dark/80">{message}</p>}
     </div>
   );
 }
@@ -492,7 +492,7 @@ function ToastStack({ toasts, onClose }: { toasts: Toast[]; onClose: (key: numbe
             type="button"
             aria-label="关闭提示"
             onClick={() => onClose(t.key)}
-            className="flex-none text-text-muted hover:text-text dark:hover:text-text-dark"
+            className="flex-none text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark"
           >
             <IconX size={14} />
           </button>

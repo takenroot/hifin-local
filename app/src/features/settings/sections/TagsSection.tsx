@@ -51,7 +51,7 @@ export function TagsSection() {
       title={
         <div>
           <div className="text-base font-medium">标签管理</div>
-          <div className="text-xs text-text-muted mt-1">
+          <div className="text-xs text-text-muted dark:text-text-muted-dark mt-1">
             自定义标签，方便管理数据
           </div>
         </div>
@@ -84,7 +84,7 @@ export function TagsSection() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-xs text-text-muted border-b border-border dark:border-border-dark">
+              <tr className="text-left text-xs text-text-muted dark:text-text-muted-dark border-b border-border dark:border-border-dark">
                 <th className="py-2.5 pr-4 font-medium">颜色</th>
                 <th className="py-2.5 pr-4 font-medium">名称</th>
                 <th className="py-2.5 pr-4 font-medium w-24">操作</th>
@@ -104,7 +104,7 @@ export function TagsSection() {
                   </td>
                   <td className="py-3 pr-4">
                     <div className="flex items-center gap-2">
-                      <IconTag size={14} className="text-text-muted" />
+                      <IconTag size={14} className="text-text-muted dark:text-text-muted-dark" />
                       <span className="font-medium">{t.name}</span>
                     </div>
                   </td>
@@ -113,7 +113,7 @@ export function TagsSection() {
                       <button
                         type="button"
                         onClick={() => setEditing(t)}
-                        className="p-1.5 rounded-lg text-text-muted hover:bg-bg dark:hover:bg-bg-card-dark hover:text-text dark:hover:text-text-dark"
+                        className="p-1.5 rounded-lg text-text-muted dark:text-text-muted-dark hover:bg-bg dark:hover:bg-bg-card-dark hover:text-text dark:hover:text-text-dark"
                         title="编辑"
                       >
                         <IconPencil size={14} />
@@ -121,7 +121,7 @@ export function TagsSection() {
                       <button
                         type="button"
                         onClick={() => setDeleting(t)}
-                        className="p-1.5 rounded-lg text-text-muted hover:bg-expense-soft hover:text-expense"
+                        className="p-1.5 rounded-lg text-text-muted dark:text-text-muted-dark hover:bg-expense-soft hover:text-expense"
                         title="删除"
                       >
                         <IconTrash size={14} />
@@ -221,7 +221,7 @@ function TagFormModal({
     >
       <div className="space-y-3">
         <div>
-          <label className="block text-xs text-text-muted mb-1.5">
+          <label className="block text-xs text-text-muted dark:text-text-muted-dark mb-1.5">
             名称<span className="text-expense ml-0.5">*</span>
           </label>
           <Input
@@ -232,7 +232,7 @@ function TagFormModal({
           />
         </div>
         <div>
-          <label className="block text-xs text-text-muted mb-1.5">颜色</label>
+          <label className="block text-xs text-text-muted dark:text-text-muted-dark mb-1.5">颜色</label>
           <div className="flex flex-wrap gap-2">
             {COLOR_OPTIONS.map((c) => (
               <button
@@ -312,7 +312,7 @@ function DeleteTagModal({
           确定要删除标签「
           <span className="font-medium">{tag?.name || '—'}</span> 」吗？
         </div>
-        <div className="text-xs text-text-muted">
+        <div className="text-xs text-text-muted dark:text-text-muted-dark">
           该标签将从引用它的账户 / 流水中解除。
         </div>
         {error && (

@@ -83,7 +83,7 @@ export function TransactionFilterBar({ filter, onChange, version = 0 }: Props) {
 
   return (
     <div className="card !p-3 flex flex-wrap items-center gap-2">
-      <div className="flex items-center gap-2 text-text-muted text-sm flex-none">
+      <div className="flex items-center gap-2 text-text-muted dark:text-text-muted-dark text-sm flex-none">
         <IconFilter size={14} />
         <span>筛选</span>
       </div>
@@ -136,7 +136,7 @@ export function TransactionFilterBar({ filter, onChange, version = 0 }: Props) {
         }
         className="!w-36"
       />
-      <span className="text-text-muted">~</span>
+      <span className="text-text-muted dark:text-text-muted-dark">~</span>
       <Input
         type="date"
         value={toStr}
@@ -153,7 +153,7 @@ export function TransactionFilterBar({ filter, onChange, version = 0 }: Props) {
         <button
           type="button"
           onClick={reset}
-          className="flex items-center gap-1 text-xs text-text-muted hover:text-text dark:hover:text-text-dark px-2 h-8 rounded-lg hover:bg-bg dark:hover:bg-bg-card-dark"
+          className="flex items-center gap-1 text-xs text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark px-2 h-8 rounded-lg hover:bg-bg dark:hover:bg-bg-card-dark"
         >
           <IconX size={12} /> 清除
         </button>

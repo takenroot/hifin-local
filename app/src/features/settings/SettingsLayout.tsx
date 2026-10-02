@@ -23,7 +23,7 @@ export function SettingsLayout({ active, onSelect, children }: SettingsLayoutPro
           {SETTINGS_GROUPS.map((group) => (
             <div key={group.label}>
               <div className="flex items-center justify-between px-2 mb-2">
-                <span className="text-xs font-medium text-text-muted">
+                <span className="text-xs font-medium text-text-muted dark:text-text-muted-dark">
                   {group.label}
                 </span>
                 <span className="h-px flex-1 ml-3 bg-border dark:bg-border-dark" />
@@ -40,13 +40,13 @@ export function SettingsLayout({ active, onSelect, children }: SettingsLayoutPro
                           'w-full flex items-center gap-2.5 h-9 px-3 rounded-xl text-sm transition',
                           isActive
                             ? 'bg-bg dark:bg-bg-card-dark text-text dark:text-text-dark font-medium'
-                            : 'text-text-muted hover:bg-bg dark:hover:bg-bg-card-dark hover:text-text dark:hover:text-text-dark',
+                            : 'text-text-muted dark:text-text-muted-dark hover:bg-bg dark:hover:bg-bg-card-dark hover:text-text dark:hover:text-text-dark',
                         )}
                       >
                         <span
                           className={clsx(
                             'flex-none',
-                            isActive ? 'text-brand' : 'text-text-muted',
+                            isActive ? 'text-brand' : 'text-text-muted dark:text-text-muted-dark',
                           )}
                         >
                           {item.icon}
@@ -74,7 +74,7 @@ export function SettingsLayout({ active, onSelect, children }: SettingsLayoutPro
                 'inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs whitespace-nowrap transition',
                 it.key === active
                   ? 'bg-text text-bg-card dark:bg-bg-card-dark dark:text-text-dark'
-                  : 'text-text-muted bg-bg dark:bg-bg-card-dark',
+                  : 'text-text-muted dark:text-text-muted-dark bg-bg dark:bg-bg-card-dark',
               )}
             >
               {it.icon}

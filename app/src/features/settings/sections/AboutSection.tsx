@@ -32,7 +32,7 @@ export function AboutSection() {
                 <h2 className="text-lg font-medium">HiFin · 本地复刻版</h2>
                 <Badge tone="brand">v0.1.0</Badge>
               </div>
-              <div className="text-sm text-text-muted mt-1">
+              <div className="text-sm text-text-muted dark:text-text-muted-dark mt-1">
                 个人财务管理工具的本地化实现
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -63,7 +63,7 @@ export function AboutSection() {
           {/* 功能列表 */}
           <div>
             <div className="text-sm font-medium mb-2">已实现功能</div>
-            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-sm text-text-muted">
+            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-sm text-text-muted dark:text-text-muted-dark">
               {FEATURES.map((f) => (
                 <li key={f} className="flex items-start gap-2">
                   <span className="text-income mt-1">·</span>
@@ -95,7 +95,7 @@ export function AboutSection() {
           </div>
 
           {/* 致谢 */}
-          <div className="border-t border-border dark:border-border-dark pt-4 flex items-center gap-2 text-xs text-text-muted">
+          <div className="border-t border-border dark:border-border-dark pt-4 flex items-center gap-2 text-xs text-text-muted dark:text-text-muted-dark">
             <IconBrandGithub size={14} />
             <span>
               本项目为个人学习复刻，灵感与界面参考 HiFin.ai；如有问题请通过「设置 → 数据安全 → 导出」备份数据。

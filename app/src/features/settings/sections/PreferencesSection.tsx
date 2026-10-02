@@ -56,7 +56,7 @@ export function PreferencesSection() {
         title={
           <div>
             <div className="text-base font-medium">外观与语言</div>
-            <div className="text-xs text-text-muted mt-1">
+            <div className="text-xs text-text-muted dark:text-text-muted-dark mt-1">
               设置您的主题、字体大小和其他偏好设置
             </div>
           </div>
@@ -67,7 +67,7 @@ export function PreferencesSection() {
           <div className="flex items-center justify-between gap-4 py-3 first:pt-0">
             <div className="min-w-0">
               <div className="text-sm text-text dark:text-text-dark">主题</div>
-              <div className="text-xs text-text-muted mt-1">
+              <div className="text-xs text-text-muted dark:text-text-muted-dark mt-1">
                 选择您的主题，切换纯白、暗黑模式或跟随系统
               </div>
             </div>
@@ -90,7 +90,7 @@ export function PreferencesSection() {
                         'h-8 px-3 text-sm rounded-lg transition whitespace-nowrap',
                         active
                           ? 'bg-text text-bg-card dark:bg-text-dark dark:text-bg-dark font-medium shadow-sm'
-                          : 'text-text-muted hover:text-text dark:hover:text-text-dark',
+                          : 'text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark',
                       )}
                     >
                       {opt.label}
@@ -105,7 +105,7 @@ export function PreferencesSection() {
           <div className="flex items-center justify-between gap-4 py-3">
             <div className="min-w-0">
               <div className="text-sm text-text dark:text-text-dark">语言</div>
-              <div className="text-xs text-text-muted mt-1">
+              <div className="text-xs text-text-muted dark:text-text-muted-dark mt-1">
                 切换语言（当前仅简体中文；其他为占位）
               </div>
             </div>
@@ -122,7 +122,7 @@ export function PreferencesSection() {
           <div className="flex items-center justify-between gap-4 py-3 last:pb-0">
             <div className="min-w-0">
               <div className="text-sm text-text dark:text-text-dark">默认登录页</div>
-              <div className="text-xs text-text-muted mt-1">
+              <div className="text-xs text-text-muted dark:text-text-muted-dark mt-1">
                 选择您的默认登录页
               </div>
             </div>
@@ -142,7 +142,7 @@ export function PreferencesSection() {
         title={
           <div>
             <div className="text-base font-medium">菜单显隐</div>
-            <div className="text-xs text-text-muted mt-1">
+            <div className="text-xs text-text-muted dark:text-text-muted-dark mt-1">
               可以隐藏部分菜单
             </div>
           </div>
@@ -194,7 +194,7 @@ function MenuRow({
       )}
     >
       <div className="flex items-center gap-2 min-w-0">
-        <span className="text-text-muted">{icon}</span>
+        <span className="text-text-muted dark:text-text-muted-dark">{icon}</span>
         <span className="text-sm truncate">{label}</span>
       </div>
       <Switch

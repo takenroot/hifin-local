@@ -106,7 +106,7 @@ export function GoalAmountModal({ open, onClose, goal, mode, account, onChanged 
     >
       <div className="space-y-4">
         <div className="rounded-xl bg-bg dark:bg-bg-card-dark p-4 space-y-1">
-          <div className="text-xs text-text-muted">
+          <div className="text-xs text-text-muted dark:text-text-muted-dark">
             已{title === '存入' ? '存' : '还'}
             <span className={`ml-1 ${accent} tabular-nums`}>
               {formatMoney(goal.currentAmount, false)}
@@ -128,7 +128,7 @@ export function GoalAmountModal({ open, onClose, goal, mode, account, onChanged 
             </label>
             <span
               className={`text-xs tabular-nums ${
-                tooLong ? 'text-expense' : 'text-text-muted'
+                tooLong ? 'text-expense' : 'text-text-muted dark:text-text-muted-dark'
               }`}
             >
               {amount.length}/{AMOUNT_LIMIT}
@@ -146,11 +146,11 @@ export function GoalAmountModal({ open, onClose, goal, mode, account, onChanged 
         </div>
 
         {account ? (
-          <div className="rounded-xl border border-border dark:border-border-dark p-3 text-xs text-text-muted">
+          <div className="rounded-xl border border-border dark:border-border-dark p-3 text-xs text-text-muted dark:text-text-muted-dark">
             「{account.name}」账户余额会由服务端随本次{title}同步调整。
           </div>
         ) : (
-          <div className="text-xs text-text-muted">
+          <div className="text-xs text-text-muted dark:text-text-muted-dark">
             未关联账户，本操作不会影响任何账户余额。
           </div>
         )}

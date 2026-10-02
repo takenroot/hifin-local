@@ -15,14 +15,14 @@ export function ImportSection() {
       title={
         <div>
           <div className="text-base font-medium">账单导入</div>
-          <div className="text-xs text-text-muted mt-1">
+          <div className="text-xs text-text-muted dark:text-text-muted-dark mt-1">
             从银行 / 支付宝 / 微信账单导入历史流水
           </div>
         </div>
       }
     >
       <div className="space-y-4 max-w-[640px]">
-        <ul className="text-sm text-text-muted list-disc pl-5 space-y-1">
+        <ul className="text-sm text-text-muted dark:text-text-muted-dark list-disc pl-5 space-y-1">
           <li>支持 CSV / PDF 格式（最大 10MB）</li>
           <li>支持拖拽上传；自动识别平台</li>
           <li>支持 16 家主流银行 + 支付宝 + 微信</li>
@@ -37,7 +37,7 @@ export function ImportSection() {
           >
             去导入
           </Button>
-          <span className="text-xs text-text-muted">
+          <span className="text-xs text-text-muted dark:text-text-muted-dark">
             跳转后默认展示批量导入视图。
           </span>
         </div>

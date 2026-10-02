@@ -307,7 +307,7 @@ export default function AssistantPage() {
         <div className="p-6 lg:p-8 max-w-[960px] mx-auto">
           <Card>
             <EmptyState
-              illustration={<IconRobot size={64} className="text-text-muted" />}
+              illustration={<IconRobot size={64} className="text-text-muted dark:text-text-muted-dark" />}
               title="尚未配置 AI 模型"
               description={
                 'AI 助手默认关闭。\n' +
@@ -373,7 +373,7 @@ export default function AssistantPage() {
                 placeholder="请选择模型"
               />
               {selectedModel && (
-                <div className="text-xs text-text-muted space-y-1 pt-1">
+                <div className="text-xs text-text-muted dark:text-text-muted-dark space-y-1 pt-1">
                   <div className="truncate">模型：{selectedModel.model || '—'}</div>
                   <div className="truncate">地址：{selectedModel.endpoint || '—'}</div>
                 </div>
@@ -382,7 +382,7 @@ export default function AssistantPage() {
           </Card>
 
           <Card title="财务概况（只读）">
-            <pre className="text-[11px] leading-snug text-text-muted dark:text-text-muted-dark whitespace-pre-wrap break-words font-mono">
+            <pre className="text-[11px] leading-snug text-text-muted dark:text-text-muted-dark dark:text-text-muted-dark whitespace-pre-wrap break-words font-mono">
               {snapshotText}
             </pre>
           </Card>
@@ -407,7 +407,7 @@ export default function AssistantPage() {
             className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[360px] max-h-[calc(100vh-220px)]"
           >
             {messages.length === 0 && !sending ? (
-              <div className="h-full flex items-center justify-center text-center text-text-muted py-16">
+              <div className="h-full flex items-center justify-center text-center text-text-muted dark:text-text-muted-dark py-16">
                 <div>
                   <div className="text-base mb-2">开始与 AI 助手对话</div>
                   <div className="text-xs">它能根据你当前的财务概况回答问题</div>
@@ -437,7 +437,7 @@ export default function AssistantPage() {
               <div className="flex-1 break-words">{error}</div>
               <button
                 type="button"
-                className="text-text-muted hover:text-text dark:hover:text-text-dark"
+                className="text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark"
                 onClick={() => setError(null)}
                 title="关闭"
               >
@@ -461,7 +461,7 @@ export default function AssistantPage() {
               rows={2}
             />
             <div className="flex items-center justify-between gap-2">
-              <div className="text-[11px] text-text-muted">
+              <div className="text-[11px] text-text-muted dark:text-text-muted-dark">
                 最近 {messages.length} 条 / 最多 20 条
               </div>
               <div className="flex items-center gap-2">
@@ -529,7 +529,7 @@ function Bubble({
         )}
       >
         {pending ? (
-          <span className="inline-flex items-center gap-1 text-text-muted">
+          <span className="inline-flex items-center gap-1 text-text-muted dark:text-text-muted-dark">
             <Dot delay={0} />
             <Dot delay={150} />
             <Dot delay={300} />
@@ -538,7 +538,7 @@ function Bubble({
           <span>{content}</span>
         )}
         {!pending && (
-          <div className="mt-1 text-[10px] text-text-muted">
+          <div className="mt-1 text-[10px] text-text-muted dark:text-text-muted-dark">
             {dayjs().format('HH:mm')}
           </div>
         )}

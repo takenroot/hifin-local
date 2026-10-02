@@ -251,7 +251,7 @@ function Field({
           {label}
           {required && <span className="text-expense ml-0.5">*</span>}
         </label>
-        {hint && <span className="text-xs text-text-muted">{hint}</span>}
+        {hint && <span className="text-xs text-text-muted dark:text-text-muted-dark">{hint}</span>}
       </div>
       {children}
     </div>
@@ -264,7 +264,7 @@ function FieldHint({ hint, error }: { hint: string; error: string }) {
       <span className={error ? 'text-expense' : 'text-transparent'}>
         {error || '·'}
       </span>
-      <span className="text-text-muted tabular-nums">{hint}</span>
+      <span className="text-text-muted dark:text-text-muted-dark tabular-nums">{hint}</span>
     </div>
   );
 }

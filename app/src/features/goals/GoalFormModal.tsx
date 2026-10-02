@@ -283,7 +283,7 @@ function KindPicker({
 }) {
   return (
     <div className="space-y-4">
-      <div className="text-sm text-text-muted">第一步 · 选择目标类型</div>
+      <div className="text-sm text-text-muted dark:text-text-muted-dark">第一步 · 选择目标类型</div>
       <div className="grid grid-cols-2 gap-3">
         {(
           [
@@ -331,7 +331,7 @@ function KindPicker({
                   />
                 )}
               </div>
-              <div className="text-xs text-text-muted">{it.desc}</div>
+              <div className="text-xs text-text-muted dark:text-text-muted-dark">{it.desc}</div>
             </button>
           );
         })}
@@ -354,7 +354,7 @@ function SubtypePicker({
   const list = kind === 'saving' ? SAVING_SUBTYPES : REPAYMENT_SUBTYPES;
   return (
     <div className="space-y-4">
-      <div className="text-sm text-text-muted">
+      <div className="text-sm text-text-muted dark:text-text-muted-dark">
         第二步 · 选择 {kindLabel(kind)} 子类
       </div>
       <div className="grid grid-cols-4 gap-2">
@@ -426,7 +426,7 @@ function FormStep({
 
   return (
     <div className="space-y-5">
-      <div className="text-sm text-text-muted">填写目标详情</div>
+      <div className="text-sm text-text-muted dark:text-text-muted-dark">填写目标详情</div>
 
       {/* 名称 */}
       <Field label="目标名称" required>
@@ -578,7 +578,7 @@ function Field({
           {label}
           {required && <span className="text-expense ml-0.5">*</span>}
         </label>
-        {hint && <span className="text-xs text-text-muted">{hint}</span>}
+        {hint && <span className="text-xs text-text-muted dark:text-text-muted-dark">{hint}</span>}
       </div>
       {children}
     </div>
@@ -591,7 +591,7 @@ function FieldHint({ hint, error }: { hint: string; error: string }) {
       <span className={error ? 'text-expense' : 'text-transparent'}>
         {error || '·'}
       </span>
-      <span className="text-text-muted tabular-nums">{hint}</span>
+      <span className="text-text-muted dark:text-text-muted-dark tabular-nums">{hint}</span>
     </div>
   );
 }

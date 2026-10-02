@@ -110,7 +110,7 @@ export function DiscoverPage() {
               <h2 className="section-title mb-3">数据洞察</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 <Card>
-                  <div className="flex items-center gap-2 text-sm text-text-muted">
+                  <div className="flex items-center gap-2 text-sm text-text-muted dark:text-text-muted-dark">
                     <IconReceipt2 size={16} /> 本月支出
                   </div>
                   <div className="mt-2 text-xl font-medium text-expense tabular-nums">
@@ -132,13 +132,13 @@ export function DiscoverPage() {
                 </Card>
 
                 <Card>
-                  <div className="flex items-center gap-2 text-sm text-text-muted">
+                  <div className="flex items-center gap-2 text-sm text-text-muted dark:text-text-muted-dark">
                     <IconPigMoney size={16} /> 本月储蓄率
                   </div>
                   <div className="mt-2 text-xl font-medium text-income tabular-nums">
                     {savingsRate === null ? '—' : `${savingsRate.toFixed(1)}%`}
                   </div>
-                  <div className="mt-1 text-xs text-text-muted">
+                  <div className="mt-1 text-xs text-text-muted dark:text-text-muted-dark">
                     {savingsRate === null
                       ? '本月暂无收入记录'
                       : savingsRate >= 20
@@ -148,22 +148,22 @@ export function DiscoverPage() {
                 </Card>
 
                 <Card>
-                  <div className="flex items-center gap-2 text-sm text-text-muted">
+                  <div className="flex items-center gap-2 text-sm text-text-muted dark:text-text-muted-dark">
                     <IconFlame size={16} /> 连续记账
                   </div>
                   <div className="mt-2 text-xl font-medium tabular-nums">{streak} 天</div>
-                  <div className="mt-1 text-xs text-text-muted">
+                  <div className="mt-1 text-xs text-text-muted dark:text-text-muted-dark">
                     {streak >= 7 ? '坚持就是胜利 🔥' : '每天记一笔，养成好习惯'}
                   </div>
                 </Card>
 
                 {largest && (
                   <Card>
-                    <div className="text-sm text-text-muted">单笔最大支出</div>
+                    <div className="text-sm text-text-muted dark:text-text-muted-dark">单笔最大支出</div>
                     <div className="mt-2 text-xl font-medium text-expense tabular-nums">
                       {formatMoney(largest.amount)}
                     </div>
-                    <div className="mt-1 text-xs text-text-muted truncate">
+                    <div className="mt-1 text-xs text-text-muted dark:text-text-muted-dark truncate">
                       {largest.name || '未命名'} · {dayjs(largest.date).format('MM月DD日')}
                     </div>
                   </Card>
@@ -171,7 +171,7 @@ export function DiscoverPage() {
 
                 {top3.length > 0 && (
                   <Card className="md:col-span-2">
-                    <div className="text-sm text-text-muted mb-3">本月支出 TOP{top3.length} 分类</div>
+                    <div className="text-sm text-text-muted dark:text-text-muted-dark mb-3">本月支出 TOP{top3.length} 分类</div>
                     <div className="space-y-3">
                       {top3.map((c) => (
                         <div key={c.categoryId} className="flex items-center gap-3">
@@ -181,7 +181,7 @@ export function DiscoverPage() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-baseline justify-between gap-2 mb-1">
                               <span className="text-sm truncate">{c.name}</span>
-                              <span className="text-sm tabular-nums text-text-muted">
+                              <span className="text-sm tabular-nums text-text-muted dark:text-text-muted-dark">
                                 {formatMoney(c.amount)} · {c.pct.toFixed(0)}%
                               </span>
                             </div>
@@ -200,7 +200,7 @@ export function DiscoverPage() {
               <h2 className="section-title mb-3">提醒</h2>
               {alerts.length === 0 && dueSoon.length === 0 ? (
                 <Card>
-                  <div className="py-4 text-center text-sm text-text-muted">✅ 一切正常，预算与目标都在轨道上</div>
+                  <div className="py-4 text-center text-sm text-text-muted dark:text-text-muted-dark">✅ 一切正常，预算与目标都在轨道上</div>
                 </Card>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -216,7 +216,7 @@ export function DiscoverPage() {
                       <div className="mt-3">
                         <ProgressBar value={Math.min(pct, 100)} tone={pct >= 100 ? 'expense' : 'brand'} size="sm" />
                       </div>
-                      <div className="mt-2 text-xs text-text-muted tabular-nums">
+                      <div className="mt-2 text-xs text-text-muted dark:text-text-muted-dark tabular-nums">
                         已花 {formatMoney(spent)} / 预算 {formatMoney(budget.amount)}（{pct.toFixed(0)}%）
                       </div>
                     </Card>
@@ -237,7 +237,7 @@ export function DiscoverPage() {
                           size="sm"
                         />
                       </div>
-                      <div className="mt-2 text-xs text-text-muted tabular-nums">
+                      <div className="mt-2 text-xs text-text-muted dark:text-text-muted-dark tabular-nums">
                         {formatMoney(g.currentAmount)} / {formatMoney(g.targetAmount)}
                       </div>
                     </Card>
@@ -257,7 +257,7 @@ export function DiscoverPage() {
             {TIPS.map((tip) => (
               <Card key={tip.title}>
                 <div className="text-sm font-medium">{tip.title}</div>
-                <div className="mt-2 text-xs text-text-muted leading-relaxed">{tip.body}</div>
+                <div className="mt-2 text-xs text-text-muted dark:text-text-muted-dark leading-relaxed">{tip.body}</div>
               </Card>
             ))}
           </div>

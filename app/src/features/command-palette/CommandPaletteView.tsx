@@ -156,16 +156,16 @@ export function CommandPaletteView({
       >
         {/* 输入栏 */}
         <div className="flex items-center gap-2 px-4 h-12 border-b border-border dark:border-border-dark">
-          <IconSearch size={16} className="text-text-muted" />
+          <IconSearch size={16} className="text-text-muted dark:text-text-muted-dark" />
           <input
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={onKeyDown}
             placeholder="搜索或输入指令…"
-            className="flex-1 bg-transparent outline-none text-sm placeholder:text-text-muted"
+            className="flex-1 bg-transparent outline-none text-sm placeholder:text-text-muted dark:text-text-muted-dark"
           />
-          <span className="flex items-center gap-1 text-xs text-text-muted">
+          <span className="flex items-center gap-1 text-xs text-text-muted dark:text-text-muted-dark">
             <span className="inline-flex items-center gap-0.5 px-1.5 h-5 rounded-md bg-bg dark:bg-bg-card-dark border border-border dark:border-border-dark">
               <IconCommand size={10} />K
             </span>
@@ -175,7 +175,7 @@ export function CommandPaletteView({
         {/* 结果区 */}
         <div ref={listRef} className="max-h-[60vh] overflow-auto py-2">
           {filtered.length === 0 ? (
-            <div className="px-5 py-10 text-center text-sm text-text-muted">
+            <div className="px-5 py-10 text-center text-sm text-text-muted dark:text-text-muted-dark">
               未找到结果
             </div>
           ) : (
@@ -189,7 +189,7 @@ export function CommandPaletteView({
                 const items = filtered.filter((it) => it.group === g);
                 return (
                   <div key={g} className="pb-1">
-                    <div className="px-4 py-1.5 text-xs text-text-muted">
+                    <div className="px-4 py-1.5 text-xs text-text-muted dark:text-text-muted-dark">
                       {g}
                     </div>
                     {items.map((it) => {
@@ -207,7 +207,7 @@ export function CommandPaletteView({
                             'w-full flex items-center gap-3 px-4 h-10 text-left text-sm transition',
                             isActive
                               ? 'bg-bg dark:bg-bg-card-dark text-text dark:text-text-dark'
-                              : 'text-text-muted hover:bg-bg dark:hover:bg-bg-card-dark',
+                              : 'text-text-muted dark:text-text-muted-dark hover:bg-bg dark:hover:bg-bg-card-dark',
                           )}
                         >
                           <span
@@ -215,19 +215,19 @@ export function CommandPaletteView({
                               'flex-none',
                               isActive
                                 ? 'text-text dark:text-text-dark'
-                                : 'text-text-muted',
+                                : 'text-text-muted dark:text-text-muted-dark',
                             )}
                           >
                             {it.icon ?? <IconArrowRight size={14} />}
                           </span>
                           <span className="flex-1 truncate">{it.label}</span>
                           {it.shortcut && (
-                            <span className="text-xs text-text-muted">
+                            <span className="text-xs text-text-muted dark:text-text-muted-dark">
                               {it.shortcut.toUpperCase()}
                             </span>
                           )}
                           {isActive && (
-                            <span className="text-text-muted">
+                            <span className="text-text-muted dark:text-text-muted-dark">
                               <IconCornerDownLeft size={12} />
                             </span>
                           )}
@@ -242,7 +242,7 @@ export function CommandPaletteView({
         </div>
 
         {/* 底部提示栏 */}
-        <div className="flex items-center justify-between gap-2 px-4 h-9 border-t border-border dark:border-border-dark text-xs text-text-muted">
+        <div className="flex items-center justify-between gap-2 px-4 h-9 border-t border-border dark:border-border-dark text-xs text-text-muted dark:text-text-muted-dark">
           <span className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1">
               <IconChevronUp size={10} />

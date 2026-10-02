@@ -40,7 +40,7 @@ export function MerchantsSection() {
       title={
         <div>
           <div className="text-base font-medium">商户管理</div>
-          <div className="text-xs text-text-muted mt-1">
+          <div className="text-xs text-text-muted dark:text-text-muted-dark mt-1">
             自定义商户，便于按商户筛选流水
           </div>
         </div>
@@ -73,7 +73,7 @@ export function MerchantsSection() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-xs text-text-muted border-b border-border dark:border-border-dark">
+              <tr className="text-left text-xs text-text-muted dark:text-text-muted-dark border-b border-border dark:border-border-dark">
                 <th className="py-2.5 pr-4 font-medium">名称</th>
                 <th className="py-2.5 pr-4 font-medium">备注</th>
                 <th className="py-2.5 pr-4 font-medium w-24">操作</th>
@@ -87,11 +87,11 @@ export function MerchantsSection() {
                 >
                   <td className="py-3 pr-4">
                     <div className="flex items-center gap-2">
-                      <IconBuildingStore size={14} className="text-text-muted" />
+                      <IconBuildingStore size={14} className="text-text-muted dark:text-text-muted-dark" />
                       <span className="font-medium">{m.name}</span>
                     </div>
                   </td>
-                  <td className="py-3 pr-4 text-text-muted">
+                  <td className="py-3 pr-4 text-text-muted dark:text-text-muted-dark">
                     {m.remark || '—'}
                   </td>
                   <td className="py-3 pr-4">
@@ -99,7 +99,7 @@ export function MerchantsSection() {
                       <button
                         type="button"
                         onClick={() => setEditing(m)}
-                        className="p-1.5 rounded-lg text-text-muted hover:bg-bg dark:hover:bg-bg-card-dark hover:text-text dark:hover:text-text-dark"
+                        className="p-1.5 rounded-lg text-text-muted dark:text-text-muted-dark hover:bg-bg dark:hover:bg-bg-card-dark hover:text-text dark:hover:text-text-dark"
                         title="编辑"
                       >
                         <IconPencil size={14} />
@@ -107,7 +107,7 @@ export function MerchantsSection() {
                       <button
                         type="button"
                         onClick={() => setDeleting(m)}
-                        className="p-1.5 rounded-lg text-text-muted hover:bg-expense-soft hover:text-expense"
+                        className="p-1.5 rounded-lg text-text-muted dark:text-text-muted-dark hover:bg-expense-soft hover:text-expense"
                         title="删除"
                       >
                         <IconTrash size={14} />
@@ -207,7 +207,7 @@ function MerchantFormModal({
     >
       <div className="space-y-3">
         <div>
-          <label className="block text-xs text-text-muted mb-1.5">
+          <label className="block text-xs text-text-muted dark:text-text-muted-dark mb-1.5">
             名称<span className="text-expense ml-0.5">*</span>
           </label>
           <Input
@@ -218,14 +218,14 @@ function MerchantFormModal({
           />
         </div>
         <div>
-          <label className="block text-xs text-text-muted mb-1.5">备注</label>
+          <label className="block text-xs text-text-muted dark:text-text-muted-dark mb-1.5">备注</label>
           <Textarea
             value={remark}
             onChange={(e) => setRemark(e.target.value)}
             placeholder="可选；最多 200 字"
             maxLength={200}
           />
-          <div className="mt-1 text-xs text-text-muted text-right">
+          <div className="mt-1 text-xs text-text-muted dark:text-text-muted-dark text-right">
             {remark.length}/200
           </div>
         </div>
@@ -291,7 +291,7 @@ function DeleteMerchantModal({
           确定要删除商户「
           <span className="font-medium">{merchant?.name || '—'}</span> 」吗？
         </div>
-        <div className="text-xs text-text-muted">
+        <div className="text-xs text-text-muted dark:text-text-muted-dark">
           该商户从引用它的流水中解除；流水仍保留。
         </div>
         {error && (
