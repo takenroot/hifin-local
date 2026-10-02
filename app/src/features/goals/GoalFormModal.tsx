@@ -323,7 +323,7 @@ function KindPicker({
                 >
                   {it.icon}
                 </span>
-                <span className="text-sm font-medium">{kindLabel(it.kind)}</span>
+                <span className="text-sm font-medium text-text dark:text-text-dark">{kindLabel(it.kind)}</span>
                 {active && (
                   <IconCircleCheckFilled
                     size={14}
@@ -378,7 +378,7 @@ function SubtypePicker({
               >
                 {opt.icon}
               </span>
-              <span className="text-xs">{opt.label}</span>
+              <span className="text-xs text-text dark:text-text-dark">{opt.label}</span>
             </button>
           );
         })}
@@ -574,7 +574,9 @@ function Field({
   return (
     <div>
       <div className="flex items-center justify-between mb-1.5">
-        <label className="text-sm">
+        {/* Modal 通过 portal 挂到 body，脱离 AppLayout 的 text-text 根色，
+            模态内文字必须显式声明颜色，否则暗黑模式下退回纯黑不可见 */}
+        <label className="text-sm text-text dark:text-text-dark">
           {label}
           {required && <span className="text-expense ml-0.5">*</span>}
         </label>

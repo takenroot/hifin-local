@@ -134,7 +134,7 @@ export function TransactionFilterBar({ filter, onChange, version = 0 }: Props) {
             from: e.target.value ? dayjs(e.target.value).startOf('day').valueOf() : undefined,
           })
         }
-        className="!w-36"
+        className="!w-36 dark:[&_input]:[color-scheme:dark] [&_input::-webkit-calendar-picker-indicator]:dark:invert"
       />
       <span className="text-text-muted dark:text-text-muted-dark">~</span>
       <Input
@@ -146,7 +146,7 @@ export function TransactionFilterBar({ filter, onChange, version = 0 }: Props) {
             to: e.target.value ? dayjs(e.target.value).endOf('day').valueOf() : undefined,
           })
         }
-        className="!w-36"
+        className="!w-36 dark:[&_input]:[color-scheme:dark] [&_input::-webkit-calendar-picker-indicator]:dark:invert"
       />
 
       {isActive && (

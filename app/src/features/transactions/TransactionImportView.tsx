@@ -309,8 +309,8 @@ function ImportPanel({ onImported }: { onImported?: () => void }) {
           className={clsx(
             'border-2 border-dashed rounded-2xl py-12 text-center cursor-pointer transition',
             dragOver
-              ? 'border-brand bg-brand-soft/30'
-              : 'border-border dark:border-border-dark hover:border-text-muted',
+              ? 'border-brand bg-brand-soft/30 dark:bg-brand/20'
+              : 'border-border dark:border-border-dark hover:border-text-muted dark:hover:border-text-muted-dark',
           )}
         >
           <div className="flex flex-col items-center gap-2 text-text-muted dark:text-text-muted-dark">
@@ -321,7 +321,7 @@ function ImportPanel({ onImported }: { onImported?: () => void }) {
               <div className="mt-2 flex items-center gap-2 text-text dark:text-text-dark">
                 <IconFileSpreadsheet size={16} className="text-income" />
                 <span className="text-sm font-medium">{file.name}</span>
-                <Badge tone="neutral">{(file.size / 1024).toFixed(1)} KB</Badge>
+                <Badge tone="neutral" className="dark:text-text-muted-dark">{(file.size / 1024).toFixed(1)} KB</Badge>
               </div>
             )}
           </div>
@@ -394,7 +394,7 @@ function ImportPanel({ onImported }: { onImported?: () => void }) {
         >
           <div className="px-4 py-2 border-b border-border dark:border-border-dark flex items-center justify-between text-xs text-text-muted dark:text-text-muted-dark">
             <div className="flex items-center gap-2">
-              <IconBolt size={12} className="text-brand" />
+              <IconBolt size={12} className="text-brand dark:text-[#a5b4fc]" />
               {Object.keys(suggestions).length > 0
                 ? `规则已为 ${Object.keys(suggestions).length} 条流水建议分类`
                 : '未匹配到任何规则建议'}
@@ -436,7 +436,9 @@ function ImportPanel({ onImported }: { onImported?: () => void }) {
                     <tr
                       key={i}
                       className={clsx(
-                        'border-t border-border dark:divide-border-dark',
+                        // 这里用的是 border-t，不是 divide-*：dark 变体必须也是 border-*
+                        // （原来误写成 dark:divide-border-dark，暗黑下分隔线消失）
+                        'border-t border-border dark:border-border-dark',
                         !ok && 'opacity-50 line-through',
                       )}
                     >
@@ -452,7 +454,11 @@ function ImportPanel({ onImported }: { onImported?: () => void }) {
                       <td
                         className={clsx(
                           'px-4 py-2 text-right tabular-nums',
-                          it.type === 'income' ? 'text-income' : it.type === 'expense' ? 'text-expense' : '',
+                          it.type === 'income'
+                            ? 'text-income'
+                            : it.type === 'expense'
+                              ? 'text-expense'
+                              : 'text-text dark:text-text-dark',
                         )}
                       >
                         {it.amount ? formatMoney(it.amount) : '—'}
@@ -462,7 +468,8 @@ function ImportPanel({ onImported }: { onImported?: () => void }) {
                         {showSuggestColumn ? (
                           effectiveCat ? (
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="inline-flex items-center gap-1 rounded-full bg-brand-soft text-brand px-2 py-0.5 text-xs">
+                              {/* brand-soft 是浅色板色，暗黑下改为 brand 低透明度底 + 提亮文字 */}
+                              <span className="inline-flex items-center gap-1 rounded-full bg-brand-soft dark:bg-brand/15 text-brand dark:text-[#a5b4fc] px-2 py-0.5 text-xs">
                                 {effectiveCat.icon && <span>{effectiveCat.icon}</span>}
                                 <span>{effectiveCat.name}</span>
                               </span>

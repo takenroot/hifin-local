@@ -5,6 +5,9 @@
  * - 名称、日期、金额、分类（按类型过滤 + optgroup 分组）、
  *   账户、转账时的"转入账户"、备注、标签多选、商户、计入资产
  * - 保存：POST/PUT /api/transactions，账户余额联动由 core 在事务内完成
+ * - 暗色约定：Modal 走 portal 挂到 body，拿不到布局根节点的文字色，
+ *   容器需显式 text-text dark:text-text-dark；浅色板专用的 *-soft 底色
+ *   一律配 dark: 低透明度版本，避免暗黑下出现刺眼亮块。
  */
 import { useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
@@ -292,7 +295,8 @@ export function TransactionFormModal({ open, onClose, editing, version = 0, onSa
       width={520}
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>
+          {/* 共享 Button 的 ghost 变体没有 dark 文字色变体，此处就地补齐 */}
+          <Button variant="ghost" onClick={onClose} className="text-text-muted dark:text-text-muted-dark">
             取消
           </Button>
           <Button onClick={save} disabled={saving}>
@@ -301,9 +305,12 @@ export function TransactionFormModal({ open, onClose, editing, version = 0, onSa
         </>
       }
     >
-      <div className="space-y-4">
+      {/* Modal 通过 portal 渲染到 body，拿不到 AppLayout 根节点的
+          `text-text dark:text-text-dark` 继承色（body 上是 dark:text-text ≈ #111827），
+          所以这里必须显式声明文字色，否则暗黑模式下输入框内容会是黑字黑底。 */}
+      <div className="space-y-4 text-text dark:text-text-dark">
         {/* 类型 Tab */}
-        <div className="flex items-center gap-1 p-1 bg-bg dark:bg-bg-card-dark rounded-xl w-fit">
+        <div className="flex items-center gap-1 p-1 bg-bg dark:bg-bg-dark rounded-xl w-fit">
           {(Object.keys(TAB_META) as TypeTab[]).map((k) => {
             const meta = TAB_META[k];
             const active = type === k;
@@ -314,8 +321,10 @@ export function TransactionFormModal({ open, onClose, editing, version = 0, onSa
                 onClick={() => setType(k)}
                 className={clsx(
                   'flex items-center gap-1.5 h-8 px-3 text-sm rounded-lg transition',
+                  // 选中态：浅色模式是"深底浅字"，暗黑模式做反相处理（浅底深字），
+                  // 否则 chip 与容器同色（都是 bg-card-dark）会完全看不出来。
                   active
-                    ? 'bg-text text-bg-card dark:bg-bg-card-dark dark:text-text-dark shadow'
+                    ? 'bg-text text-bg-card dark:bg-text-dark dark:text-bg-dark shadow'
                     : 'text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark',
                 )}
               >
@@ -341,6 +350,8 @@ export function TransactionFormModal({ open, onClose, editing, version = 0, onSa
               onBlur={recomputeSuggestion}
               placeholder={type === 'excluded' ? '可选备注' : '购物，餐饮等支出'}
               block
+              // 共享 Input 的 placeholder 没有 dark 变体，这里就地补一个（限定到内部 input）
+              className="[&_input::placeholder]:text-text-muted-dark"
             />
           </Field>
         )}
@@ -350,6 +361,8 @@ export function TransactionFormModal({ open, onClose, editing, version = 0, onSa
             value={dateStr}
             onChange={(e) => setDateStr(e.target.value)}
             block
+            // 原生日期控件：暗黑下需声明 color-scheme 并把日历图标反相，否则图标不可见
+            className="dark:[&_input]:[color-scheme:dark] [&_input::-webkit-calendar-picker-indicator]:dark:invert"
           />
         </Field>
 
@@ -359,11 +372,12 @@ export function TransactionFormModal({ open, onClose, editing, version = 0, onSa
             type="number"
             step="0.01"
             min="0"
-            prefix={<span className="text-sm">¥</span>}
+            prefix={<span className="text-sm text-text-muted dark:text-text-muted-dark">¥</span>}
             value={amount === '' ? '' : String(amount)}
             onChange={(e) => setAmount(e.target.value === '' ? '' : Number(e.target.value))}
             placeholder="0.00"
             block
+            className="[&_input::placeholder]:text-text-muted-dark"
           />
         </Field>
 
@@ -381,8 +395,10 @@ export function TransactionFormModal({ open, onClose, editing, version = 0, onSa
               block
             />
             {suggestedCategory && categoryId === undefined && (
-              <div className="mt-2 flex items-center justify-between gap-2 rounded-xl bg-brand-soft px-3 py-2 text-xs">
-                <div className="flex items-center gap-1.5 text-brand">
+              // brand-soft 是浅色调色板色，暗黑下会变成一块刺眼亮斑；
+              // 改用 brand 15% 透明度叠加 + 提亮的 brand 文字色。
+              <div className="mt-2 flex items-center justify-between gap-2 rounded-xl bg-brand-soft dark:bg-brand/15 px-3 py-2 text-xs">
+                <div className="flex items-center gap-1.5 text-brand dark:text-[#a5b4fc]">
                   <IconWand size={12} />
                   <span>
                     根据规则建议使用分类：
@@ -395,7 +411,7 @@ export function TransactionFormModal({ open, onClose, editing, version = 0, onSa
                 <button
                   type="button"
                   onClick={applySuggestion}
-                  className="rounded-lg border border-brand text-brand px-2 h-7 hover:bg-brand hover:text-white transition"
+                  className="rounded-lg border border-brand text-brand dark:border-[#a5b4fc] dark:text-[#a5b4fc] px-2 h-7 hover:bg-brand hover:text-white transition"
                 >
                   应用
                 </button>
@@ -438,7 +454,7 @@ export function TransactionFormModal({ open, onClose, editing, version = 0, onSa
               onChange={(e) => setRemark(e.target.value.slice(0, 200))}
               maxLength={200}
               placeholder="添加备注（最多 200 字）"
-              className="pb-6"
+              className="pb-6 placeholder:text-text-muted-dark"
             />
             <div className="absolute right-3 bottom-2 text-xs text-text-muted dark:text-text-muted-dark pointer-events-none">
               {remark.length}/200
@@ -452,6 +468,7 @@ export function TransactionFormModal({ open, onClose, editing, version = 0, onSa
             <div className="flex flex-wrap gap-1.5">
               {(tags ?? []).map((t) => {
                 const active = tagIds.includes(t.id as number);
+                const color = t.color ?? undefined;
                 return (
                   <button
                     key={t.id}
@@ -463,13 +480,21 @@ export function TransactionFormModal({ open, onClose, editing, version = 0, onSa
                           : [...prev, t.id as number],
                       )
                     }
-                    className="rounded-lg transition border h-7 px-2.5 text-xs"
-                    style={{
-                      borderColor: active ? t.color : 'transparent',
-                      background: active
-                        ? `${t.color}22`
-                        : 'rgb(229 231 235 / 1)',
-                    }}
+                    // 未选中态不再写死浅灰底（#e5e7eb 在暗黑下与文字同色 = 看不见），
+                    // 改用 border token；选中态用标签自身颜色。
+                    className={clsx(
+                      'rounded-lg transition border h-7 px-2.5 text-xs',
+                      active
+                        ? color
+                          ? ''
+                          : 'bg-bg dark:bg-bg-dark text-text-muted dark:text-text-muted-dark'
+                        : 'border-border dark:border-border-dark text-text-muted dark:text-text-muted-dark hover:border-text-muted dark:hover:border-text-muted-dark hover:text-text dark:hover:text-text-dark',
+                    )}
+                    style={
+                      active && color
+                        ? { borderColor: color, background: `${color}22`, color }
+                        : undefined
+                    }
                   >
                     {t.name}
                   </button>
@@ -521,7 +546,7 @@ export function TransactionFormModal({ open, onClose, editing, version = 0, onSa
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <div className="text-sm text-text-muted dark:text-text-muted-dark dark:text-text-muted-dark mb-1.5">{label}</div>
+      <div className="text-sm text-text-muted dark:text-text-muted-dark mb-1.5">{label}</div>
       {children}
     </div>
   );
@@ -533,7 +558,7 @@ function selectedAccountBadge(id: number | undefined, accounts: Account[]) {
   if (!a) return null;
   return (
     <div className="flex items-center gap-2 text-xs text-text-muted dark:text-text-muted-dark">
-      <Badge tone="neutral">当前账户余额</Badge>
+      <Badge tone="neutral" className="dark:text-text-muted-dark">当前账户余额</Badge>
       <span className="tabular-nums">
         ¥ {a.balance.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
       </span>

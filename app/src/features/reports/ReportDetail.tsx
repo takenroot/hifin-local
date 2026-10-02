@@ -7,6 +7,9 @@
  *
  * 数据均来自 REST（/api/reports、/api/transactions、/api/accounts、
  * /api/categories、/api/budgets），图表按模板在本地实时计算。
+ *
+ * 暗黑模式：坐标轴 / 网格线走 currentColor + text-* token；Tooltip 与 Legend
+ * 换成 ./chartTheme 里的主题感知组件（recharts 默认写死 #fff 背景 + 系列色文字）。
  */
 import { useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -69,6 +72,12 @@ import {
   type DistributionDatum,
 } from './calculations';
 import { formatAxis, formatMoney } from './format';
+import {
+  BAR_CURSOR,
+  ChartLegend,
+  ChartTooltip,
+  LINE_CURSOR,
+} from './chartTheme';
 import { getTemplateKey, templateMeta } from './metadata';
 import {
   REPORT_RANGE_OPTIONS,
@@ -375,20 +384,15 @@ function ConfigIncomeExpenseBar({
                 width={60}
               />
               <Tooltip
-                contentStyle={{
-                  backgroundColor: '#fff',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: 12,
-                  fontSize: 12,
-                }}
+                content={<ChartTooltip />}
+                cursor={BAR_CURSOR}
                 formatter={(v: number | string, name: string) => [
                   formatMoney(Number(v)),
                   name === 'income' ? '收入' : '支出',
                 ]}
               />
               <Legend
-                wrapperStyle={{ fontSize: 12 }}
-                formatter={(v) => (v === 'income' ? '收入' : '支出')}
+                content={<ChartLegend formatter={(v) => (v === 'income' ? '收入' : '支出')} />}
               />
               <Bar dataKey="income" fill="#ef4444" radius={[4, 4, 0, 0]} />
               <Bar dataKey="expense" fill="#10b981" radius={[4, 4, 0, 0]} />
@@ -472,12 +476,7 @@ function ConfigAssetPie({
                   ))}
                 </Pie>
                 <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#fff',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: 12,
-                    fontSize: 12,
-                  }}
+                  content={<ChartTooltip />}
                   formatter={(v: number | string) => formatMoney(Number(v))}
                 />
               </PieChart>
@@ -555,12 +554,8 @@ function ConfigTrendArea({
                 width={60}
               />
               <Tooltip
-                contentStyle={{
-                  backgroundColor: '#fff',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: 12,
-                  fontSize: 12,
-                }}
+                content={<ChartTooltip />}
+                cursor={LINE_CURSOR}
                 formatter={(v: number | string) => [formatMoney(Number(v)), '结余']}
               />
               <Area
@@ -712,12 +707,8 @@ function MonthlyTemplate() {
                 width={60}
               />
               <Tooltip
-                contentStyle={{
-                  backgroundColor: '#fff',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: 12,
-                  fontSize: 12,
-                }}
+                content={<ChartTooltip />}
+                cursor={BAR_CURSOR}
                 formatter={(v: number | string, name: string) => [
                   formatMoney(Number(v)),
                   name === 'income' ? '收入' : '支出',
@@ -725,8 +716,7 @@ function MonthlyTemplate() {
                 labelFormatter={(label: string) => `${label}`}
               />
               <Legend
-                wrapperStyle={{ fontSize: 12 }}
-                formatter={(v) => (v === 'income' ? '收入' : '支出')}
+                content={<ChartLegend formatter={(v) => (v === 'income' ? '收入' : '支出')} />}
               />
               <Bar dataKey="income" fill="#ef4444" radius={[4, 4, 0, 0]} />
               <Bar dataKey="expense" fill="#10b981" radius={[4, 4, 0, 0]} />
@@ -824,12 +814,8 @@ function YearlyTemplate() {
                 width={60}
               />
               <Tooltip
-                contentStyle={{
-                  backgroundColor: '#fff',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: 12,
-                  fontSize: 12,
-                }}
+                content={<ChartTooltip />}
+                cursor={LINE_CURSOR}
                 formatter={(v: number | string, name: string) => [
                   formatMoney(Number(v)),
                   name === 'income'
@@ -840,14 +826,13 @@ function YearlyTemplate() {
                 ]}
               />
               <Legend
-                wrapperStyle={{ fontSize: 12 }}
-                formatter={(v) =>
+                content={<ChartLegend formatter={(v) =>
                   v === 'income'
                     ? '收入'
                     : v === 'expense'
                       ? '支出'
                       : '结余'
-                }
+                } />}
               />
               <Line
                 type="monotone"
@@ -985,12 +970,7 @@ function DistributionTemplate() {
                     ))}
                   </Pie>
                   <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#fff',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: 12,
-                      fontSize: 12,
-                    }}
+                    content={<ChartTooltip />}
                     formatter={(v: number | string) => formatMoney(Number(v))}
                   />
                 </PieChart>
@@ -1223,20 +1203,15 @@ function BudgetTemplate() {
                 width={60}
               />
               <Tooltip
-                contentStyle={{
-                  backgroundColor: '#fff',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: 12,
-                  fontSize: 12,
-                }}
+                content={<ChartTooltip />}
+                cursor={BAR_CURSOR}
                 formatter={(v: number | string, name: string) => [
                   formatMoney(Number(v)),
                   name === '预算' ? '预算' : '实际',
                 ]}
               />
               <Legend
-                wrapperStyle={{ fontSize: 12 }}
-                formatter={(v) => (v === '预算' ? '预算' : '实际')}
+                content={<ChartLegend formatter={(v) => (v === '预算' ? '预算' : '实际')} />}
               />
               <Bar dataKey="预算" fill="#6366f1" radius={[4, 4, 0, 0]} />
               <Bar dataKey="实际" fill="#ef4444" radius={[4, 4, 0, 0]} />

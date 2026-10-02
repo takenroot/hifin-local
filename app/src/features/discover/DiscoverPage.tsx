@@ -1,5 +1,8 @@
 /**
  * 发现页 — 基于本地数据的财务洞察
+ *
+ * 暗黑模式：卡片底色走 Card/ProgressBar 自带的 token；这里只处理
+ * 品牌色 / 警示色这类固定色板值（brand-soft 是浅色底，暗黑下会变成亮斑）。
  */
 import { useMemo } from 'react';
 import dayjs from 'dayjs';
@@ -73,7 +76,7 @@ export function DiscoverPage() {
   const hasData = txs.length > 0;
 
   return (
-    <div>
+    <div className="min-h-full bg-bg dark:bg-bg-dark">
       <PageHeader
         icon={<IconSparkles size={18} />}
         title="发现"
@@ -207,7 +210,7 @@ export function DiscoverPage() {
                   {alerts.map(({ budget, spent, pct }) => (
                     <Card key={budget.id}>
                       <div className="flex items-center gap-2 text-sm">
-                        <IconAlertTriangle size={16} className={pct >= 100 ? 'text-expense' : 'text-yellow-500'} />
+                        <IconAlertTriangle size={16} className={pct >= 100 ? 'text-expense' : 'text-yellow-500 dark:text-yellow-400'} />
                         <span className="font-medium">{budget.name}</span>
                         <Badge tone={pct >= 100 ? 'expense' : 'warning'}>
                           {pct >= 100 ? '已超支' : '接近上限'}
@@ -224,9 +227,9 @@ export function DiscoverPage() {
                   {dueSoon.map((g) => (
                     <Card key={g.id}>
                       <div className="flex items-center gap-2 text-sm">
-                        <IconTargetArrow size={16} className="text-brand" />
+                        <IconTargetArrow size={16} className="text-brand dark:text-[#a5b4fc]" />
                         <span className="font-medium">{g.name}</span>
-                        <Badge tone="brand">
+                        <Badge tone="brand" className="dark:bg-brand/15 dark:text-[#a5b4fc]">
                           还剩 {Math.max(0, dayjs(g.deadline).diff(today, 'day'))} 天
                         </Badge>
                       </div>

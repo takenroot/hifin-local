@@ -30,7 +30,7 @@ export function AboutSection() {
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-medium">HiFin · 本地复刻版</h2>
-                <Badge tone="brand">v0.1.0</Badge>
+                <Badge tone="brand" className="dark:bg-brand/15 dark:text-[#a5b4fc]">v0.1.0</Badge>
               </div>
               <div className="text-sm text-text-muted dark:text-text-muted-dark mt-1">
                 个人财务管理工具的本地化实现

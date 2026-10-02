@@ -113,7 +113,7 @@ export function GoalAmountModal({ open, onClose, goal, mode, account, onChanged 
             </span>
             <span className="ml-1">/ {formatMoney(goal.targetAmount, false)}</span>
           </div>
-          <div className="text-base font-medium">
+          <div className="text-base font-medium text-text dark:text-text-dark">
             {mode === 'deposit' ? '本次存入' : '本次取出'}
             <span className={`ml-2 tabular-nums ${accent}`}>
               {formatMoney(numAmount, false)}
@@ -123,7 +123,9 @@ export function GoalAmountModal({ open, onClose, goal, mode, account, onChanged 
 
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label className="text-sm">
+            {/* Modal 通过 portal 挂到 body，脱离 AppLayout 的 text-text 根色，
+                label 未显式上色时在暗黑模式下会退回纯黑，只剩红色的 * 可见 */}
+            <label className="text-sm text-text dark:text-text-dark">
               金额 <span className="text-expense">*</span>
             </label>
             <span

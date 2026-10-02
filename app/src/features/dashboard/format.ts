@@ -37,6 +37,15 @@ export function trendToneClass(delta: number, expenseMode = false): string {
   return positive ? 'text-income' : 'text-expense';
 }
 
+/**
+ * 账户余额配色：负数走绿色（expense），正数走红色（income）。
+ * 与色板约定一致（收入=红、支出=绿）：账户净值为负代表欠款，按"支出"着色。
+ * 两个色都是固定色板值，深浅背景下都可读，不需要 dark: 变体。
+ */
+export function balanceToneClass(balance: number): string {
+  return balance < 0 ? 'text-expense' : 'text-income';
+}
+
 /** 按时段返回问候语 */
 export function greetingByHour(hour: number): string {
   if (hour < 5) return '凌晨好';

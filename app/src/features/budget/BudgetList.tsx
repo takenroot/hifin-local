@@ -262,7 +262,8 @@ function BudgetCard({ budget, category, spent, onEdit, onDelete }: BudgetCardPro
   const safePct = Math.max(0, Math.min(100, pct));
   const overspent = spent > budget.amount && budget.amount > 0;
   const remaining = budget.amount - spent;
-  const tone = overspent ? 'expense' : 'income';
+  // 超支是异常状态，用红色 text-income 报警；未超支时"已花"属支出，用绿色 text-expense。
+  const tone = overspent ? 'income' : 'expense';
 
   return (
     <div className="card !p-5 flex flex-col gap-4 hover:shadow-md transition">
@@ -314,7 +315,7 @@ function BudgetCard({ budget, category, spent, onEdit, onDelete }: BudgetCardPro
             <span
               className={clsx(
                 'text-xl font-medium tabular-nums',
-                overspent ? 'text-expense' : 'text-text dark:text-text-dark',
+                overspent ? 'text-income' : 'text-expense',
               )}
             >
               {formatMoney(spent, false)}
@@ -326,7 +327,7 @@ function BudgetCard({ budget, category, spent, onEdit, onDelete }: BudgetCardPro
           <div
             className={clsx(
               'text-sm tabular-nums',
-              overspent ? 'text-expense' : 'text-text-muted dark:text-text-muted-dark',
+              overspent ? 'text-income' : 'text-text-muted dark:text-text-muted-dark',
             )}
           >
             {pct.toFixed(0)}%
@@ -344,13 +345,13 @@ function BudgetCard({ budget, category, spent, onEdit, onDelete }: BudgetCardPro
           </div>
         </div>
         <div>
-          <div className="text-text-muted dark:text-text-muted-dark">
+          <div className={clsx('text-text-muted dark:text-text-muted-dark', overspent && 'text-income')}>
             {overspent ? '已超支' : '剩余'}
           </div>
           <div
             className={clsx(
               'mt-0.5 font-medium tabular-nums',
-              overspent ? 'text-expense' : 'text-text dark:text-text-dark',
+              overspent ? 'text-income' : 'text-text dark:text-text-dark',
             )}
           >
             {formatMoney(Math.abs(remaining), false)}
@@ -359,7 +360,7 @@ function BudgetCard({ budget, category, spent, onEdit, onDelete }: BudgetCardPro
       </div>
 
       {overspent && (
-        <div className="flex items-center gap-1.5 text-xs text-expense">
+        <div className="flex items-center gap-1.5 text-xs text-income">
           <IconAlertTriangle size={12} />
           <span>已超出预算 {formatMoney(spent - budget.amount, false)}</span>
         </div>

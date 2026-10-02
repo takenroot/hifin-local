@@ -86,11 +86,11 @@ export const ACCOUNT_TYPE_META: Record<AccountType, AccountTypeMeta> = {
 export const ASSET_TYPES: AccountType[] = ['fund', 'asset', 'social', 'invest', 'other'];
 export const DEBT_TYPES: AccountType[] = ['credit', 'debt'];
 
-/** 渲染类型图标的小工具 */
-export function renderTypeIcon(type: AccountType, size = 18): ReactNode {
+/** 渲染类型图标的小工具（默认继承父级颜色，也可显式指定） */
+export function renderTypeIcon(type: AccountType, size = 18, className?: string): ReactNode {
   const meta = ACCOUNT_TYPE_META[type];
   const Cmp = meta.icon;
-  return <Cmp size={size} />;
+  return <Cmp size={size} className={className} />;
 }
 
 /** 类型对应卡片底色（浅色文本色） */

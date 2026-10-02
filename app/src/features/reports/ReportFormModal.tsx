@@ -4,6 +4,11 @@
  * 字段：名称（0/20）、描述（0/200）、模板（四选一）、图标 / 颜色。
  * 当选择"自定义"模板时，额外展示：数据范围下拉 + 展示组件多选；
  * 两者会以 JSON 形式写入 Report.config（向后兼容：未启用自定义时 config 为空）。
+ *
+ * ⚠️ 暗黑模式：Modal 通过 portal 渲染到 document.body，脱离了 AppLayout 上
+ *    `text-text dark:text-text-dark` 的根节点，未显式上色的文字会退回浏览器
+ *    默认黑字（暗黑下 = 只看得见绿色的星号）。因此这里的内容根节点必须自带
+ *    前景色，label / 标题类元素再各自显式声明一次。
  */
 import { useEffect, useMemo, useState } from 'react';
 import clsx from 'clsx';
@@ -40,6 +45,12 @@ interface Props {
   /** 保存成功后回调（由列表页触发 refetch） */
   onSaved?: () => void;
 }
+
+// Input 的 placeholder 色写死在 ui 组件里（无 dark 变体），这里用任意变体补暗黑态
+const FIELD_INPUT_CLS =
+  '[&_input]:placeholder:text-text-muted dark:[&_input]:placeholder:text-text-muted-dark';
+const FIELD_TEXTAREA_CLS =
+  'placeholder:text-text-muted dark:placeholder:text-text-muted-dark';
 
 const NAME_LIMIT = 20;
 const DESC_LIMIT = 200;
@@ -172,7 +183,8 @@ export function ReportFormModal({ open, onClose, report, onSaved }: Props) {
         </>
       }
     >
-      <div className="space-y-5">
+      {/* 根节点自带前景色：portal 在 AppLayout 之外，Input / Textarea / label 都靠这里继承 */}
+      <div className="space-y-5 text-text dark:text-text-dark">
         <div className="text-sm text-text-muted dark:text-text-muted-dark">
           报表展示你的财务全貌
           <div className="mt-1">
@@ -183,7 +195,7 @@ export function ReportFormModal({ open, onClose, report, onSaved }: Props) {
         {/* 名称 */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label className="text-sm">
+            <label className="text-sm text-text dark:text-text-dark">
               名称 <span className="text-expense">*</span>
             </label>
             <span
@@ -196,6 +208,7 @@ export function ReportFormModal({ open, onClose, report, onSaved }: Props) {
             </span>
           </div>
           <Input
+            className={FIELD_INPUT_CLS}
             placeholder="为报表起个名字"
             value={form.name}
             maxLength={NAME_LIMIT + 50}
@@ -210,7 +223,7 @@ export function ReportFormModal({ open, onClose, report, onSaved }: Props) {
         {/* 描述 */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label className="text-sm">描述</label>
+            <label className="text-sm text-text dark:text-text-dark">描述</label>
             <span
               className={clsx(
                 'text-xs tabular-nums',
@@ -221,6 +234,7 @@ export function ReportFormModal({ open, onClose, report, onSaved }: Props) {
             </span>
           </div>
           <Textarea
+            className={FIELD_TEXTAREA_CLS}
             placeholder="为报表添加描述（可选）"
             value={form.description}
             maxLength={DESC_LIMIT + 50}
@@ -231,7 +245,7 @@ export function ReportFormModal({ open, onClose, report, onSaved }: Props) {
 
         {/* 模板 */}
         <div>
-          <div className="mb-1.5 text-sm">使用模板</div>
+          <div className="mb-1.5 text-sm text-text dark:text-text-dark">使用模板</div>
           <div className="grid grid-cols-2 gap-2">
             {REPORT_TEMPLATES.map((tpl) => {
               const active = form.template === tpl.key;
@@ -276,7 +290,7 @@ export function ReportFormModal({ open, onClose, report, onSaved }: Props) {
 
         {/* 自定义：数据范围 */}
         <div>
-          <div className="mb-1.5 text-sm">数据范围</div>
+          <div className="mb-1.5 text-sm text-text dark:text-text-dark">数据范围</div>
           <Select
             value={form.config.range}
             onChange={(e) =>
@@ -295,7 +309,7 @@ export function ReportFormModal({ open, onClose, report, onSaved }: Props) {
         {/* 自定义：展示组件（多选） */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label className="text-sm">
+            <label className="text-sm text-text dark:text-text-dark">
               展示组件 <span className="text-expense">*</span>
             </label>
             <span className="text-xs text-text-muted dark:text-text-muted-dark">
@@ -345,7 +359,7 @@ export function ReportFormModal({ open, onClose, report, onSaved }: Props) {
 
         {/* 图标 */}
         <div>
-          <div className="mb-1.5 text-sm">图标</div>
+          <div className="mb-1.5 text-sm text-text dark:text-text-dark">图标</div>
           <div className="flex flex-wrap gap-2">
             {REPORT_ICON_CHOICES.map((ic) => {
               const active = form.icon === ic;
@@ -370,7 +384,7 @@ export function ReportFormModal({ open, onClose, report, onSaved }: Props) {
 
         {/* 颜色 */}
         <div>
-          <div className="mb-1.5 text-sm">颜色</div>
+          <div className="mb-1.5 text-sm text-text dark:text-text-dark">颜色</div>
           <div className="flex flex-wrap gap-2">
             {REPORT_COLOR_CHOICES.map((c) => {
               const active = form.color === c;

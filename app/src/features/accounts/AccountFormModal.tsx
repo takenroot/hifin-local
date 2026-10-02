@@ -27,6 +27,7 @@ import type { Account, AccountType, Tag } from '@/db';
 import { apiFetch, useApi } from '@/hooks/useApi';
 import {
   ACCOUNT_TYPE_META,
+  ACCOUNT_TONE,
   ACCOUNT_TONE_BG,
   ASSET_TYPES,
   DEBT_TYPES,
@@ -301,13 +302,14 @@ function TypeOption({
         className={clsx(
           'w-9 h-9 rounded-xl flex items-center justify-center flex-none',
           ACCOUNT_TONE_BG[type],
+          ACCOUNT_TONE[type],
         )}
       >
-        {renderTypeIcon(type, 18)}
+        {renderTypeIcon(type, 18, 'text-inherit')}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">{meta.label}</span>
+          <span className="text-sm font-medium text-text dark:text-text-dark">{meta.label}</span>
           {selected && (
             <IconCircleCheckFilled size={14} className="text-income" />
           )}
@@ -366,8 +368,8 @@ function FormStep({
           ACCOUNT_TONE_BG[type],
         )}
       >
-        {renderTypeIcon(type, 14)}
-        <span className="font-medium">{meta.label}账户</span>
+        {renderTypeIcon(type, 14, 'text-inherit')}
+        <span className="font-medium text-text dark:text-text-dark">{meta.label}账户</span>
       </div>
 
       {/* 名称 */}
@@ -422,7 +424,7 @@ function FormStep({
       {/* 计入资产 */}
       <div className="flex items-center justify-between">
         <div>
-          <div className="text-sm">计入资产</div>
+          <div className="text-sm text-text dark:text-text-dark">计入资产</div>
           <div className="text-xs text-text-muted dark:text-text-muted-dark mt-0.5">
             关闭后将不计入净资产计算
           </div>
@@ -462,7 +464,9 @@ function Field({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <label className="text-sm">
+        {/* Modal 通过 portal 挂到 body，脱离 AppLayout 的 text-text 根色，
+            因此模态内所有文字都必须显式声明颜色，否则在暗黑模式下会退回纯黑而不可见 */}
+        <label className="text-sm text-text dark:text-text-dark">
           {label}
           {required && <span className="text-expense ml-0.5">*</span>}
         </label>
@@ -531,7 +535,7 @@ function TagMultiSelect({
                 onClick={() => toggle(id)}
                 className="inline-flex items-center gap-1 h-7 px-2 rounded-lg bg-bg dark:bg-bg-card-dark border border-border dark:border-border-dark text-xs hover:border-text dark:hover:border-bg-card transition"
               >
-                <span>{opt.label}</span>
+                <span className="text-text dark:text-text-dark">{opt.label}</span>
                 <span className="text-text-muted dark:text-text-muted-dark">×</span>
               </button>
             );
@@ -547,7 +551,7 @@ function TagMultiSelect({
             toggle(Number(v));
             e.target.value = '';
           }}
-          className="w-full h-10 px-3 pr-9 rounded-xl border border-border dark:border-border-dark bg-bg-card dark:bg-bg-card-dark text-sm appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand/40"
+          className="w-full h-10 px-3 pr-9 rounded-xl border border-border dark:border-border-dark bg-bg-card dark:bg-bg-card-dark text-sm text-text dark:text-text-dark appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand/40"
         >
           <option value="" disabled>
             {value.length === 0 ? '选择标签（可多选）' : '继续添加…'}

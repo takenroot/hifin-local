@@ -69,7 +69,7 @@ export default function SettingsPage() {
             <div
               className={clsx(
                 'w-9 h-9 rounded-xl flex items-center justify-center',
-                'bg-brand-soft text-brand',
+                'bg-brand-soft dark:bg-brand/15 text-brand dark:text-[#a5b4fc]',
               )}
             >
               {currentMeta.icon}

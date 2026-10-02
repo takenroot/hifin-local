@@ -23,7 +23,7 @@ import {
 import type { Account, Transaction, TransactionType, Tag } from '@/db';
 import { apiFetch, useApi } from '@/hooks/useApi';
 import { toAccount, toTransactions, type RestAccount, type RestTransaction } from './rest';
-import { formatMoney } from './format';
+import { formatMoney, balanceToneClass } from './format';
 import {
   ACCOUNT_TONE_BG,
   ACCOUNT_TYPE_META,
@@ -188,7 +188,7 @@ export default function AccountDetail() {
               <div
                 className={clsx(
                   'mt-2 text-3xl font-medium tabular-nums',
-                  isDebt ? 'text-expense' : 'text-income',
+                  balanceToneClass(account.balance),
                 )}
               >
                 {formatMoney(isDebt ? Math.abs(account.balance) : account.balance)}

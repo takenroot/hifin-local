@@ -9,6 +9,11 @@
  * - 收支日历：当月网格，每日收入/支出小计，点击弹当日流水列表
  * - 右侧栏：还款提醒 / 账户管理 / 目标管理 / 预算管理（占位）/ 最近交易
  *
+ * 暗黑模式约定：
+ *   - 图表 Tooltip / 悬浮光标走 @/features/reports/chartTheme（recharts 默认写死 #fff）。
+ *   - 弹窗内容自带前景色：Modal 是 portal，脱离 AppLayout 的 text-text 根节点。
+ *   - 金额配色沿用色板约定：负数走 expense（绿），正数走 income（红）。
+ *
  * ⚠️ 路由冲突说明：本模块 routes.tsx 中仍写 path: 'home'，
  *    与阶段 1 骨架 src/features/home/Dashboard.tsx 共用同一路径，
  *    集成阶段由 App.tsx 的 glob 收集决定保留哪一个。
@@ -58,6 +63,7 @@ import { useSpaceId } from '@/db';
 import type { Category, Goal } from '@/db';
 import { useApi } from '@/hooks/useApi';
 import { toAccounts, toTransactions, type RestAccount, type RestTransaction } from '@/features/accounts/rest';
+import { ChartTooltip, LINE_CURSOR } from '@/features/reports/chartTheme';
 
 import {
   calcNetAsset,
@@ -85,6 +91,7 @@ import {
   formatPercent,
   monthOverMonth,
   trendToneClass,
+  balanceToneClass,
   greetingByHour,
   weekdayCn,
 } from './format';
@@ -471,14 +478,14 @@ export default function Dashboard() {
                         <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-border dark:text-border-dark" />
                         <XAxis
                           dataKey="date"
-                          tick={{ fontSize: 11, fill: 'currentColor' }}
-                          className="text-text-muted dark:text-text-muted-dark"
+                          tick={{ fontSize: 11, fill: '#6b7280' }}
+                          className="dark:[&_text]:fill-[#9ca3af]"
                           tickFormatter={(v: string) => dayjs(v).format('MM/DD')}
                           minTickGap={28}
                         />
                         <YAxis
-                          tick={{ fontSize: 11, fill: 'currentColor' }}
-                          className="text-text-muted dark:text-text-muted-dark"
+                          tick={{ fontSize: 11, fill: '#6b7280' }}
+                          className="dark:[&_text]:fill-[#9ca3af]"
                           width={60}
                           tickFormatter={(v: number) => {
                             if (Math.abs(v) >= 10000) return `${(v / 10000).toFixed(1)}万`;
@@ -486,13 +493,8 @@ export default function Dashboard() {
                           }}
                         />
                         <Tooltip
-                          contentStyle={{
-                            background: 'var(--tw-bg-opacity, #fff)',
-                            backgroundColor: '#fff',
-                            border: '1px solid #e5e7eb',
-                            borderRadius: 12,
-                            fontSize: 12,
-                          }}
+                          content={<ChartTooltip />}
+                          cursor={LINE_CURSOR}
                           formatter={(value: number | string) => [formatMoney(Number(value)), '净资产']}
                           labelFormatter={(label: string) => dayjs(label).format('YYYY-MM-DD')}
                         />
@@ -548,12 +550,7 @@ export default function Dashboard() {
                             ))}
                           </Pie>
                           <Tooltip
-                            contentStyle={{
-                              backgroundColor: '#fff',
-                              border: '1px solid #e5e7eb',
-                              borderRadius: 12,
-                              fontSize: 12,
-                            }}
+                            content={<ChartTooltip />}
                             formatter={(value: number | string) => formatMoney(Number(value))}
                           />
                         </PieChart>
@@ -673,7 +670,7 @@ export default function Dashboard() {
                 <div>
                   <div className="flex items-baseline justify-between">
                     <span className="text-xs text-text-muted dark:text-text-muted-dark">共 {accounts.length} 个账户</span>
-                    <span className={clsx('tabular-nums font-medium', accountTotal < 0 ? 'text-expense' : 'text-income')}>
+                    <span className={clsx('tabular-nums font-medium', balanceToneClass(accountTotal))}>
                       <MaskMoney value={accountTotal} hide={hideAmounts} withSymbol={false} />
                     </span>
                   </div>
@@ -833,7 +830,8 @@ export default function Dashboard() {
         {dayTransactions.length === 0 ? (
           <EmptyState title="当日暂无流水" />
         ) : (
-          <div className="divide-y divide-border dark:divide-border-dark -mx-2">
+          // 根节点自带前景色：Modal 是 portal，文字不会继承 AppLayout 的 text-text
+          <div className="divide-y divide-border dark:divide-border-dark -mx-2 text-text dark:text-text-dark">
             {dayTransactions.map((t) => {
               const cat = categories.find((c) => c.id === t.categoryId);
               const sign = t.type === 'income' ? '+' : t.type === 'expense' ? '-' : '';
@@ -849,7 +847,7 @@ export default function Dashboard() {
                     {cat?.icon || (t.type === 'transfer' ? '🔁' : t.type === 'income' ? '💰' : '💸')}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm truncate">
+                    <div className="text-sm truncate text-text dark:text-text-dark">
                       {t.name || cat?.name || (t.type === 'transfer' ? '转账' : '未命名')}
                     </div>
                     <div className="text-xs text-text-muted dark:text-text-muted-dark flex items-center gap-2 mt-0.5">
@@ -876,7 +874,7 @@ export default function Dashboard() {
         title="天气城市"
         width={400}
       >
-        <div className="space-y-3">
+        <div className="space-y-3 text-text dark:text-text-dark">
           <p className="text-xs text-text-muted dark:text-text-muted-dark">
             浏览器定位可用时优先使用当前位置；否则展示所选城市的天气。当前：
             <span className="text-text dark:text-text-dark font-medium">{currentCity || '未选择'}</span>
@@ -892,7 +890,7 @@ export default function Dashboard() {
             placeholder="搜索城市，如“深”“杭州”"
             aria-label="搜索城市"
             data-testid="city-search"
-            className="w-full rounded-xl border border-border dark:border-border-dark bg-bg dark:bg-bg-card-dark px-3 py-2 text-sm outline-none focus:border-text dark:focus:border-text-dark transition-colors placeholder:text-text-muted dark:text-text-muted-dark"
+            className="w-full rounded-xl border border-border dark:border-border-dark bg-bg dark:bg-bg-card-dark px-3 py-2 text-sm text-text dark:text-text-dark outline-none focus:border-text dark:focus:border-text-dark transition-colors placeholder:text-text-muted dark:placeholder:text-text-muted-dark"
           />
 
           <div

@@ -247,7 +247,10 @@ function Field({
   return (
     <div>
       <div className="flex items-center justify-between mb-1.5">
-        <label className="text-sm">
+        {/* Modal 通过 portal 挂到 body，脱离 AppLayout 的 text-text 根色。
+            未显式声明颜色的文字在暗黑模式下会退回浏览器默认纯黑，压在深色卡片上不可见，
+            于是只剩下带 text-expense 的红色星号可见——必须显式给 label 上色。 */}
+        <label className="text-sm text-text dark:text-text-dark">
           {label}
           {required && <span className="text-expense ml-0.5">*</span>}
         </label>

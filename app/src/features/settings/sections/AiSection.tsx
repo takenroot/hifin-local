@@ -42,6 +42,10 @@ import {
   type RestAiModelRow,
 } from '../restApi';
 
+// Input 的 placeholder 色写死在 ui 组件里（无 dark 变体），这里用任意变体补暗黑态
+const FIELD_INPUT_CLS =
+  '[&_input]:placeholder:text-text-muted dark:[&_input]:placeholder:text-text-muted-dark';
+
 /**
  * hideApiKey=0：编辑模态需要回填 apiKey，默认列表会把 apiKey 脱敏成 null。
  * 这是本地应用，明文只走本地 REST，不出网。
@@ -242,7 +246,7 @@ function ModelsTable({
                     <IconRobot size={14} className="text-text-muted dark:text-text-muted-dark" />
                     <span className="font-medium">{m.name || '—'}</span>
                     {isDefault && (
-                      <Badge tone="brand" className="ml-1">
+                      <Badge tone="brand" className="ml-1 dark:bg-brand/15 dark:text-[#a5b4fc]">
                         <span className="inline-flex items-center gap-1">
                           <IconCheck size={10} /> 默认
                         </span>
@@ -268,7 +272,7 @@ function ModelsTable({
                       className={clsx(
                         'inline-flex items-center gap-1 px-2 h-8 rounded-lg text-xs',
                         isDefault
-                          ? 'bg-brand-soft text-brand cursor-default'
+                          ? 'bg-brand-soft dark:bg-brand/15 text-brand dark:text-[#a5b4fc] cursor-default'
                           : 'border border-border dark:border-border-dark text-text-muted dark:text-text-muted-dark hover:bg-bg dark:hover:bg-bg-card-dark hover:text-text dark:hover:text-text-dark',
                       )}
                       title={isDefault ? '当前默认模型' : '设为默认'}
@@ -301,7 +305,7 @@ function ModelsTable({
                     <button
                       type="button"
                       onClick={() => onDelete(m)}
-                      className="p-1.5 rounded-lg text-text-muted dark:text-text-muted-dark hover:bg-expense-soft hover:text-expense"
+                      className="p-1.5 rounded-lg text-text-muted dark:text-text-muted-dark hover:bg-expense-soft dark:hover:bg-expense-soft-dark hover:text-expense"
                       title="删除"
                     >
                       <IconTrash size={14} />
@@ -433,7 +437,12 @@ function AiModelFormModal({
       width={520}
       footer={
         <>
-          <Button variant="ghost" onClick={onClose} disabled={saving}>
+          <Button
+            variant="ghost"
+            onClick={onClose}
+            disabled={saving}
+            className="disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             取消
           </Button>
           <Button variant="primary" onClick={save} disabled={saving}>
@@ -442,9 +451,11 @@ function AiModelFormModal({
         </>
       }
     >
-      <div className="space-y-3">
+      {/* 根节点自带前景色：Modal 走 portal，脱离 AppLayout 的 text-text 根节点 */}
+      <div className="space-y-3 text-text dark:text-text-dark">
         <Field label="名称" required>
           <Input
+            className={FIELD_INPUT_CLS}
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="例如：智谱 GLM"
@@ -453,6 +464,7 @@ function AiModelFormModal({
         </Field>
         <Field label="模型" required>
           <Input
+            className={FIELD_INPUT_CLS}
             value={modelName}
             onChange={(e) => setModelName(e.target.value)}
             placeholder="例如：glm-4-plus"
@@ -461,6 +473,7 @@ function AiModelFormModal({
         </Field>
         <Field label="地址" required>
           <Input
+            className={FIELD_INPUT_CLS}
             value={endpoint}
             onChange={(e) => setEndpoint(e.target.value)}
             placeholder="https://open.bigmodel.cn/api/paas/v4/chat/completions"
@@ -468,6 +481,7 @@ function AiModelFormModal({
         </Field>
         <Field label="API Key（可选）">
           <Input
+            className={FIELD_INPUT_CLS}
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
             placeholder="本地保存，不上传"
@@ -481,7 +495,7 @@ function AiModelFormModal({
         )}
         <div className="text-xs text-text-muted dark:text-text-muted-dark">
           所有字段仅保存在本地服务（core / SQLite），不会上传到任何远端。提示：
-          <Badge tone="brand" className="ml-1 align-middle">本地</Badge>
+          <Badge tone="brand" className="ml-1 align-middle dark:bg-brand/15 dark:text-[#a5b4fc]">本地</Badge>
         </div>
       </div>
     </Modal>
@@ -538,16 +552,26 @@ function DeleteModelModal({
       width={420}
       footer={
         <>
-          <Button variant="ghost" onClick={onClose} disabled={busy}>
+          <Button
+            variant="ghost"
+            onClick={onClose}
+            disabled={busy}
+            className="disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             取消
           </Button>
-          <Button variant="danger" onClick={handleConfirm} disabled={busy}>
+          <Button
+            variant="danger"
+            onClick={handleConfirm}
+            disabled={busy}
+            className="disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             {busy ? '删除中…' : '确认删除'}
           </Button>
         </>
       }
     >
-      <div className="text-sm">
+      <div className="text-sm text-text dark:text-text-dark">
         确定要删除模型「
         <span className={clsx('font-medium')}>{model?.name || '—'}</span> 」吗？此操作不可撤销。
       </div>

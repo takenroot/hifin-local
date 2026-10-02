@@ -1,5 +1,7 @@
 /**
  * 交易列表视图（按日分组 + 筛选 + 行内编辑 / 删除）
+ * - 暗色约定：所有 muted / hover 底色都要配 dark: 变体；
+ *   动态颜色（分类色、标签色）无色时回落到 muted token，不写死浅色灰。
  */
 import { useMemo } from 'react';
 import dayjs from 'dayjs';
@@ -265,11 +267,17 @@ function TxRow({
             {tx.tagIds.map((id) => {
               const t = tags.find((x) => x.id === id);
               if (!t) return null;
+              // 无自定义颜色时不要写死 #6b7280（暗底下过暗），改用 muted token
+              const color = t.color ?? undefined;
               return (
                 <span
                   key={id}
-                  className="px-1.5 h-4 rounded text-[10px] inline-flex items-center"
-                  style={{ background: `${t.color ?? '#6b7280'}22`, color: t.color ?? '#6b7280' }}
+                  className={clsx(
+                    'px-1.5 h-4 rounded text-[10px] inline-flex items-center',
+                    // 无色时不要给底色（与卡片同色等于没画），只留 muted 文字
+                    !color && 'text-text-muted dark:text-text-muted-dark',
+                  )}
+                  style={color ? { background: `${color}22`, color } : undefined}
                 >
                   {t.name}
                 </span>
@@ -306,7 +314,7 @@ function TxRow({
         <button
           type="button"
           onClick={onDelete}
-          className="p-1.5 rounded-lg hover:bg-expense-soft hover:text-expense text-text-muted dark:text-text-muted-dark"
+          className="p-1.5 rounded-lg hover:bg-expense-soft dark:hover:bg-expense-soft-dark hover:text-expense text-text-muted dark:text-text-muted-dark"
           title="删除"
         >
           <IconTrash size={14} />

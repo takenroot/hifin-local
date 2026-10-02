@@ -282,6 +282,7 @@ export function SecuritySection() {
                 setConfirmText('');
               }}
               disabled={clearing}
+              className="disabled:opacity-50 disabled:cursor-not-allowed"
             >
               取消
             </Button>
@@ -289,13 +290,15 @@ export function SecuritySection() {
               variant="danger"
               onClick={handleClear}
               disabled={confirmText !== '清空数据' || clearing}
+              className="disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {clearing ? '清空中…' : '确认清空'}
             </Button>
           </>
         }
       >
-        <div className="space-y-3">
+        {/* 根节点自带前景色：Modal 走 portal，脱离 AppLayout 的 text-text 根节点 */}
+        <div className="space-y-3 text-text dark:text-text-dark">
           <div className="text-sm">
             为了避免误操作，请在下方输入{' '}
             <span className="px-1.5 py-0.5 rounded-md bg-bg dark:bg-bg-card-dark text-text dark:text-text-dark font-medium">
@@ -307,7 +310,7 @@ export function SecuritySection() {
             value={confirmText}
             onChange={(e) => setConfirmText(e.target.value)}
             placeholder="清空数据"
-            className="w-full h-10 px-3 rounded-xl border border-border dark:border-border-dark bg-bg-card dark:bg-bg-card-dark text-sm outline-none focus:ring-2 focus:ring-brand/40"
+            className="w-full h-10 px-3 rounded-xl border border-border dark:border-border-dark bg-bg-card dark:bg-bg-card-dark text-sm text-text dark:text-text-dark outline-none focus:ring-2 focus:ring-brand/40 placeholder:text-text-muted dark:placeholder:text-text-muted-dark"
           />
         </div>
       </Modal>

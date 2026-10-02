@@ -34,6 +34,10 @@ const COLOR_OPTIONS = [
   '#f97316',
 ];
 
+// Input 的 placeholder 色写死在 ui 组件里（无 dark 变体），这里用任意变体补暗黑态
+const FIELD_INPUT_CLS =
+  '[&_input]:placeholder:text-text-muted dark:[&_input]:placeholder:text-text-muted-dark';
+
 export function TagsSection() {
   const { data, loading, refetch } = useApi<RestTagRow[]>('/api/tags');
   const tags = useMemo(
@@ -121,7 +125,7 @@ export function TagsSection() {
                       <button
                         type="button"
                         onClick={() => setDeleting(t)}
-                        className="p-1.5 rounded-lg text-text-muted dark:text-text-muted-dark hover:bg-expense-soft hover:text-expense"
+                        className="p-1.5 rounded-lg text-text-muted dark:text-text-muted-dark hover:bg-expense-soft dark:hover:bg-expense-soft-dark hover:text-expense"
                         title="删除"
                       >
                         <IconTrash size={14} />
@@ -210,7 +214,12 @@ function TagFormModal({
       width={420}
       footer={
         <>
-          <Button variant="ghost" onClick={onClose} disabled={saving}>
+          <Button
+            variant="ghost"
+            onClick={onClose}
+            disabled={saving}
+            className="disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             取消
           </Button>
           <Button variant="primary" onClick={save} disabled={saving}>
@@ -219,12 +228,14 @@ function TagFormModal({
         </>
       }
     >
-      <div className="space-y-3">
+      {/* 根节点自带前景色：Modal 走 portal，脱离 AppLayout 的 text-text 根节点 */}
+      <div className="space-y-3 text-text dark:text-text-dark">
         <div>
           <label className="block text-xs text-text-muted dark:text-text-muted-dark mb-1.5">
             名称<span className="text-expense ml-0.5">*</span>
           </label>
           <Input
+            className={FIELD_INPUT_CLS}
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="例如：必要"
@@ -298,16 +309,26 @@ function DeleteTagModal({
       width={420}
       footer={
         <>
-          <Button variant="ghost" onClick={onClose} disabled={busy}>
+          <Button
+            variant="ghost"
+            onClick={onClose}
+            disabled={busy}
+            className="disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             取消
           </Button>
-          <Button variant="danger" onClick={handleConfirm} disabled={busy}>
+          <Button
+            variant="danger"
+            onClick={handleConfirm}
+            disabled={busy}
+            className="disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             {busy ? '删除中…' : '确认删除'}
           </Button>
         </>
       }
     >
-      <div className="text-sm space-y-2">
+      <div className="text-sm space-y-2 text-text dark:text-text-dark">
         <div>
           确定要删除标签「
           <span className="font-medium">{tag?.name || '—'}</span> 」吗？

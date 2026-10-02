@@ -22,7 +22,7 @@ import { useSpaceId } from '@/db';
 import type { Account, Tag } from '@/db';
 import { useApi } from '@/hooks/useApi';
 import { toAccounts, type RestAccount } from './rest';
-import { formatMoney } from './format';
+import { formatMoney, balanceToneClass } from './format';
 import {
   ACCOUNT_TONE_BG,
   ACCOUNT_TYPE_META,
@@ -139,7 +139,6 @@ export default function AccountList() {
           <div className="space-y-8">
             <AccountSection
               title="资产"
-              tone="income"
               accounts={assets}
               total={assetSum}
               totalLabel="资产合计"
@@ -147,7 +146,6 @@ export default function AccountList() {
             />
             <AccountSection
               title="负债"
-              tone="expense"
               accounts={debts}
               total={debtSum}
               totalLabel="负债合计"
@@ -172,14 +170,12 @@ function Card({ children }: { children: React.ReactNode }) {
 
 function AccountSection({
   title,
-  tone,
   accounts,
   total,
   totalLabel,
   tags,
 }: {
   title: string;
-  tone: 'income' | 'expense';
   accounts: Account[];
   total: number;
   totalLabel: string;
@@ -192,12 +188,8 @@ function AccountSection({
         <h2 className="section-title">{title}</h2>
         <div className="flex items-baseline gap-2">
           <span className="text-xs text-text-muted dark:text-text-muted-dark">{totalLabel}</span>
-          <span
-            className={clsx(
-              'text-lg font-medium tabular-nums',
-              tone === 'income' ? 'text-income' : 'text-expense',
-            )}
-          >
+          {/* 合计按正负着色：负数（净资产为负）显示绿色，正数显示红色 */}
+          <span className={clsx('text-lg font-medium tabular-nums', balanceToneClass(total))}>
             {formatMoney(total)}
           </span>
         </div>
@@ -250,12 +242,8 @@ function AccountCard({ account, tags }: { account: Account; tags: Tag[] }) {
       </div>
 
       <div className="mt-4">
-        <div
-          className={clsx(
-            'text-xl font-medium tabular-nums',
-            isDebt ? 'text-expense' : 'text-income',
-          )}
-        >
+        {/* 余额按正负着色：负债类账户仍取绝对值展示，负余额显示绿色 */}
+        <div className={clsx('text-xl font-medium tabular-nums', balanceToneClass(account.balance))}>
           {formatMoney(isDebt ? Math.abs(account.balance) : account.balance)}
         </div>
       </div>

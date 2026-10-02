@@ -44,7 +44,7 @@ export function DeleteConfirmModal({
       }
     >
       <div className="space-y-3">
-        <div className="text-sm">
+        <div className="text-sm text-text dark:text-text-dark">
           确定要删除账户「
           <span className="font-medium">{accountName}</span>
           」吗？此操作不可撤销。

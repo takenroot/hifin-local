@@ -6,6 +6,9 @@
  * - 底部：输入框（Enter 发送，Shift+Enter 换行）
  *
  * 默认关闭：未配置任何模型时只显示配置引导，不发起任何请求。
+ *
+ * 暗黑模式：气泡底色用 bg-bg / bg-bg-card token；品牌底色 brand-soft 是
+ * 浅色板色，暗黑下会变成刺眼亮斑，统一降级成 brand 15% 透明底。
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -351,6 +354,7 @@ export default function AssistantPage() {
               icon={<IconTrash size={14} />}
               onClick={handleClear}
               disabled={sending}
+              className="disabled:opacity-50 disabled:cursor-not-allowed"
             >
               清空对话
             </Button>
@@ -382,7 +386,7 @@ export default function AssistantPage() {
           </Card>
 
           <Card title="财务概况（只读）">
-            <pre className="text-[11px] leading-snug text-text-muted dark:text-text-muted-dark dark:text-text-muted-dark whitespace-pre-wrap break-words font-mono">
+            <pre className="text-[11px] leading-snug text-text-muted dark:text-text-muted-dark whitespace-pre-wrap break-words font-mono">
               {snapshotText}
             </pre>
           </Card>
@@ -401,7 +405,8 @@ export default function AssistantPage() {
         </aside>
 
         {/* 中部：对话区 */}
-        <section className="card flex flex-col overflow-hidden">
+        {/* 对话面板自带前景色：气泡文字不再依赖祖先继承 */}
+        <section className="card text-text dark:text-text-dark flex flex-col overflow-hidden">
           <div
             ref={scrollRef}
             className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[360px] max-h-[calc(100vh-220px)]"
@@ -459,6 +464,7 @@ export default function AssistantPage() {
               }
               disabled={!selectedModel || sending}
               rows={2}
+              className="text-text dark:text-text-dark dark:placeholder:text-text-muted-dark disabled:opacity-50 disabled:cursor-not-allowed"
             />
             <div className="flex items-center justify-between gap-2">
               <div className="text-[11px] text-text-muted dark:text-text-muted-dark">
@@ -514,7 +520,7 @@ function Bubble({
           'w-7 h-7 rounded-lg flex-none flex items-center justify-center',
           isUser
             ? 'bg-bg-card dark:bg-bg-card-dark text-text dark:text-text-dark border border-border dark:border-border-dark'
-            : 'bg-brand-soft text-brand',
+            : 'bg-brand-soft dark:bg-brand/15 text-brand dark:text-[#a5b4fc]',
         )}
         title={isUser ? '你' : 'AI'}
       >
@@ -522,7 +528,7 @@ function Bubble({
       </div>
       <div
         className={clsx(
-          'max-w-[78%] rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap break-words',
+          'max-w-[78%] rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap break-words text-text dark:text-text-dark',
           isUser
             ? 'bg-bg-card dark:bg-bg-card-dark border border-border dark:border-border-dark'
             : 'bg-bg dark:bg-bg-dark border border-border dark:border-border-dark',
@@ -550,7 +556,7 @@ function Bubble({
 function Dot({ delay }: { delay: number }) {
   return (
     <span
-      className="inline-block w-1.5 h-1.5 rounded-full bg-text-muted animate-bounce"
+      className="inline-block w-1.5 h-1.5 rounded-full bg-text-muted dark:bg-text-muted-dark animate-bounce"
       style={{ animationDelay: `${delay}ms` }}
     />
   );

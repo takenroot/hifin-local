@@ -1,0 +1,10 @@
+import { chromium } from 'playwright';
+const browser = await chromium.launch();
+const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+await page.emulateMedia({ colorScheme: 'dark' });
+await page.goto('http://127.0.0.1:5199/home', { waitUntil: 'networkidle' });
+await page.evaluate(() => localStorage.setItem('hifin:theme', '"dark"'));
+await page.reload({ waitUntil: 'networkidle' });
+await page.waitForTimeout(3000);
+await page.screenshot({ path: 'accept/darkmode-final-home.png' });
+await browser.close();
