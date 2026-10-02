@@ -9,6 +9,7 @@
  *   tx add --type expense --amount 38 --name X [--accountId N] [--date ISO]
  *   summary [--month YYYY-MM]
  *   import-csv <file> --platform alipay --accountId N
+ *   import-bill <zipPath> --platform alipay|wechat [--password xxx] --accountId N [--space N]
  *   mail config --host imap.qq.com --port 993 --user x@qq.com --password **** [--tls true]
  *   mail config --show
  *   mail poll [--days 7] --accountId N
@@ -17,10 +18,11 @@
  *
  * CLI 直接操作 SQLite（通过 src/db/connection.ts），不走 HTTP。
  * 但 import-csv 是复用 app/src/features/transactions/csv.ts 的解析器（tsx 运行时解析）。
+ * import-bill 在此之上多一步 ZIP 解压（见 src/bill/），密码默认按平台内置。
  */
 import { Command } from 'commander';
 import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { basename, resolve } from 'node:path';
 import {
   openDatabase,
 } from './db/connection.js';
@@ -33,6 +35,7 @@ import {
   runMailPoll,
   saveMailConfig,
 } from './mail/poller.js';
+import { importBillZip } from './bill/importer.js';
 import type {
   AccountRow,
   TransactionRow,
@@ -506,6 +509,50 @@ program
     );
   });
 
+// ── import-bill ────────────────────────────────────────────
+/**
+ * 账单 ZIP 导入。
+ * 邮件账单是通知型的，流水在加密 ZIP 附件里；这里一步走完
+ * "解压 → 找 CSV → 解析 → 入库"，解析器与前端共用（app/.../csv.ts）。
+ */
+program
+  .command('import-bill <zipPath>')
+  .description('解压账单 ZIP 并导入（密码每次申请都不同，请看最新账单邮件/短信）')
+  .requiredOption('--platform <id>', '平台 (alipay/wechat)')
+  .requiredOption('--accountId <n>', '导入到哪个账户')
+  .requiredOption('--password <pw>', '解压密码（每次申请账单时不同，必填）')
+  .option('--space <n>', '空间 ID', '1')
+  .action(async (zipPath: string, opts: { platform: string; accountId: string; password: string; space: string }) => {
+    const filePath = resolve(zipPath);
+
+    ensureDb(program.opts().db);
+    const db = getDb();
+    const accountId = Number(opts.accountId);
+    const account = db.prepare('SELECT id FROM accounts WHERE id = ?').get(accountId) as
+      | { id: number }
+      | undefined;
+    if (!account) throw new Error(`账户 ${accountId} 不存在`);
+
+    const result = await importBillZip(
+      db,
+      filePath,
+      opts.platform,
+      opts.password,
+      accountId,
+      Number(opts.space),
+    );
+
+    emit(
+      {
+        platform: result.platform,
+        imported: result.imported,
+        skipped: result.skipped,
+        files: result.files.map((f) => basename(f)),
+      },
+      !!program.opts().human,
+    );
+  });
+
 // ── mail ─────────────────────────────────────────────────
 /**
  * 邮箱账单导入。
@@ -571,6 +618,19 @@ mail
       days: opts.days,
       accountId: opts.accountId,
       spaceId: opts.space,
+      // 账单提示走 stderr：stdout 保持纯 JSON，方便脚本 pipe 给 jq
+      onBill: (o) => {
+        if (o.status === 'no-attachment' && o.hint) {
+          // eslint-disable-next-line no-console
+          console.error(`[hifin] ${o.subject} — ${o.hint}`);
+        } else if (o.status === 'imported') {
+          // eslint-disable-next-line no-console
+          console.error(`[hifin] ${o.subject} — 已从附件导入 ${o.imported} 笔`);
+        } else if (o.status === 'error') {
+          // eslint-disable-next-line no-console
+          console.error(`[hifin] ${o.subject} — 附件导入失败：${o.message}`);
+        }
+      },
     });
     emit(summary, !!program.opts().human);
   });
