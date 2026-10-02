@@ -2,17 +2,19 @@
 
 本项目的所有重要变更按 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 风格记录，版本与 git 提交一一对应。
 
+> **历史归档说明**：`[0.1.0]` ~ `[0.3.1]` 各节记录的是 **REST 迁移之前**的前端形态，其中的 Dexie / useLiveQuery / fake-indexeddb / IndexedDB 表述为**当时的事实**，按史料原样保留，不代表当前架构。当前架构见 [unreleased](#unreleased) 与仓库根 `README.md`：SQLite 唯一数据源，Web SPA 已全面切 REST `/api/*`，IndexedDB 已废弃。
+
 ## [unreleased]
 
 ### 新增（core 账单自动化，2026-10-02 密集迭代）
 - **hifin-core 骨架**：Node + Express + better-sqlite3（WAL）+ imapflow + adm-zip + commander
-- **REST API 14 资源**：accounts/transactions/categories/summary/goals/budgets/tags/merchants/rules/reports/spaces/kv/ai-models/notifications
+- **REST API 15 资源**：accounts/transactions/categories/summary/goals/budgets/tags/merchants/rules/reports/spaces/kv/ai-models/notifications/bills
 - **CLI**：`serve` / `accounts` / `tx` / `summary` / `import-csv` / `import-bill` / `mail config` / `mail poll`
 - **IMAP 轮询**：QQ 邮箱 → 检测账单邮件 → 支付宝直接下载附件 / 微信提取 URL 下载
 - **账单解析**：ZIP 解密（ZipCrypto）→ GBK CSV 解码 / **xlsx 转 CSV**（微信账单是 Excel）→ parseCsvText → 事务入库 + 余额联动
 - **通知系统**：need_password → 用户提交密码 → 3 次重试状态机 → failed 降级；前端 30s 轮询 + Modal 密码输入
 - **微信 URL 提取**：MIME base64 解码 → HTML `<a>` 标签提取 → 中转页参数解包
-- **数据迁移**：Web SPA 全面切 REST（8 feature 目录，激进迁移，IndexedDB 废弃）
+- **数据迁移**：Web SPA 全面切 REST（`app/src/features/` 下 12 个 feature 目录，激进迁移，IndexedDB 废弃）
 - **样式**：收入=红色、支出=绿色（用户直觉，tailwind 色板交换）
 
 ### 真实数据验证
@@ -20,16 +22,26 @@
 - 微信：500 笔自动导入（URL 下载 → xlsx → CSV → 入库）
 - 余额联动：支出扣减 / 收入增加，事务内完成
 
+### 修复与打磨（账单自动化之后的收尾提交）
+
+- **前端 Dexie 彻底移除**：删除 `dexie` / `dexie-react-hooks` / `fake-indexeddb` 依赖，`src/db.ts` 收缩为纯类型 + 空间 hook 模块（不再持有数据库实例），`main.tsx` 去掉 `dexie-react-hooks` 副作用导入，Vite `manualChunks` 去掉 `vendor-dexie` 分包，删除 `tests/db-seed.test.ts`（前端单测 56 → **50 例**）。新增 `accept/scripts/dexie-purge-smoke.mjs` 验收。
+- **better-sqlite3 11 → 13**（`27bdad7`）：旧版原生绑定在 Node 24 下崩溃，升级到 13.x 解决，REST 服务恢复正常启动。
+- **暗黑模式批量修复 + 审计**（`296c880`、`8bda44f`）：`text-text-muted` 批量补 `dark:` 变体 **307 处**；3 agent 并行修复 + Playwright 审计验证（初报 175 issue，核实后 2 个为误报）。新增 `accept/scripts/darkmode-verify.mjs`、`darkmode-audit.mjs`。
+- **天气组件**（`90eddcc`、`5f83c3d`）：stale-while-revalidate 缓存 + 66 城市搜索列表；修复"用户选的城市被浏览器定位覆盖"（选择后停止跟随定位）。新增 `accept/scripts/weather-verify.mjs`、`weather-city-persist.mjs`。
+- **净资产负数颜色**（`ce23d07`、`89a1cc0`）：补全 B 方案（红=好事 / 绿=坏事）颜色逻辑，修复净资产为负时误显示绿色。新增 `accept/scripts/netasset-color.mjs`。
+- **6 列表页设计一致性统一**（`1006470`）：删除 PageHeader 死按钮（IconEye/IconShare），新建按钮常驻右上角，新增 `EmptyStateCard` 统一空状态，网格间距 `gap-5`→`gap-4`，移除 `hover:shadow-md`，内容最大宽度 1200px→1400px。新增 `accept/scripts/design-consistency.mjs`（Playwright 108 断言全过）。
+
 ### 文档
 - README.md 全面重写（架构图 + 快速开始 + 数据现状）
 - docs/known-issues.md：ISSUE-001（微信 URL 4字节假文件）、ISSUE-002（Tailwind 缓存）
 - docs/bill-automation-design.md：账单自动化设计（Mermaid 架构/时序/状态机）
+- 文档全面对齐 REST 现状：app/README.md、app/src/features/README.md、core/README.md、README.md、docs/agent-prompt-template.md 移除 Dexie 时代叙述（IndexedDB 已废弃，SQLite 为唯一数据源）；docs/acceptance-report.md 加历史归档声明
 
-### 路线图（下一步）
-- IDLE 长连接替代轮询（秒级通知）
-- Tauri 桌面 App（系统通知 + 开机自启）
-- AI 分析引擎（LLM 生成财务建议）
-- MCP server 模式（AI Agent 直接调用）
+### 路线图（下一步，均待决策）
+- IDLE 长连接替代轮询（秒级通知）——（待决策）
+- Tauri 桌面 App（系统通知 + 开机自启）——（待决策）
+- AI 分析引擎（LLM 生成财务建议）——（待决策）
+- MCP server 模式（AI Agent 直接调用）——（待决策）
 
 ---
 
@@ -111,7 +123,6 @@
 
 ## 未来计划
 
-- i18n 全量翻译（接入 i18next，工程量大）
 - 报表可视化编辑器（拖拽组件）
 - E2E 测试固化进 `tests/`
 - 进一步拆分 `vendor-recharts`（按路由懒加载）

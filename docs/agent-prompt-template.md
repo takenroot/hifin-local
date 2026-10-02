@@ -16,9 +16,9 @@
   - `chromium_headless_shell-1187` — 与 playwright@1.55.0 配套
   - `ffmpeg-1011` — 所有 playwright 视频录制共用
   - **绝对禁止** `npx playwright install` 或 `npx playwright install chromium`（会触发新下载，污染 cache）
-- **预览服务**：5199 是主 agent 的预览服务（**绝不可触碰**）；自查端口由任务具体指定
-- **数据**：应用使用 IndexedDB（Dexie v4）；验收脚本通过 `http://127.0.0.1:<指定端口>/` 操作真实页面
-- **网络**：npm registry 可用；外部 API 仅 Open-Meteo 可用
+- **预览服务**：vite 默认端口 5173；5199 是主 agent 的预览服务（**绝不可触碰**）；自查端口由任务具体指定，优先在 5185-5190 之间选（`npx vite --port <端口> --strictPort`）
+- **数据**：SQLite 唯一数据源（core REST 服务 :8787），前端全走 REST `/api/*`，IndexedDB 已废弃；验收脚本通过 `http://127.0.0.1:<指定端口>/` 操作真实页面
+- **网络**：npm registry 可用；外部 API —— Open-Meteo（天气）、IMAP（账单邮件轮询）、OpenAI 兼容端点（AI 助手，用户自行配置）
 
 ## 【环境约束】
 

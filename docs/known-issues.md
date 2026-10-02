@@ -42,3 +42,28 @@ Tailwind CSS 在 vite dev 模式下会缓存生成的 CSS。`tailwind.config.js`
 ### 教训
 - 改 Tailwind 配置 → `pkill -f "vite.*端口"` → 重启
 - 或在文档中标注"配置更改后需重启 dev server"
+
+---
+
+## ISSUE-003：ZipCrypto 错误密码有概率被误判为 BillFormatError（测试/分类偶发）
+
+**发现时间**：2026-10-02（core `tests/bill.test.ts` 偶发失败暴露）
+**状态**：待修复（根因已定位）
+
+### 现象
+`unzipBill` 用错误密码解压时，期望抛 `BillPasswordError`，偶发抛
+`BillFormatError: ZIP 解压失败: invalid block type`。
+
+### 根因
+ZipCrypto 的密码校验只靠 1 字节 verification byte，错误密码有约 1/256
+概率恰好通过校验，随后解密出乱码，zlib 报 `invalid block type`，
+被错误归类为"格式错误"而非"密码错误"。
+
+### 影响
+- 用户侧：通知系统对"密码错误"与"格式错误"的提示文案不同，偶发会误导
+- 测试侧：`tests/bill.test.ts > unzipBill > 错误密码抛 BillPasswordError` 约 1/256 概率 flake
+
+### 修复方向（待实施）
+`unzip.ts` 解压分支（约 195-211 行）：当调用方已提供密码且底层报
+zlib 格式类错误（invalid block type / incorrect data check 等）时，
+归类为 `BillPasswordError` 而非 `BillFormatError`。

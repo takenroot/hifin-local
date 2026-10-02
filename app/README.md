@@ -2,14 +2,18 @@
 
 主应用 — Vite + React 18 + TypeScript + Tailwind v3。
 
+数据全部来自 core 的 REST API（`core/` 提供，SQLite 唯一数据源），浏览器端不落本地数据库。
+
 ## 脚本
 
 ```bash
-npm run dev        # 开发服务（默认 http://127.0.0.1:5173）
+npm run dev        # 开发服务（vite 默认 http://127.0.0.1:5173）
 npm run build      # tsc 类型检查 + Vite 产物构建
 npm run preview    # 预览构建产物
-npm run test       # Vitest 单元测试（52 例）
+npm run test       # Vitest 单元测试（50 例）
 ```
+
+> 端口说明：`vite.config.ts` 中 `server.port` 为 **5173**。本机多人/多 agent 并行预览时常被占用，实际使用中一般以 `npx vite --port <端口> --strictPort` 覆盖（例如 :5199）。接口不受影响——`/api` 由 vite proxy 转发到 core。
 
 ## 目录结构
 
@@ -17,67 +21,75 @@ npm run test       # Vitest 单元测试（52 例）
 src/
 ├── main.tsx                  入口（ThemeProvider > BrowserRouter > App）
 ├── App.tsx                   路由表：/ 重定向 + feature glob 自动收集
-├── db.ts                     Dexie 数据库（v4，9 张表）
+├── db.ts                     领域类型定义 + 空间 hook（无数据库实例）
 ├── space.ts                  多空间过滤 helper（filterBySpace）
 ├── components/
 │   └── ui/                   通用组件库（Button/Card/Modal/...）
+├── hooks/
+│   └── useApi.ts             REST 数据 hook（useApi + apiFetch，共享契约）
 ├── layout/
 │   ├── AppLayout.tsx         侧边栏 + 抽屉式主区 + 命令面板挂载
 │   └── CommandPalette.tsx    命令面板占位（实际由 feature 提供）
 ├── store/
 │   ├── atoms.ts              Jotai atoms（主题/语言/默认页/菜单显隐/空间）
 │   └── theme.tsx             主题 Provider（light/dark/system + matchMedia）
-└── features/                 功能模块（每个 module 一目录）
-    ├── dashboard/            看板
-    ├── accounts/             账户
-    ├── transactions/         流水
-    ├── goals/                目标
-    ├── reports/              报表
-    ├── budget/               预算
-    ├── discover/             发现
-    ├── settings/             设置
-    ├── ai-assistant/         AI 助手
-    └── command-palette/      ⌘K
+└── features/                 功能模块（每个 module 一目录，共 12 个）
+    ├── dashboard/            看板        → /home
+    ├── accounts/             账户        → /account, /account/list, /account/detail/:id
+    ├── transactions/         流水        → /transaction
+    ├── goals/                目标        → /goal/list
+    ├── reports/              报表        → /report, /report/list, /report/detail/:id
+    ├── budget/               预算        → /budget
+    ├── discover/             发现        → /discover
+    ├── settings/             设置        → /settings
+    ├── ai-assistant/         AI 助手     → /ai
+    ├── command-palette/      ⌘K          → /command-palette
+    ├── notifications/        通知中心（无 routes.tsx，由 AppLayout 挂载）
+    └── rules/                规则引擎（无 routes.tsx，纯函数 engine.ts）
 ```
 
-## 数据模型
+## 数据通道：REST + useApi
 
-`db.ts` 中的 9 张表（Dexie v4）：
+所有页面数据经 `/api/*` 从 core 取，**唯一数据源是 core 的 SQLite**。
 
-| 表 | 关键字段 | 说明 |
-|---|---|---|
-| `spaces` | id, name, createdAt | 空间（多空间隔离） |
-| `accounts` | id, name, type, balance, spaceId, ... | 账户 |
-| `transactions` | id, type, amount, date, accountId, toAccountId, spaceId, ... | 流水 |
-| `goals` | id, name, targetAmount, currentAmount, deadline, spaceId, ... | 目标 |
-| `budgets` | id, name, categoryId?, amount, period, spaceId, ... | 预算 |
-| `categories` | id, name, group, type, icon | 分类（全局，不分空间） |
-| `tags` | id, name, color | 标签（全局） |
-| `merchants` | id, name, remark | 商户（全局） |
-| `rules` | id, keyword, matchField, categoryId, priority, enabled | 交易规则 |
-| `reports` | id, name, template, config, ... | 报表 |
-| `aiModels` | id, name, model, endpoint, apiKey | AI 模型 |
-| `kv` | key, value | 杂项配置（昵称、用户 ID、默认页等） |
+```ts
+import { useApi, apiFetch } from '@/hooks/useApi';
 
-启动自动 seed 默认空间 + 33 个默认分类 + 4 个默认标签。
+// 读
+const { data, loading, error, refetch } = useApi<Account[]>('/api/accounts');
+const txs = useApi<Transaction[]>(`/api/transactions?spaceId=${spaceId}`, [spaceId]);
+
+// 写：apiFetch 统一错误处理，完成后手动 refetch()
+await apiFetch('/api/accounts', 'POST', payload);
+refetch();
+```
+
+- 读用 `useApi<T>(url, deps?)`：`url` 变化或调用 `refetch()` 时重新拉取；`url` 传 `null` 则不请求。
+- 写用 `apiFetch<T>(url, method, body?)`：`POST` / `PUT` / `DELETE`，非 2xx 抛 `HTTP <status>: <body>`。
+- 空间过滤直接拼 URL 查询参数（`?spaceId=1`），服务端负责过滤。
+- 代理：`vite.config.ts` 把 `/api` 转发到 `http://localhost:8787`（core REST 服务）。
+
+### core 提供的 REST 资源
+
+`/api/` 下共 15 个资源：accounts、transactions、summary、categories、goals、budgets、tags、merchants、rules、reports、spaces、kv、ai-models、notifications、bills。详见 [core/README.md](../core/README.md)。
+
+> `src/db.ts` 是**纯类型模块**（文件名是历史遗留）：它只导出 `Account` / `Transaction` / `Goal` / `TxRule` 等 TypeScript 类型、`DEFAULT_SPACE_ID` 常量，以及 `useSpaceId()`（读 Jotai atom 的空间选择 hook）。**它不持有任何数据库连接，也不做数据读写**——浏览器端已无本地数据库（IndexedDB 已废弃，依赖也已移除）。新代码需要领域类型时从它 `import type`，取数一律走上面的 `useApi` / `apiFetch`。
 
 ## 路由约定
 
 - `App.tsx` 用 `import.meta.glob('./features/*/routes.tsx', { eager: true })` 自动收集
 - 每个 feature 模块导出 `routes: RouteObject[]`，路径**不带前导 `/`**（相对 AppLayout 子路径）
 - 新增 feature 无需改 `App.tsx`
+- 无 `routes.tsx` 的 feature（如 `notifications/`、`rules/`）由父级布局或其他 feature 直接引用
 
 ## 多空间系统
 
 ```ts
-import { useSpaceId } from '@/db';
+import { useSpaceId } from '@/db';        // Jotai atom，不是数据库查询
 import { filterBySpace } from '@/space';
 
 const spaceId = useSpaceId();              // 0 表示"全部空间"
-const accounts = useLiveQuery(
-  () => db.accounts.toArray().then(r => filterBySpace(r, spaceId)),
-  [spaceId],
-);
+const { data } = useApi<Account[]>(`/api/accounts?spaceId=${spaceId}`, [spaceId]);
 ```
 
 ## 主题系统
@@ -99,14 +111,14 @@ const theme = useAtomValue(themeAtom);     // 'light' | 'dark' | 'system'
 
 ## 单元测试
 
-`tests/` 下：
+`tests/` 下共 50 例（4 个文件）：
 
 - `balance.test.ts` —— 流水余额联动
 - `csv.test.ts` —— CSV 解析（支付宝/微信/通用）
+- `csv-real-statement.test.ts` —— 真实账单样本解析回归
 - `dashboard-calc.test.ts` —— 看板计算（净资产/收支/分布/日历）
-- `db-seed.test.ts` —— 数据库 seed 幂等
 
-环境：`fake-indexeddb` 自动注入 Dexie 内存存储。
+全部为纯计算用例，`tests/setup.ts` 已移除浏览器数据库垫片。运行：`npm run test`
 
 ## 验收
 
