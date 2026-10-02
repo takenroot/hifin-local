@@ -29,7 +29,7 @@ export function belongsToSpace(row: SpaceAware, sid: number): boolean {
 
 /**
  * 按空间过滤（返回新数组）。
- * 用法：const rows = useLiveQuery(() => filterBySpace(myRows, spaceId), [spaceId]);
+ * 用法：const rows = filterBySpace(allRows, spaceId);   // allRows 来自 useApi('/api/...')
  */
 export function filterBySpace<T extends SpaceAware>(rows: T[], sid: number): T[] {
   if (sid === ALL_SPACES_ID) return rows;

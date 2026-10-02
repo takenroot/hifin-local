@@ -8,7 +8,7 @@ import { Modal, Button } from '@/components/ui';
 
 /** 帮助说明文本（命令面板专属，不与其他 feature 共享） */
 const HELP_TEXT = [
-  'HiFin 是本地复刻版，所有数据仅保存在你的浏览器 IndexedDB 中，不会上传云端。',
+  'HiFin 是本地复刻版，所有数据仅保存在本机 core 服务的 SQLite 数据库中，不会上传云端。',
   '⌘K / Ctrl + K：唤起命令面板，快速跳转或新建。',
   '在「设置 → 数据安全」中可以导出全量 JSON 或清空数据库。',
   'AI 配置默认关闭，需要时请在「设置 → AI 配置」中自行添加模型。',

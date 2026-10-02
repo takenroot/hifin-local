@@ -51,8 +51,8 @@ export function AboutSection() {
           {/* 介绍 */}
           <div className="text-sm text-text dark:text-text-dark leading-relaxed space-y-2">
             <p>
-              HiFin 本地复刻版是一款完全运行在浏览器中的个人财务工具，
-              所有数据保存在浏览器的 IndexedDB 中，<strong>不会上传到任何服务器</strong>。
+              HiFin 本地复刻版是一款运行在本机的个人财务工具，
+              所有数据保存在本地 core 服务的 SQLite 数据库中，<strong>不会上传到任何服务器</strong>。
             </p>
             <p>
               支持账户、流水、目标、报表、分类、标签、商户等核心模块，并提供 ⌘K
@@ -78,11 +78,11 @@ export function AboutSection() {
             <div className="text-sm font-medium mb-2">技术栈</div>
             <div className="flex flex-wrap gap-1.5">
               {[
-                'React 19',
+                'React 18',
                 'Vite',
                 'TypeScript',
                 'Tailwind v3',
-                'Dexie / IndexedDB',
+                'SQLite / Express（core）',
                 'react-router-dom v6',
                 'jotai',
                 'recharts',

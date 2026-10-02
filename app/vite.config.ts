@@ -43,13 +43,6 @@ export default defineConfig({
           ) {
             return 'vendor-recharts';
           }
-          // dexie
-          if (
-            id.includes('/node_modules/dexie/') ||
-            id.includes('/node_modules/dexie-react-hooks/')
-          ) {
-            return 'vendor-dexie';
-          }
           // jotai / icons / dayjs
           if (
             id.includes('/node_modules/jotai/') ||

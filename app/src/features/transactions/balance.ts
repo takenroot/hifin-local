@@ -1,7 +1,7 @@
 /**
  * 余额联动 + 过滤/聚合工具
  * ---------------------------------------------------------------
- * 这一模块只依赖 Dexie db + types，不依赖 UI 组件。
+ * 这一模块只依赖类型定义，不依赖 UI 组件。
  */
 import dayjs from 'dayjs';
 import type { Transaction, TransactionType } from '@/db';
