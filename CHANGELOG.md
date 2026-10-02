@@ -4,18 +4,32 @@
 
 ## [unreleased]
 
-### 文档与整理
-- 项目结构整理：探索原始资料归档至 `docs/exploration-originals/`，删除冗余探索工具
-- 新增根 `README.md`、`app/README.md`、`CHANGELOG.md`（本文档）
-- `accept/` 重组：脚本与截图按类型分目录，移除端口重命名重复件
-- `.gitignore` 补全（`*.tsbuildinfo`、`.vite/`、`.env*` 等）
-- GitHub 仓库建立：`takenroot/hifin-local`（首次推送）
-- 新增 R7（眼睛切换/设置样式/交易导入空白）与 R8（Select 组件彻底自写）迭代
+### 新增（core 账单自动化，2026-10-02 密集迭代）
+- **hifin-core 骨架**：Node + Express + better-sqlite3（WAL）+ imapflow + adm-zip + commander
+- **REST API 14 资源**：accounts/transactions/categories/summary/goals/budgets/tags/merchants/rules/reports/spaces/kv/ai-models/notifications
+- **CLI**：`serve` / `accounts` / `tx` / `summary` / `import-csv` / `import-bill` / `mail config` / `mail poll`
+- **IMAP 轮询**：QQ 邮箱 → 检测账单邮件 → 支付宝直接下载附件 / 微信提取 URL 下载
+- **账单解析**：ZIP 解密（ZipCrypto）→ GBK CSV 解码 / **xlsx 转 CSV**（微信账单是 Excel）→ parseCsvText → 事务入库 + 余额联动
+- **通知系统**：need_password → 用户提交密码 → 3 次重试状态机 → failed 降级；前端 30s 轮询 + Modal 密码输入
+- **微信 URL 提取**：MIME base64 解码 → HTML `<a>` 标签提取 → 中转页参数解包
+- **数据迁移**：Web SPA 全面切 REST（8 feature 目录，激进迁移，IndexedDB 废弃）
+- **样式**：收入=红色、支出=绿色（用户直觉，tailwind 色板交换）
 
-### 路线图（计划中，未开始）
-- 📧 **定时邮箱账单自动接入**：通过 IMAP 周期性拉取指定邮箱的账单邮件，解析（依赖交易规则引擎）后批量导入，零人工干预
-- 📱 **原生 App 封装**：用 Tauri/Electron 把 Web 打包成 macOS/Windows/Linux 桌面 App，移动端可考虑 PWA 或 Capacitor
-- 🛠️ **CLI 工具（AI 可调用）**：暴露 `hifin` CLI 子命令（`add-tx` / `list-accounts` / `query` / `summary` 等），直接读写本地 SQLite 镜像或 IndexedDB 导出文件，供 AI Agent 通过 shell 调用项目能力
+### 真实数据验证
+- 支付宝：317 笔自动导入（IMAP 附件下载 → GBK CSV → 入库）
+- 微信：500 笔自动导入（URL 下载 → xlsx → CSV → 入库）
+- 余额联动：支出扣减 / 收入增加，事务内完成
+
+### 文档
+- README.md 全面重写（架构图 + 快速开始 + 数据现状）
+- docs/known-issues.md：ISSUE-001（微信 URL 4字节假文件）、ISSUE-002（Tailwind 缓存）
+- docs/bill-automation-design.md：账单自动化设计（Mermaid 架构/时序/状态机）
+
+### 路线图（下一步）
+- IDLE 长连接替代轮询（秒级通知）
+- Tauri 桌面 App（系统通知 + 开机自启）
+- AI 分析引擎（LLM 生成财务建议）
+- MCP server 模式（AI Agent 直接调用）
 
 ---
 

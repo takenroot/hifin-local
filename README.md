@@ -1,153 +1,122 @@
-# HiFin 本地复刻
+# HiFin 本地复刻 + AI 财务自动化工具
 
-个人财务管理工具的本地化版本 —— 完全跑在浏览器，数据存在 IndexedDB，**无任何云端依赖**。
+个人财务管理工具的本地化版本 + **自动化账单接入引擎**。
 
-原版 [app.hifin.ai](https://app.hifin.ai) 是一个云端财务应用。本仓库基于公开访问的界面（功能清单见 [`hifin-features.md`](./hifin-features.md)）进行 1:1 复刻并扩展本地化能力。
+原版 [app.hifin.ai](https://app.hifin.ai) 是云端财务应用。本项目：
+1. **1:1 复刻**原版界面与功能（浏览器 SPA）
+2. **激进迁移**到本地 SQLite（IndexedDB 已废弃，REST 为唯一数据通道）
+3. **扩展自动化**：IMAP 邮件轮询 → 自动识别账单 → 解压 → 解析 → 入库 → 通知
 
-## 特性
+## 架构总览
 
-- 🏠 **看板**：净资产/收支三卡、趋势图、分布环图、收支日历
-- 💳 **账户**：两步创建、列表/详情、与流水联动
-- 🔁 **交易流水**：四类（支出/收入/转账/不计收支）、余额联动、CSV 批量导入（支付宝/微信/通用银行）
-- 🎯 **目标**：两步创建、进度条、快捷存入/取出
-- 📊 **报表**：4 个内置模板 + 自定义数据范围/组件组合
-- 💰 **预算**：月度/年度预算、按分类聚合、超支预警
-- 🔍 **发现**：本地数据洞察（储蓄率/连续记账/超支提醒/临期目标）
-- ⚡ **交易规则**：按关键词自动归类流水
-- 🤖 **AI 助手**：本地接入 OpenAI 兼容端点（默认关闭）
-- ⌘K **命令面板**：搜索 + 快捷操作（新建流水 t / 新建账户 n / 新建分类 c / AI 助手 a）
-- 🏢 **多空间**：数据按空间隔离，可创建/切换/全部空间
-- 🌤️ **天气**：基于 Open-Meteo，看板欢迎区实时显示
-- 🎨 **主题**：浅色/暗黑/跟随系统三种模式
-- 📱 **移动端**：390px 起全功能可用，抽屉式侧边栏
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    hifin-core (Node 常驻)                     │
+│  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────────────┐  │
+│  │ IMAP    │ │ REST    │ │ 账单    │ │ 通知引擎        │  │
+│  │ 轮询器  │ │ API     │ │ 解压器  │ │ (密码重试状态机)│  │
+│  │         │ │ 13资源  │ │ GBK/xlsx│ │                 │  │
+│  └─────────┘ └─────────┘ └─────────┘ └─────────────────┘  │
+│         ↑ SQLite (唯一数据源, WAL)                           │
+└─────────┬───────────────────────────────────────────────────┘
+          │ REST /api/*
+    ┌─────┴─────┐
+    ↓           ↓
+┌───────┐  ┌───────┐
+│ Web   │  │ CLI   │
+│ SPA   │  │(AI用) │
+└───────┘  └───────┘
+```
+
+## 核心特性
+
+### 前端（app/）
+- 看板/账户/交易/目标/报表/预算/发现/设置/AI助手/⌘K 命令面板
+- 主题：浅色/暗黑/跟随系统；**收入=红色，支出=绿色**（用户直觉）
+- 移动端 390px 全功能；通知弹窗（密码输入 + 重试计数）
+- 数据全部来自 REST，零 IndexedDB
+
+### 后端（core/）
+- **REST API**：accounts/transactions/categories/summary/goals/budgets/tags/merchants/rules/reports/spaces/kv/ai-models/notifications（14 资源）
+- **IMAP 轮询**：QQ 邮箱 → 检测账单邮件 → 支付宝直接下载附件 / 微信提取 URL 下载
+- **账单解析**：ZIP 解密（adm-zip + ZipCrypto）→ GBK CSV 解码 / xlsx 转 CSV → parseCsvText → 事务入库 + 余额联动
+- **通知系统**：need_password → 用户提交 → 3 次重试 → failed 降级
+- **CLI**：`hifin serve/accounts/tx/summary/import-csv/import-bill/mail config/mail poll`
 
 ## 快速开始
 
 ```bash
-cd app
-npm install
-npm run dev        # 开发服务，默认 http://127.0.0.1:5173
-npm run build      # 生产构建（含 tsc 类型检查）
-npm run test       # 单元测试（Vitest）
-```
+# 1. 启动 core（REST + SQLite）
+cd core && npm install && npx tsx src/server.ts   # :8787
 
-第一次运行会自动 seed 默认分类（33 项）和默认标签。
+# 2. 启动前端（vite proxy → core）
+cd app && npm install && npm run dev              # :5173
+
+# 3. 配置邮箱（IMAP 授权码）
+cd core
+npx tsx src/cli.ts mail config --host imap.qq.com --port 993 \
+  --user xxx@qq.com --password <授权码> --tls true
+
+# 4. 手动导入账单 ZIP
+npx tsx src/cli.ts import-bill ~/Downloads/账单.zip \
+  --platform alipay|wechat --password <一次性密码> --accountId 1
+
+# 5. 或自动轮询（检测到新账单邮件时自动下载导入）
+npx tsx src/cli.ts mail poll --days 7 --accountId 1 \
+  --bill-password-alipay <密码> --bill-password-wechat <密码>
+```
 
 ## 项目结构
 
 ```
 hifin/
-├── app/                              # 主应用（Vite + React + TS）
-│   ├── src/
-│   │   ├── components/ui/            # 通用组件库（Tailwind 实现）
-│   │   ├── features/                 # 功能模块（自动路由注册）
-│   │   │   ├── dashboard/            # 看板
-│   │   │   ├── accounts/             # 账户
-│   │   │   ├── transactions/         # 交易流水
-│   │   │   ├── goals/                # 目标
-│   │   │   ├── reports/              # 报表
-│   │   │   ├── budget/               # 预算
-│   │   │   ├── discover/             # 发现
-│   │   │   ├── settings/             # 设置
-│   │   │   ├── ai-assistant/         # AI 助手
-│   │   │   └── command-palette/      # ⌘K
-│   │   ├── layout/                   # 全局布局（侧边栏/抽屉）
-│   │   ├── store/                    # Jotai atoms
-│   │   ├── db.ts                     # Dexie 数据库（v4，9 张表）
-│   │   └── space.ts                  # 多空间过滤 helper
-│   ├── tests/                        # Vitest 单元测试（52 例）
-│   └── package.json
+├── app/                          # Web SPA（Vite+React18+TS+Tailwind）
+│   ├── src/features/             # 10 个功能模块（REST 已切换）
+│   ├── src/hooks/useApi.ts       # useApi + apiFetch（共享契约）
+│   └── tests/                    # 56 例 Vitest
+├── core/                         # Node 核心服务
+│   ├── src/db/                   # SQLite schema/connection/migrate/seed
+│   ├── src/routes/               # 14 个 REST 路由
+│   ├── src/mail/                 # IMAP poller + 平台 parser + URL 提取
+│   ├── src/bill/                 # ZIP 解压 + xlsx 转换 + 密码暂存
+│   ├── src/notifications/        # 通知 store + 状态机
+│   └── tests/                    # 148 例 Vitest
 ├── docs/
-│   ├── exploration-originals/         # 原版界面截图（归档，仅供对照）
-│   └── acceptance-report.md          # 验收报告（第二轮 R1-R3）
-├── accept/                           # 验收产物
-│   ├── scripts/                      # Playwright E2E 脚本
-│   └── screenshots/                  # 截图（按类型分目录）
-├── hifin-features.md                 # 项目缘起：原版功能清单（最重要文档）
-├── README.md                         # 你正在看
-├── CHANGELOG.md                      # 版本变更日志
-└── package.json                      # 仅供 accept/scripts 使用 Playwright
+│   ├── bill-automation-design.md # 账单自动化设计（Mermaid 图）
+│   ├── known-issues.md           # 已知问题（URL 提取、Tailwind 缓存）
+│   ├── agent-prompt-template.md  # subagent 派发模板
+│   └── exploration-originals/    # 原版界面截图归档
+├── accept/                       # 验收产物（Playwright 脚本+截图）
+├── hifin-features.md             # 原版功能清单（复刻源文档）
+└── README.md / CHANGELOG.md
 ```
+
+## 数据现状（2026-10-02）
+
+- **账户**：现金 × 1（余额 -19,505.22）
+- **交易**：500 笔（全部来自微信账单导入，2025-12 至 2026-10）
+- **分类/标签**：33 分类 + 4 标签（默认种子）
+- **支付宝数据**：已清空（测试数据清理后未重新导入）
 
 ## 技术栈
 
-| 层 | 选型 |
+| 层 | 技术 |
 |---|---|
-| 构建 | Vite 5 + TypeScript 5 |
-| UI | React 18 + Tailwind CSS v3（darkMode: class） |
-| 路由 | react-router-dom v6（`import.meta.glob` 自动收集 feature 模块） |
-| 数据 | Dexie 4（IndexedDB） + dexie-react-hooks |
-| 状态 | Jotai（atomWithStorage 持久化偏好） |
-| 图表 | Recharts |
-| 图标 | @tabler/icons-react |
-| 日期 | dayjs |
-| 测试 | Vitest + fake-indexeddb（52 例） |
-| 验收 | Playwright（仅脚本在 `accept/scripts/`，浏览器需自装） |
+| 前端 | React 18 + Vite + TS + Tailwind v3（darkMode:class）+ jotai + recharts |
+| 后端 | Node 24 + TS + Express + better-sqlite3（WAL）+ imapflow + adm-zip + xlsx |
+| 测试 | Vitest × 204 例（前端 56 + 后端 148）|
+| 验收 | Playwright（accept/scripts/）|
+| 部署 | GitHub Actions 无，纯本地 |
 
 ## 文档导航
 
-- [`hifin-features.md`](./hifin-features.md) —— 原版功能清单（复刻的源文档）
-- [`CHANGELOG.md`](./CHANGELOG.md) —— 版本变更日志（按 git 提交）
-- [`docs/acceptance-report.md`](./docs/acceptance-report.md) —— 第二轮验收报告（R1-R3）
-- [`app/README.md`](./app/README.md) —— app 子项目：脚本/架构/约定
-- [`accept/README.md`](./accept/README.md) —— 验收产物说明
-
-## 开发约定
-
-### 新增功能模块
-在 `app/src/features/<name>/` 下创建 `routes.tsx`：
-```ts
-import type { RouteObject } from 'react-router-dom';
-const routes: RouteObject[] = [{ path: 'your-path', element: <YourPage /> }];
-export { routes };
-```
-路由会被 `import.meta.glob` 自动收集，**不需要改 App.tsx**。
-
-### 数据模型变更
-修改 `app/src/db.ts`，递增 Dexie version（v4 当前）。Dexie 增量迁移，新字段可加但需在迁移块里赋默认值（参考 `ensureSeed` 与 `migrateLegacySpaceIds`）。
-
-### 按空间过滤
-所有功能模块通过 `useSpaceId()`（来自 `db.ts`）+ `filterBySpace(rows, spaceId)`（来自 `space.ts`）过滤数据。`spaceId === 0` 表示"全部空间"。
-
-### 暗黑模式
-必须写全 `dark:` 变体。色板约定：`text-text dark:text-text-dark`；`bg-bg dark:bg-bg-dark`；`border-border dark:border-border-dark`。所有 token 在 `app/tailwind.config.js`。
-
-## 路线图
-
-按重要性与依赖关系排序：
-
-- 📧 **定时邮箱账单自动接入** — 用户配置 IMAP 邮箱与定时周期（每天/每周），后台拉取银行/支付平台的账单邮件，用交易规则引擎解析后批量导入；首次接入需要授权一次性 OAuth 或 IMAP 密码；本地实现，无云端
-- 🛠️ **AI 可调用的 CLI 工具** — 暴露 `hifin` 命令（`add-tx`、`list-accounts`、`query`、`summary`、`import-csv` 等），直接读写本地数据快照（SQLite 镜像或 IndexedDB 导出），让外部 AI Agent 通过 shell 完成「帮我记一笔 XXX 流水」类任务；MCP server 模式作为加分项
-- 📱 **原生 App 封装** — 用 [Tauri](https://tauri.app/)（推荐，体积小）把 Web 打包成 macOS / Windows / Linux 桌面 App；移动端走 PWA 或 [Capacitor](https://capacitorjs.com/)
-
-技术债与可选方向：
-- i18n 全量翻译
-- 报表可视化编辑器（拖拽组件）
-- E2E 测试固化进 `tests/`
-- `vendor-recharts` 按路由懒加载
-
-## 不做（明确划界）
-
-按 [`hifin-features.md`](./hifin-features.md) 第十二章约定：
-
-- 云端同步 / 登录 / 多设备管理
-- 会员 / 分享
-- 原版的智谱 GLM 云端 AI（已由本地方案替代）
-- i18n 全量翻译（仅主题/默认页生效，语言切换为占位）
-
-## 施工与验收
-
-本项目由调度方（kimi-coding → minimax）协调多个 M3 agent 通过 workflow 工具分批迭代完成，每轮由调度方独立验收：
-
-- R1 脚手架 + 5 模块并行（受订阅并发上限 3-4 影响）
-- R2 限流分批 3+2 + 失败重试
-- R3 验收返修：⌘K 全局监听 / 用户 ID 生成
-- R4 验收返修：暗黑模式对比度
-- R5 迭代：预算 / 交易规则 / AI 助手 / 单测 / 代码分割
-- R6 迭代：主题跟随系统 / 多空间隔离 / 报表自定义 / 移动端 / 发现页 / 天气
-
-详细变更见 [`CHANGELOG.md`](./CHANGELOG.md)。
+- [CHANGELOG.md](./CHANGELOG.md) — 版本历史（R1-R8 + core P0-P1）
+- [docs/bill-automation-design.md](./docs/bill-automation-design.md) — 账单自动化设计
+- [docs/known-issues.md](./docs/known-issues.md) — 已知问题
+- [docs/agent-prompt-template.md](./docs/agent-prompt-template.md) — subagent 模板
+- [core/README.md](./core/README.md) — core 子项目说明
+- [app/README.md](./app/README.md) — app 子项目说明
 
 ## 许可
 
-仅供学习与个人使用。原版 [HiFin](https://app.hifin.ai) 归原作者所有。
+仅供学习。原版 [HiFin](https://app.hifin.ai) 归原作者。
