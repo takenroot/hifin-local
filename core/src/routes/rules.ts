@@ -6,6 +6,16 @@
  * - DELETE 删除
  *
  * 注意：rules 表没有 spaceId 列（规则是全局的导入侧配置），因此不提供空间过滤。
+ *
+ * 两条规则引擎的约定，写规则前值得知道：
+ *   1. **方向闸门**：rules 表没有方向列，但导入侧（mail/importer.ts 的
+ *      makeRuleMatcher）会拿 categories.type 和流水 type 比一次，不一致就跳过
+ *      这条规则。所以给一笔"收入"选一个支出分类，规则不会生效——不会写坏数据，
+ *      只是这条规则白写。想让规则真正起作用，分类方向要和它作用的流水方向对齐。
+ *   2. **单字符 keyword 在 includes 语义下不可用**：匹配是子串包含而非整名相等，
+ *      "平"会命中"拼多多平台商户"。本端点目前**不拦**这种 keyword（只是提醒），
+ *      导入侧也不拦；库中现存的两条单字符规则已由 scripts/disable-short-rules.ts
+ *      停用。要加硬校验应该加在这里，那是另一个改动。
  */
 import { Router, type Request, type Response } from 'express';
 import { getDb } from './_db.js';
@@ -64,6 +74,8 @@ rulesRouter.get('/', (req: Request, res: Response) => {
 rulesRouter.post('/', (req: Request, res: Response) => {
   const db = getDb();
   const body = req.body ?? {};
+  // 单字符 keyword 会命中所有包含它的商户名（见文件头「单字符 keyword」段）。
+  // 这里只 trim 不拦长度——是否拒绝属于另一个决策，先保证导入侧有方向闸门兜底。
   const keyword = String(body.keyword ?? '').trim();
   const matchField = String(body.matchField ?? '') as RuleMatchField;
   const categoryId = Number(body.categoryId);
