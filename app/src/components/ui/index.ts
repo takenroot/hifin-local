@@ -22,6 +22,9 @@ export type { ModalProps } from './Modal';
 export { Tabs } from './Tabs';
 export type { TabsProps, TabItem } from './Tabs';
 
+export { SegmentedControl } from './SegmentedControl';
+export type { SegmentedControlProps, SegmentedOption } from './SegmentedControl';
+
 export { Badge } from './Badge';
 export type { BadgeProps, BadgeTone } from './Badge';
 
@@ -29,6 +32,9 @@ export { EmptyState } from './EmptyState';
 export type { EmptyStateProps } from './EmptyState';
 
 export { EmptyStateCard } from './EmptyStateCard';
+
+export { Spinner } from './Spinner';
+export type { SpinnerProps } from './Spinner';
 
 export { ProgressBar } from './ProgressBar';
 export type { ProgressBarProps } from './ProgressBar';

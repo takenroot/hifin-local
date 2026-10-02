@@ -65,7 +65,7 @@ export default function BudgetList() {
   // spaceId === 0 表示"全部空间"，此时不拼 spaceId 让服务端返回全量
   const spaceQ = spaceId === 0 ? '' : `?spaceId=${spaceId}`;
 
-  const { data: budgetsAll } = useApi<Budget[]>(`/api/budgets${spaceQ}`, [version]);
+  const { data: budgetsAll, loading } = useApi<Budget[]>(`/api/budgets${spaceQ}`, [version]);
   const { data: categories } = useApi<Category[]>('/api/categories', [version]);
   // 已花只需支出；服务端已按 spaceId + type 过滤，减少传输量
   const { data: expenses } = useApi<ExpenseRow[]>(
@@ -100,7 +100,8 @@ export default function BudgetList() {
   }, [categories]);
 
   const budgetCount = budgets.length;
-  const isEmpty = budgetCount === 0;
+  // loading 期间不算空，否则每次进页面都先闪一帧"创建预算"
+  const isEmpty = !loading && budgetCount === 0;
 
   // 按 (period, categoryId) 缓存支出聚合；预算卡片渲染时直接读取
   const spentByKey = useMemo(() => {
@@ -161,7 +162,16 @@ export default function BudgetList() {
       />
 
       <div className="p-4 lg:p-8 max-w-[1400px]">
-        {isEmpty ? (
+        {loading ? (
+          <div
+            className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4"
+            data-testid="budget-loading"
+          >
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="h-40 rounded-xl bg-bg-card dark:bg-bg-card-dark animate-pulse" />
+            ))}
+          </div>
+        ) : isEmpty ? (
           <EmptyStateCard
             title="创建预算"
             description="为高频分类或整体支出设定月度 / 年度上限，实时跟踪花费进度，超支会自动红色警示"
@@ -254,7 +264,7 @@ function BudgetCard({ budget, category, spent, onEdit, onDelete }: BudgetCardPro
   const tone = overspent ? 'income' : 'expense';
 
   return (
-    <div className="card !p-5 flex flex-col gap-4 transition">
+    <div data-testid="budget-card" className="card !p-5 flex flex-col gap-4 transition">
       {/* 标题行 */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">

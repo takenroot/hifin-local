@@ -109,7 +109,7 @@ export default function AccountList() {
         ) : loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {[0, 1, 2, 3].map((i) => (
-              <div key={i} className="h-40 rounded-xl bg-bg dark:bg-bg-card-dark animate-pulse" />
+              <div key={i} className="h-40 rounded-xl bg-bg-card dark:bg-bg-card-dark animate-pulse" />
             ))}
           </div>
         ) : isEmpty ? (
@@ -216,6 +216,7 @@ function AccountCard({ account, tags }: { account: Account; tags: Tag[] }) {
       type="button"
       onClick={() => navigate(`/account/detail/${account.id}`)}
       className="card !p-5 text-left transition group"
+      data-testid="account-card"
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-3 min-w-0">

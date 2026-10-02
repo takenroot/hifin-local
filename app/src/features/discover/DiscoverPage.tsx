@@ -91,7 +91,7 @@ export function DiscoverPage() {
         ) : loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {[0, 1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="h-28 rounded-xl bg-bg dark:bg-bg-card-dark animate-pulse" />
+              <div key={i} className="h-28 rounded-xl bg-bg-card dark:bg-bg-card-dark animate-pulse" />
             ))}
           </div>
         ) : !hasData ? (

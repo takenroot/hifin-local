@@ -375,13 +375,13 @@ export default function Dashboard() {
             />
           ) : loading ? (
             <div className="flex-1 min-w-0 space-y-6">
-              <div className="h-24 rounded-xl bg-bg dark:bg-bg-card-dark animate-pulse" />
+              <div className="h-24 rounded-xl bg-bg-card dark:bg-bg-card-dark animate-pulse" />
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="h-28 rounded-xl bg-bg dark:bg-bg-card-dark animate-pulse" />
-                <div className="h-28 rounded-xl bg-bg dark:bg-bg-card-dark animate-pulse" />
-                <div className="h-28 rounded-xl bg-bg dark:bg-bg-card-dark animate-pulse" />
+                <div className="h-28 rounded-xl bg-bg-card dark:bg-bg-card-dark animate-pulse" />
+                <div className="h-28 rounded-xl bg-bg-card dark:bg-bg-card-dark animate-pulse" />
+                <div className="h-28 rounded-xl bg-bg-card dark:bg-bg-card-dark animate-pulse" />
               </div>
-              <div className="h-64 rounded-xl bg-bg dark:bg-bg-card-dark animate-pulse" />
+              <div className="h-64 rounded-xl bg-bg-card dark:bg-bg-card-dark animate-pulse" />
             </div>
           ) : (
           <div className="flex-1 min-w-0 space-y-6">

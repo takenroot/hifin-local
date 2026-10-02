@@ -25,6 +25,7 @@ import {
   Input,
   Modal,
   Select,
+  Spinner,
 } from '@/components/ui';
 import { apiFetch, useApi } from '@/hooks/useApi';
 import type { Category, CategoryType } from '@/db';
@@ -218,7 +219,12 @@ export function CategoriesSection() {
             )
           }
         >
-          {!currentGroup ? (
+          {loading ? (
+            // 数据在路上先占位：否则右栏会先闪一帧"选择左侧分组"
+            <div className="py-10 flex justify-center">
+              <Spinner />
+            </div>
+          ) : !currentGroup ? (
             <EmptyState
               title="选择左侧分组"
               description="点击左侧分组名称以查看该分组下的分类。"

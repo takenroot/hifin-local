@@ -7,7 +7,7 @@
  */
 import { useAtomValue } from 'jotai';
 import { useMemo } from 'react';
-import { Card } from '@/components/ui';
+import { Card, Spinner } from '@/components/ui';
 import { useApi } from '@/hooks/useApi';
 import { spaceIdAtom } from '@/store/atoms';
 import type { Space } from '@/db';
@@ -18,7 +18,7 @@ const ALL_SPACES_LABEL = '全部空间';
 
 export function SpaceSection() {
   const spaceId = useAtomValue(spaceIdAtom);
-  const { data } = useApi<RestSpaceRow[]>('/api/spaces');
+  const { data, loading } = useApi<RestSpaceRow[]>('/api/spaces');
   // 迁移前是 orderBy('name')，这里按名称排序保持一致
   const spaces: Space[] = useMemo(
     () => toSpaces(data ?? []).sort((a, b) => a.name.localeCompare(b.name, 'zh-CN')),
@@ -73,10 +73,17 @@ export function SpaceSection() {
                   </span>
                 </li>
               ))}
-              {spaces.length === 0 && (
-                <li className="px-3 py-2 text-xs text-text-muted dark:text-text-muted-dark">
-                  （暂无空间，请通过侧边栏顶部"添加空间"创建）
+              {loading ? (
+                // 加载中先占位，别先闪一行"（暂无空间…）"
+                <li className="px-3 py-2 flex items-center">
+                  <Spinner size={14} />
                 </li>
+              ) : (
+                spaces.length === 0 && (
+                  <li className="px-3 py-2 text-xs text-text-muted dark:text-text-muted-dark">
+                    （暂无空间，请通过侧边栏顶部"添加空间"创建）
+                  </li>
+                )
               )}
             </ul>
           </div>

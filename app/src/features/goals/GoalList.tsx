@@ -61,7 +61,7 @@ export default function GoalList() {
   // spaceId === 0 表示"全部空间"，此时不拼 spaceId 让服务端返回全量
   const spaceQ = spaceId === 0 ? '' : `?spaceId=${spaceId}`;
 
-  const { data: goalsAll } = useApi<Goal[]>(`/api/goals${spaceQ}`, [version]);
+  const { data: goalsAll, loading } = useApi<Goal[]>(`/api/goals${spaceQ}`, [version]);
   const { data: accountsAll } = useApi<Account[]>(`/api/accounts${spaceQ}`, [version]);
   const goals = useMemo(
     () => filterBySpace(goalsAll ?? [], spaceId),
@@ -90,7 +90,8 @@ export default function GoalList() {
   }, [accounts]);
 
   const goalCount = goals.length;
-  const isEmpty = goalCount === 0;
+  // loading 期间不算空，否则每次进页面都先闪一帧"创建目标"
+  const isEmpty = !loading && goalCount === 0;
 
   async function handleDeleteConfirm() {
     if (!deleting?.id) return;
@@ -120,7 +121,16 @@ export default function GoalList() {
       />
 
       <div className="p-4 lg:p-8 max-w-[1400px]">
-        {isEmpty ? (
+        {loading ? (
+          <div
+            className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4"
+            data-testid="goal-loading"
+          >
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="h-40 rounded-xl bg-bg-card dark:bg-bg-card-dark animate-pulse" />
+            ))}
+          </div>
+        ) : isEmpty ? (
           <EmptyStateCard
             title="创建目标"
             description="目标助你实现财务梦想，例如购房首付、应急基金、旅行储蓄、教育基金等"
