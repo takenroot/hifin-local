@@ -49,6 +49,8 @@ interface AppParseResult {
     type: string;
     merchant: string;
     remark?: string;
+    /** 平台自带分类：支付宝「交易分类」/ 微信「交易类型」 */
+    billCategory?: string;
     rawLine?: string;
   }>;
   error?: string;
@@ -91,8 +93,15 @@ async function loadCsvParser(): Promise<(text: string, platformHint?: string) =>
  * 把 app 解析结果收敛成 core 的 ParsedTx[]。
  * app 的 type 还包含 transfer / excluded，而 core 的 ParsedTx 只认收支两类；
  * 不计收支的行按"跳过"计，不进库。
+ *
+ * platform + billCategory 一起带下去：分类决策要靠它们查 category-map 的映射表，
+ * 单独传 billCategory 而不传 platform 的话，importTransactions 无从判断这是
+ * 微信的"交易类型"还是某个银行流水的"交易类型"（后者语义完全不同，不能乱套）。
  */
-function toCoreTxs(items: AppParseResult['items']): { txs: ParsedTx[]; dropped: number } {
+function toCoreTxs(
+  items: AppParseResult['items'],
+  platform: string,
+): { txs: ParsedTx[]; dropped: number } {
   const txs: ParsedTx[] = [];
   let dropped = 0;
   for (const it of items) {
@@ -111,6 +120,8 @@ function toCoreTxs(items: AppParseResult['items']): { txs: ParsedTx[]; dropped: 
       type: it.type,
       merchant: it.merchant || '账单导入',
       remark: it.remark,
+      billCategory: it.billCategory,
+      platform,
     });
   }
   return { txs, dropped };
@@ -185,7 +196,7 @@ export async function importBillZip(
       throw new BillCsvNotFoundError(`账单表格无法解析（${billFileName}）：${parsed.error}`);
     }
 
-    const { txs, dropped } = toCoreTxs(parsed.items);
+    const { txs, dropped } = toCoreTxs(parsed.items, platform);
 
     // 外层事务：解析 → 落库整体原子（内层 importTransactions 走 SAVEPOINT）
     const res = db.transaction(() =>
@@ -216,8 +227,11 @@ export async function importBillZip(
  *   - 前 ~17 行是导出说明，表头在"交易时间"所在行
  *   - 交易时间是 Excel 日期序列号（如 46292.533），需要转回日期字符串
  *   - 金额列名是"金额(元)"
+ *
+ * 导出来是为了让 scripts/ 下的回填脚本复用同一套 xlsx→CSV 转换，
+ * 免得"导入时看到的日期"和"回填时算出来的日期"对不上。
  */
-function xlsxToCsvText(xlsxPath: string): string {
+export function xlsxToCsvText(xlsxPath: string): string {
   const require = createRequire(import.meta.url);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const XLSX = require('xlsx') as any;

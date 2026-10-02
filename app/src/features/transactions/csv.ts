@@ -39,6 +39,8 @@ export interface ParsedTx {
   type: TransactionType;
   merchant: string;
   remark?: string;
+  /** 平台自带的粗粒度分类：支付宝「交易分类」/ 微信「交易类型」。没有这列时为 undefined。 */
+  billCategory?: string;
   /** 解析错误 */
   rawLine?: string;
 }
@@ -49,6 +51,8 @@ interface FieldMap {
   type: number;
   merchant: number;
   remark: number;
+  /** 平台自带分类列，无则 -1 */
+  billCategory: number;
 }
 
 /* ---------- CSV 文本 → 二维数组 ---------- */
@@ -104,6 +108,14 @@ const COL_ALIASES = {
   type: ['收/支', '收支', '类型', '方向', 'type', 'direction'],
   merchant: ['对方', '商户', '交易对方', '对手方', '收款方', '付款方', 'merchant', 'counterparty', 'payee'],
   remark: ['备注', '说明', 'remark', 'note', 'memo', 'summary'],
+  // 平台自己给的粗粒度分类。支付宝表头是「交易分类」，微信是「交易类型」，
+  // 两者互不包含，谁先谁后无所谓。
+  //
+  // 真正要留意的是**别的数组**里那条 '类型' 兜底别名（见上方 type）：微信表头同时
+  // 有「交易类型」和「收/支」，若 type 的别名顺序不是 '收/支' 在前，整列「交易类型」
+  // 会被当成收支方向，所有行变 transfer 并被静默丢弃。改动 type 的别名顺序时，
+  // 请连带检查这里。
+  billCategory: ['交易分类', '交易类型'],
 };
 
 /** 找列下标；返回 -1 表示无匹配 */
@@ -121,8 +133,9 @@ function buildFieldMap(headers: string[]): FieldMap | null {
   const type = findCol(headers, COL_ALIASES.type);
   const merchant = findCol(headers, COL_ALIASES.merchant);
   const remark = findCol(headers, COL_ALIASES.remark);
+  const billCategory = findCol(headers, COL_ALIASES.billCategory);
   if (date === -1 || amount === -1) return null;
-  return { date, amount, type, merchant, remark };
+  return { date, amount, type, merchant, remark, billCategory };
 }
 
 /* ---------- 单元格解析 ---------- */
@@ -215,6 +228,7 @@ export function parseCsvText(text: string, platformHint?: string): ParseResult {
     const typeCell = map.type !== -1 ? r[map.type] : '';
     const merchantCell = map.merchant !== -1 ? r[map.merchant] : '';
     const remarkCell = map.remark !== -1 ? r[map.remark] : '';
+    const billCategoryCell = map.billCategory !== -1 ? r[map.billCategory] : '';
 
     const date = parseDate(dateCell);
     const amount = parseAmount(amountCell);
@@ -234,6 +248,9 @@ export function parseCsvText(text: string, platformHint?: string): ParseResult {
       type: parseType(typeCell),
       merchant: merchantCell || '',
       remark: remarkCell || undefined,
+      // 原样带出（不 trim），归一化交给消费方的 resolveBillCategory，
+      // 免得解析层和映射层各有一套去空白规则
+      billCategory: billCategoryCell ? String(billCategoryCell) : undefined,
     });
     valid++;
   }

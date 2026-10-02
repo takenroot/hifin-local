@@ -15,6 +15,19 @@ export interface ParsedTx {
   merchant: string;
   /** 备注（可选） */
   remark?: string;
+  /**
+   * 平台账单自带的粗粒度分类原文：支付宝「交易分类」/ 微信「交易类型」。
+   * 邮件账单解析器（cmb/alipay/wechat mail）拿不到这列，留空即可。
+   */
+  billCategory?: string;
+  /**
+   * 该笔流水来自哪个平台的**账单文件**（'alipay' / 'wechat'）。
+   *
+   * 刻意和 billCategory 分开两个字段：银行邮件账单里也可能带"交易类型"列，
+   * 语义与微信完全不同。只有这里认得 'alipay'/'wechat' 时，
+   * importTransactions 才会拿 billCategory 去查映射表，否则一律忽略。
+   */
+  platform?: string;
 }
 
 export interface MailParser {
