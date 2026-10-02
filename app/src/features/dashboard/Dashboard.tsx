@@ -332,7 +332,7 @@ export default function Dashboard() {
                 <StatCard
                   label="净资产"
                   icon="💰"
-                  tone="income"
+                  tone="dynamic"
                   amount={netAsset}
                   delta={netAssetMoM}
                   hide={hideAmounts}
@@ -575,7 +575,7 @@ export default function Dashboard() {
                 <div>
                   <div className="flex items-baseline justify-between">
                     <span className="text-xs text-text-muted">共 {accounts.length} 个账户</span>
-                    <span className="text-income tabular-nums font-medium">
+                    <span className={clsx('tabular-nums font-medium', accountTotal < 0 ? 'text-expense' : 'text-income')}>
                       <MaskMoney value={accountTotal} hide={hideAmounts} withSymbol={false} />
                     </span>
                   </div>
@@ -817,7 +817,8 @@ export default function Dashboard() {
 interface StatCardProps {
   label: string;
   icon: string;
-  tone: 'income' | 'expense';
+  /** 金额颜色：默认按 expenseMode 判断；传 'dynamic' 时按 delta 方向（涨红跌绿） */
+  tone: 'income' | 'expense' | 'dynamic';
   amount: number;
   delta: number;
   expenseMode?: boolean;
@@ -826,7 +827,14 @@ interface StatCardProps {
 }
 
 function StatCard({ label, icon, tone, amount, delta, expenseMode, hide }: StatCardProps) {
-  const valueClass = tone === 'income' ? 'text-income' : 'text-expense';
+  // dynamic：净资产专用——负数=坏事=绿，正数=好事=红；delta 辅助判断趋势
+  const effectiveTone =
+    tone === 'dynamic'
+      ? amount < 0 || delta < 0
+        ? 'expense'
+        : 'income'
+      : tone;
+  const valueClass = effectiveTone === 'income' ? 'text-income' : 'text-expense';
   const sign = delta > 0 ? '+' : '';
   return (
     <Card className="!p-5">
@@ -835,7 +843,7 @@ function StatCard({ label, icon, tone, amount, delta, expenseMode, hide }: StatC
           <span>{icon}</span>
           <span>{label}</span>
         </div>
-        <Badge tone={tone === 'income' ? 'income' : 'expense'}>
+        <Badge tone={effectiveTone === 'income' ? 'income' : 'expense'}>
           <span className="inline-flex items-center gap-0.5">
             {delta > 0 && <IconArrowUpRight size={10} />}
             {delta < 0 && <IconArrowDownLeft size={10} />}
