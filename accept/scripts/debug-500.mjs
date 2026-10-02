@@ -1,0 +1,10 @@
+import { chromium } from 'playwright';
+const browser = await chromium.launch();
+const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+const failed = [];
+page.on('response', r => { if (r.status() >= 400) failed.push(`${r.status()} ${r.url()}`); });
+page.on('pageerror', e => failed.push('PAGEERROR: ' + String(e).slice(0,150)));
+await page.goto('http://127.0.0.1:5199/home', { waitUntil: 'networkidle' });
+await page.waitForTimeout(3000);
+console.log('failed requests:', JSON.stringify(failed, null, 2));
+await browser.close();
