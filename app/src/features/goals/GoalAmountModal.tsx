@@ -1,13 +1,15 @@
 /**
  * 「存入 / 取出」快捷更新模态
  *
- * - 调整 currentAmount；可选联动账户余额（存入：账户余额 -= amount；
- *   取出：账户余额 += amount，相当于把"已存的钱"释放到可用资金）。
- * - 真实写库：db.transaction('rw', db.goals, db.accounts, ...) 保证一致。
+ * - 调整 currentAmount。
+ * - 账户余额联动改由服务端完成：PUT /api/goals/:id 会在事务内先撤销旧
+ *   currentAmount 对关联账户的贡献，再按新值重新计入（saving 记 +，repayment 记 -）。
+ *   因此"是否联动账户"不再是前端可选项——只要目标关联了账户就会联动。
  */
 import { useEffect, useMemo, useState } from 'react';
-import { Button, Input, Modal, Switch } from '@/components/ui';
-import { db, type Account, type Goal } from '@/db';
+import { Button, Input, Modal } from '@/components/ui';
+import { apiFetch } from '@/hooks/useApi';
+import { type Account, type Goal } from '@/db';
 import { formatMoney, parseAmount } from './format';
 
 interface Props {
@@ -15,15 +17,16 @@ interface Props {
   onClose: () => void;
   goal: Goal | null;
   mode: 'deposit' | 'withdraw';
-  /** 已关联账户（用于联动余额） */
+  /** 已关联账户（仅用于展示说明） */
   account?: Account;
+  /** 保存成功后通知父级刷新列表 */
+  onChanged?: () => void;
 }
 
 const AMOUNT_LIMIT = 12;
 
-export function GoalAmountModal({ open, onClose, goal, mode, account }: Props) {
+export function GoalAmountModal({ open, onClose, goal, mode, account, onChanged }: Props) {
   const [amount, setAmount] = useState('');
-  const [adjustAccount, setAdjustAccount] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -31,7 +34,6 @@ export function GoalAmountModal({ open, onClose, goal, mode, account }: Props) {
   useEffect(() => {
     if (open) {
       setAmount('');
-      setAdjustAccount(true);
       setError(null);
     }
   }, [open, goal?.id, mode]);
@@ -66,30 +68,13 @@ export function GoalAmountModal({ open, onClose, goal, mode, account }: Props) {
     setSaving(true);
     try {
       const delta = mode === 'deposit' ? numAmount : -numAmount;
-      await db.transaction('rw', db.goals, db.accounts, async () => {
-        const fresh = await db.goals.get(goal.id!);
-        if (!fresh) return;
-        const newCurrent = Math.max(
-          0,
-          Math.min(
-            fresh.targetAmount || Number.MAX_SAFE_INTEGER,
-            fresh.currentAmount + delta,
-          ),
-        );
-        await db.goals.update(goal.id!, { currentAmount: newCurrent });
-        // 联动账户余额
-        if (adjustAccount && account?.id != null) {
-          const acc = await db.accounts.get(account.id);
-          if (acc) {
-            // 存款到目标视为资金从可用账户挪走（账户余额 -= amount）
-            // 取出视为资金回到账户（账户余额 += amount）
-            const accDelta = mode === 'deposit' ? -numAmount : numAmount;
-            acc.balance = Number((acc.balance + accDelta).toFixed(2));
-            acc.updatedAt = Date.now();
-            await db.accounts.put(acc);
-          }
-        }
-      });
+      const newCurrent = Math.max(
+        0,
+        Math.min(goal.targetAmount || Number.MAX_SAFE_INTEGER, goal.currentAmount + delta),
+      );
+      // 只提交新的 currentAmount；余额联动由 core 在同一事务内完成
+      await apiFetch(`/api/goals/${goal.id}`, 'PUT', { currentAmount: newCurrent });
+      onChanged?.();
       onClose();
     } catch (e) {
       setError((e as Error).message ?? '保存失败');
@@ -161,16 +146,8 @@ export function GoalAmountModal({ open, onClose, goal, mode, account }: Props) {
         </div>
 
         {account ? (
-          <div className="flex items-center justify-between rounded-xl border border-border dark:border-border-dark p-3">
-            <div>
-              <div className="text-sm">联动「{account.name}」账户余额</div>
-              <div className="text-xs text-text-muted mt-0.5">
-                {mode === 'deposit'
-                  ? '存款时账户余额会同步减少'
-                  : '取出时账户余额会同步增加'}
-              </div>
-            </div>
-            <Switch checked={adjustAccount} onChange={setAdjustAccount} />
+          <div className="rounded-xl border border-border dark:border-border-dark p-3 text-xs text-text-muted">
+            「{account.name}」账户余额会由服务端随本次{title}同步调整。
           </div>
         ) : (
           <div className="text-xs text-text-muted">

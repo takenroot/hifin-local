@@ -15,7 +15,8 @@ import {
   Select,
   Textarea,
 } from '@/components/ui';
-import { db, type Report } from '@/db';
+import { type Report } from '@/db';
+import { createReport, updateReport } from './api';
 import {
   REPORT_COLOR_CHOICES,
   REPORT_ICON_CHOICES,
@@ -36,6 +37,8 @@ interface Props {
   open: boolean;
   onClose: () => void;
   report?: Report;
+  /** 保存成功后回调（由列表页触发 refetch） */
+  onSaved?: () => void;
 }
 
 const NAME_LIMIT = 20;
@@ -73,15 +76,18 @@ function formFromReport(r: Report): FormState {
   };
 }
 
-export function ReportFormModal({ open, onClose, report }: Props) {
+export function ReportFormModal({ open, onClose, report, onSaved }: Props) {
   const isEdit = !!report;
   const [form, setForm] = useState<FormState>(DEFAULT_FORM);
   const [submitted, setSubmitted] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
     setForm(report ? formFromReport(report) : DEFAULT_FORM);
     setSubmitted(false);
+    setSaveError(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, report?.id]);
 
@@ -120,21 +126,28 @@ export function ReportFormModal({ open, onClose, report }: Props) {
   async function handleConfirm() {
     setSubmitted(true);
     if (!canConfirm) return;
-    const now = Date.now();
-    const payload: Omit<Report, 'id'> = {
+    // core 的 POST /api/reports 由服务端写 createdAt，PUT 支持局部更新
+    const payload = {
       name: trimmedName,
       description: form.description.trim() || undefined,
       template: form.template,
       icon: form.icon,
-      createdAt: report?.createdAt ?? now,
       config: JSON.stringify(form.config),
     };
-    if (report?.id != null) {
-      await db.reports.update(report.id, payload);
-    } else {
-      await db.reports.add(payload);
+    try {
+      setSaving(true);
+      if (report?.id != null) {
+        await updateReport(report.id, payload);
+      } else {
+        await createReport(payload);
+      }
+      onSaved?.();
+      onClose();
+    } catch (e) {
+      setSaveError('保存失败：' + (e as Error).message);
+    } finally {
+      setSaving(false);
     }
-    onClose();
   }
 
   return (
@@ -151,10 +164,10 @@ export function ReportFormModal({ open, onClose, report }: Props) {
           <Button
             variant="primary"
             icon={<IconCheck size={16} />}
-            disabled={!canConfirm}
+            disabled={!canConfirm || saving}
             onClick={handleConfirm}
           >
-            确认
+            {saving ? '保存中…' : '确认'}
           </Button>
         </>
       }
@@ -398,6 +411,12 @@ export function ReportFormModal({ open, onClose, report }: Props) {
             </div>
           </div>
         </div>
+
+        {saveError && (
+          <div className="text-xs text-expense bg-expense-soft dark:bg-expense-soft-dark px-3 py-2 rounded-lg">
+            {saveError}
+          </div>
+        )}
       </div>
     </Modal>
   );

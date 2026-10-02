@@ -7,9 +7,8 @@
  * - 列表页：顶部筛选 + 列表
  * - 导入视图：账单导入 / 历史记录
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useLiveQuery } from 'dexie-react-hooks';
 import {
   IconArrowsLeftRight,
   IconPlus,
@@ -18,12 +17,14 @@ import {
   IconShare,
 } from '@tabler/icons-react';
 import { PageHeader, Button, EmptyState, Tabs } from '@/components/ui';
-import { db, type Transaction, useSpaceId } from '@/db';
+import { type Transaction, useSpaceId } from '@/db';
 import { filterBySpace } from '@/space';
+import { useApi } from '@/hooks/useApi';
 import TransactionListView from './TransactionListView';
 import TransactionFilterBar from './TransactionFilterBar';
 import TransactionFormModal from './TransactionFormModal';
 import TransactionImportView from './TransactionImportView';
+import type { RestTransaction } from './api';
 import type { TxFilter } from './balance';
 
 type View = 'list' | 'import';
@@ -46,14 +47,16 @@ export default function TransactionList() {
   }, [params]);
 
   const spaceId = useSpaceId();
-  const allTx = useLiveQuery(
-    () => db.transactions.toArray(),
-    [],
-    [] as Transaction[],
-  );
+  /** 全局写操作版本号：任一增删改成功后自增，驱动所有依赖 REST 的子组件重新拉取 */
+  const [version, setVersion] = useState(0);
+  const bumpVersion = useCallback(() => setVersion((v) => v + 1), []);
+
+  // spaceId === 0 表示"全部空间"，此时不拼 spaceId 让服务端返回全量
+  const spaceQ = spaceId === 0 ? '' : `?spaceId=${spaceId}`;
+  const { data: txRows } = useApi<RestTransaction[]>(`/api/transactions${spaceQ}`, [version]);
   const scopedCount = useMemo(
-    () => filterBySpace(allTx, spaceId).length,
-    [allTx, spaceId],
+    () => filterBySpace(txRows ?? [], spaceId).length,
+    [txRows, spaceId],
   );
 
   const showEmpty = scopedCount === 0 && view === 'list';
@@ -158,15 +161,26 @@ export default function TransactionList() {
             />
           ) : (
             <>
-              <TransactionFilterBar filter={filter} onChange={setFilter} />
-              <TransactionListView filter={filter} onEdit={openEdit} />
+              <TransactionFilterBar filter={filter} onChange={setFilter} version={version} />
+              <TransactionListView
+                filter={filter}
+                onEdit={openEdit}
+                version={version}
+                onChanged={bumpVersion}
+              />
             </>
           ))}
 
-        {view === 'import' && <TransactionImportView />}
+        {view === 'import' && <TransactionImportView onImported={bumpVersion} />}
       </div>
 
-      <TransactionFormModal open={creating} onClose={closeModal} editing={editing} />
+      <TransactionFormModal
+        open={creating}
+        onClose={closeModal}
+        editing={editing}
+        version={version}
+        onSaved={bumpVersion}
+      />
     </div>
   );
 }

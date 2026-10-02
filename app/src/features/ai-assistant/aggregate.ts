@@ -1,7 +1,9 @@
 /**
  * AI 助手 → 财务概况聚合
  *
- * 从 IndexedDB 实时聚合用户财务数据，供 AI 模型 system prompt 使用。
+ * 输入来自 REST（/api/transactions、/api/accounts、/api/goals、/api/categories），
+ * 在前端聚合成供 AI 模型 system prompt 使用的快照。
+ * 纯函数部分（buildFinancialSnapshot / snapshotToText）保持不变。
  *
  * 输出结构：
  *   {
@@ -130,8 +132,7 @@ export function buildFinancialSnapshot(input: {
 }
 
 /** 序列化为模型可读的纯文本（JSON 体积小，便于嵌入 prompt） */
-export function snapshotToText(snap: AiFinancialSnapshot): string {
-  const fmt = (n: number) => n.toFixed(2);
+export function snapshotToText(snap: AiFinancialSnapshot): string {  const fmt = (n: number) => n.toFixed(2);
   const lines: string[] = [];
   lines.push(`生成时间: ${snap.generatedAt}`);
   lines.push(`账户数: ${snap.accountCount}`);
@@ -155,4 +156,121 @@ export function snapshotToText(snap: AiFinancialSnapshot): string {
     lines.push('目标进度: 暂无目标');
   }
   return lines.join('\n');
+}
+
+/* ───────────────────── REST 取数 + 聚合入口 ───────────────────── */
+
+/** SQLite INTEGER 0/1 ↔ boolean。null / undefined 视为 false。 */
+function bit(value: number | boolean | null | undefined): boolean {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value !== 0;
+  return value != null;
+}
+
+function opt<T>(v: T | null | undefined): T | undefined {
+  return v == null ? undefined : v;
+}
+
+async function fetchJson<T>(url: string): Promise<T> {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`HTTP ${r.status}: ${url}`);
+  return (await r.json()) as T;
+}
+
+/** 空间过滤：sid=0 表示"全部空间"，core 用 spaceId 查询参数过滤。 */
+function spaceQuery(spaceId: number | undefined): string {
+  return spaceId != null && spaceId !== 0 ? `?spaceId=${spaceId}` : '';
+}
+
+interface RestAccountRow {
+  id: number;
+  name: string;
+  type: string;
+  balance: number;
+  includeInNetAsset: number | boolean;
+}
+
+interface RestTransactionRow {
+  id: number;
+  type: string;
+  name: string;
+  amount: number;
+  date: number;
+  categoryId?: number | null;
+  accountId: number;
+  includeInAsset: number | boolean;
+}
+
+interface RestGoalRow {
+  id: number;
+  kind: string;
+  name: string;
+  targetAmount: number;
+  currentAmount: number;
+}
+
+interface RestCategoryRow {
+  id: number;
+  name: string;
+  group: string;
+  type: string;
+}
+
+/**
+ * 从 REST 拉取当前空间的财务数据并聚合成快照。
+ *
+ * 并行请求 /api/accounts、/api/transactions、/api/goals、/api/categories；
+ * 任一端点失败即整体失败（调用方负责降级），避免把"半份数据"喂给模型。
+ */
+export async function fetchFinancialSnapshot(
+  spaceId?: number,
+): Promise<AiFinancialSnapshot> {
+  const q = spaceQuery(spaceId);
+  const [accountRows, txRows, goalRows, catRows] = await Promise.all([
+    fetchJson<RestAccountRow[]>(`/api/accounts${q}`),
+    fetchJson<RestTransactionRow[]>(`/api/transactions${q}`),
+    fetchJson<RestGoalRow[]>(`/api/goals${q}`),
+    // categories 是全局资源，无 spaceId 过滤
+    fetchJson<RestCategoryRow[]>('/api/categories'),
+  ]);
+
+  const accounts: Account[] = accountRows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    type: r.type as Account['type'],
+    balance: r.balance,
+    includeInNetAsset: bit(r.includeInNetAsset),
+    createdAt: 0,
+    updatedAt: 0,
+  }));
+
+  const transactions: Transaction[] = txRows.map((r) => ({
+    id: r.id,
+    type: r.type as Transaction['type'],
+    name: r.name,
+    amount: r.amount,
+    date: r.date,
+    categoryId: opt(r.categoryId),
+    accountId: r.accountId,
+    includeInAsset: bit(r.includeInAsset),
+    createdAt: 0,
+  }));
+
+  const goals: Goal[] = goalRows.map((r) => ({
+    id: r.id,
+    kind: r.kind as Goal['kind'],
+    name: r.name,
+    targetAmount: r.targetAmount,
+    currentAmount: r.currentAmount,
+    createdAt: 0,
+  }));
+
+  const categories: Category[] = catRows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    group: r.group,
+    type: r.type as Category['type'],
+  }));
+
+  return buildFinancialSnapshot({ accounts, transactions, goals, categories });
 }

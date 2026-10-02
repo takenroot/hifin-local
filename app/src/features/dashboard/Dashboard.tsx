@@ -16,7 +16,6 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
-import { useLiveQuery } from 'dexie-react-hooks';
 import { useNavigate } from 'react-router-dom';
 import {
   IconLayoutDashboard,
@@ -55,8 +54,11 @@ import {
   ProgressBar,
   PageHeader,
 } from '@/components/ui';
-import { db, useSpaceId } from '@/db';
-import { filterBySpace } from '@/space';
+import { useSpaceId } from '@/db';
+import type { Category, Goal } from '@/db';
+import { useApi } from '@/hooks/useApi';
+import { toAccounts, toTransactions, type RestAccount, type RestTransaction } from '@/features/accounts/rest';
+
 import {
   calcNetAsset,
   sumIncome,
@@ -154,19 +156,26 @@ export default function Dashboard() {
     };
   }, []);
 
-  // 实时数据
-  const accountsAll = useLiveQuery(() => db.accounts.toArray(), []) ?? [];
-  const transactionsAll = useLiveQuery(() => db.transactions.toArray(), []) ?? [];
-  const goalsAll = useLiveQuery(() => db.goals.toArray(), []) ?? [];
-  const categories = useLiveQuery(() => db.categories.toArray(), []) ?? [];
-  const nicknameKv = useLiveQuery(() => db.kv.get('nickname'), []);
+  // 实时数据（REST）。空间过滤直接拼 URL：spaceId=0 表示"全部空间"，不带参数由后端返回全量。
   const spaceId = useSpaceId();
-  // 按空间过滤；sid=0 不过滤
-  const accounts = useMemo(() => filterBySpace(accountsAll, spaceId), [accountsAll, spaceId]);
-  const transactions = useMemo(() => filterBySpace(transactionsAll, spaceId), [transactionsAll, spaceId]);
-  const goals = useMemo(() => filterBySpace(goalsAll, spaceId), [goalsAll, spaceId]);
+  const spaceQuery = spaceId ? `?spaceId=${spaceId}` : '';
 
-  const nickname = (nicknameKv?.value as string | undefined) || '用户';
+  const accountsRes = useApi<RestAccount[]>(`/api/accounts${spaceQuery}`, [spaceId]);
+  const transactionsRes = useApi<RestTransaction[]>(`/api/transactions${spaceQuery}`, [spaceId]);
+  const goalsRes = useApi<Goal[]>(`/api/goals${spaceQuery}`, [spaceId]);
+  const categoriesRes = useApi<Category[]>('/api/categories');
+  // 昵称：/api/kv/:key 在键不存在时返回 404，属于"未设置昵称"的正常状态，故不计入 error。
+  const nicknameRes = useApi<{ value?: string }>('/api/kv/nickname');
+
+  const accounts = useMemo(() => toAccounts(accountsRes.data), [accountsRes.data]);
+  const transactions = useMemo(() => toTransactions(transactionsRes.data), [transactionsRes.data]);
+  const goals = goalsRes.data ?? [];
+  const categories = categoriesRes.data ?? [];
+
+  const loading = accountsRes.loading || transactionsRes.loading;
+  const loadError = accountsRes.error ?? transactionsRes.error ?? goalsRes.error ?? categoriesRes.error;
+
+  const nickname = nicknameRes.data?.value || '用户';
 
   // 计算概览
   const netAsset = useMemo(() => calcNetAsset(accounts), [accounts]);
@@ -269,7 +278,22 @@ export default function Dashboard() {
 
       <div className="p-4 lg:p-8">
         <div className="flex flex-col lg:flex-row gap-6 max-w-[1440px] mx-auto">
-          {/* 主区域 */}
+          {loadError ? (
+            <EmptyState
+              title="数据加载失败"
+              description={`无法从服务端读取看板数据：${loadError}`}
+            />
+          ) : loading ? (
+            <div className="flex-1 min-w-0 space-y-6">
+              <div className="h-24 rounded-xl bg-bg dark:bg-bg-card-dark animate-pulse" />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="h-28 rounded-xl bg-bg dark:bg-bg-card-dark animate-pulse" />
+                <div className="h-28 rounded-xl bg-bg dark:bg-bg-card-dark animate-pulse" />
+                <div className="h-28 rounded-xl bg-bg dark:bg-bg-card-dark animate-pulse" />
+              </div>
+              <div className="h-64 rounded-xl bg-bg dark:bg-bg-card-dark animate-pulse" />
+            </div>
+          ) : (
           <div className="flex-1 min-w-0 space-y-6">
             {/* 欢迎区 */}
             <section>
@@ -486,6 +510,7 @@ export default function Dashboard() {
               </Card>
             </section>
           </div>
+          )}
 
           {/* 右侧栏 280px */}
           <aside className="w-full lg:w-[280px] flex-none space-y-4">

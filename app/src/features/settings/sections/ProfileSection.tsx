@@ -1,14 +1,13 @@
 /**
  * 设置 → 用户信息
  *
- * - 昵称：可编辑，存 kv: 'nickname'
+ * - 昵称：可编辑，存 kv: 'nickname' → PUT /api/kv/nickname
  * - 邮箱：占位（仅展示，无写入后端）
- * - 本地用户 ID：首次访问生成一次，存 kv: 'userId'
+ * - 本地用户 ID：首次访问生成一次，存 kv: 'userId' → PUT /api/kv/userId
  *
- * 通过 useLiveQuery + 直接 db.put 保持实时。
+ * core 的 GET /api/kv/:key 对不存在的键返回 404，useKv() 已把它归一成 null。
  */
 import { useEffect, useState } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
 import {
   IconUser,
   IconCopy,
@@ -16,22 +15,14 @@ import {
   IconMail,
 } from '@tabler/icons-react';
 import { Button, Card, Input } from '@/components/ui';
-import { db } from '@/db';
+import { kvPut, useKv } from '../restApi';
 import { generateUserId } from '../format';
 
-interface KvRow<T> {
-  key: string;
-  value: T;
-}
-
 export function ProfileSection() {
-  const nicknameKv = useLiveQuery(() => db.kv.get('nickname'), []);
-  // 把“无记录”规范化为 null，让 undefined 仅表示“加载中”，避免两个状态被混在一起。
-  const userIdKv = useLiveQuery(
-    () => db.kv.get('userId').then((r) => r ?? null),
-    [],
-  );
-  const emailKv = useLiveQuery(() => db.kv.get('email'), []);
+  const nicknameKv = useKv<string>('nickname');
+  // 把"无记录"规范化为 null，让 undefined 仅表示"加载中"，避免两个状态被混在一起。
+  const userIdKv = useKv<string>('userId');
+  const emailKv = useKv<string>('email');
 
   const [nickname, setNickname] = useState('');
   const [saving, setSaving] = useState(false);
@@ -40,30 +31,31 @@ export function ProfileSection() {
 
   // 同步显示值（首次拉取 / 外部修改）
   useEffect(() => {
-    if (nicknameKv === undefined) return;
-    setNickname((nicknameKv?.value as string | undefined) ?? '');
-  }, [nicknameKv]);
+    if (nicknameKv.loading) return;
+    setNickname(nicknameKv.value ?? '');
+  }, [nicknameKv.loading, nicknameKv.value]);
 
-  // 首次写入 userId：useLiveQuery 首次拿到结果（不再是 undefined）说明已查完；
-  // 此时 userIdKv === null 表示“无记录”，写入一次；已有记录则跳过（幂等）。
+  // 首次写入 userId：加载完成说明已查完；
+  // 此时 userIdKv.value === null 表示"无记录"，写入一次；已有记录则跳过（幂等）。
   useEffect(() => {
     if (userIdEnsured) return;
-    if (userIdKv === undefined) return; // 仍在加载
+    if (userIdKv.loading) return; // 仍在加载
     setUserIdEnsured(true);
-    if (userIdKv === null) {
-      void db.kv.put({ key: 'userId', value: generateUserId() });
+    if (userIdKv.value === null) {
+      void kvPut('userId', generateUserId()).then(() => userIdKv.refetch());
     }
-  }, [userIdKv, userIdEnsured]);
+  }, [userIdKv.loading, userIdKv.value, userIdKv.refetch, userIdEnsured]);
 
-  const userId = (userIdKv?.value as string | undefined) ?? '—';
-  const emailDisplay = (emailKv?.value as string | undefined) ?? '';
+  const userId = userIdKv.value ?? '—';
+  const emailDisplay = emailKv.value ?? '';
 
   async function saveNickname() {
     const v = nickname.trim();
     if (!v) return;
     setSaving(true);
     try {
-      await db.kv.put({ key: 'nickname', value: v } as KvRow<string>);
+      await kvPut('nickname', v);
+      nicknameKv.refetch();
     } finally {
       setSaving(false);
     }

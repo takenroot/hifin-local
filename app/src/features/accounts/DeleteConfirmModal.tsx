@@ -13,6 +13,8 @@ interface DeleteConfirmModalProps {
   relatedCount: number;
   onClose: () => void;
   onConfirm: () => void;
+  /** 删除失败时的服务端错误；非空时在对话框内提示 */
+  errorMessage?: string | null;
 }
 
 export function DeleteConfirmModal({
@@ -21,6 +23,7 @@ export function DeleteConfirmModal({
   relatedCount,
   onClose,
   onConfirm,
+  errorMessage,
 }: DeleteConfirmModalProps) {
   const hasRelated = relatedCount > 0;
   return (
@@ -55,6 +58,9 @@ export function DeleteConfirmModal({
               条关联流水，删除后这些流水将失去账户归属。
             </div>
           </div>
+        )}
+        {errorMessage && (
+          <div className="text-xs text-expense">{errorMessage}</div>
         )}
       </div>
     </Modal>

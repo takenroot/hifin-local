@@ -3,7 +3,6 @@
  */
 import { useMemo } from 'react';
 import dayjs from 'dayjs';
-import { useLiveQuery } from 'dexie-react-hooks';
 import { Link } from 'react-router-dom';
 import {
   IconSparkles,
@@ -17,8 +16,9 @@ import {
   IconBulb,
 } from '@tabler/icons-react';
 import { Badge, Card, EmptyState, PageHeader, ProgressBar } from '@/components/ui';
-import { db, useSpaceId } from '@/db';
-import { filterBySpace } from '@/space';
+import { useSpaceId } from '@/db';
+import type { Budget, Category, Goal, Transaction } from '@/db';
+import { useApi } from '@/hooks/useApi';
 import {
   budgetAlerts,
   formatMoney,
@@ -39,19 +39,25 @@ const TIPS: { title: string; body: string }[] = [
 
 export function DiscoverPage() {
   const spaceId = useSpaceId();
+  // 空间过滤直接拼 URL：spaceId=0 表示"全部空间"，不带参数由后端返回全量。
+  const spaceQuery = spaceId ? `?spaceId=${spaceId}` : '';
   const today = useMemo(() => dayjs(), []);
   const monthFrom = today.startOf('month').valueOf();
   const monthTo = today.add(1, 'month').startOf('month').valueOf();
   const prevFrom = today.subtract(1, 'month').startOf('month').valueOf();
 
-  const txsAll = useLiveQuery(() => db.transactions.toArray(), []) ?? [];
-  const budgetsAll = useLiveQuery(() => db.budgets.toArray(), []) ?? [];
-  const goalsAll = useLiveQuery(() => db.goals.toArray(), []) ?? [];
-  const categories = useLiveQuery(() => db.categories.toArray(), []) ?? [];
+  const txsRes = useApi<Transaction[]>(`/api/transactions${spaceQuery}`, [spaceId]);
+  const budgetsRes = useApi<Budget[]>(`/api/budgets${spaceQuery}`, [spaceId]);
+  const goalsRes = useApi<Goal[]>(`/api/goals${spaceQuery}`, [spaceId]);
+  const categoriesRes = useApi<Category[]>('/api/categories');
 
-  const txs = useMemo(() => filterBySpace(txsAll, spaceId), [txsAll, spaceId]);
-  const budgets = useMemo(() => filterBySpace(budgetsAll, spaceId), [budgetsAll, spaceId]);
-  const goals = useMemo(() => filterBySpace(goalsAll, spaceId), [goalsAll, spaceId]);
+  const txs = txsRes.data ?? [];
+  const budgets = budgetsRes.data ?? [];
+  const goals = goalsRes.data ?? [];
+  const categories = categoriesRes.data ?? [];
+
+  const loading = txsRes.loading || budgetsRes.loading;
+  const loadError = txsRes.error ?? budgetsRes.error ?? goalsRes.error ?? categoriesRes.error;
 
   const monthExpense = useMemo(() => sumByType(txs, 'expense', monthFrom, monthTo), [txs, monthFrom, monthTo]);
   const monthIncome = useMemo(() => sumByType(txs, 'income', monthFrom, monthTo), [txs, monthFrom, monthTo]);
@@ -74,7 +80,18 @@ export function DiscoverPage() {
         description="基于你的数据生成的财务洞察"
       />
       <div className="p-4 lg:p-8 max-w-[1200px] mx-auto space-y-6">
-        {!hasData ? (
+        {loadError ? (
+          <EmptyState
+            title="洞察数据加载失败"
+            description={`无法从服务端读取数据：${loadError}`}
+          />
+        ) : loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {[0, 1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="h-28 rounded-xl bg-bg dark:bg-bg-card-dark animate-pulse" />
+            ))}
+          </div>
+        ) : !hasData ? (
           <EmptyState
             title="还没有数据可以洞察"
             description="先记录几笔流水，这里会生成你的专属财务洞察"

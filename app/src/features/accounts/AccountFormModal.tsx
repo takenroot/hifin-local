@@ -7,7 +7,6 @@
  * 通过 props.account 传入已有账户即可进入"编辑"模式（自动跳过第一步）。
  */
 import { useEffect, useMemo, useState } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
 import clsx from 'clsx';
 import {
   IconCircleCheckFilled,
@@ -23,7 +22,9 @@ import {
   Switch,
   Textarea,
 } from '@/components/ui';
-import { db, type Account, type AccountType, useSpaceId } from '@/db';
+import { useSpaceId } from '@/db';
+import type { Account, AccountType, Tag } from '@/db';
+import { apiFetch, useApi } from '@/hooks/useApi';
 import {
   ACCOUNT_TYPE_META,
   ACCOUNT_TONE_BG,
@@ -38,6 +39,8 @@ interface AccountFormModalProps {
   onClose: () => void;
   /** 编辑模式：传入已有账户；省略则进入"新建" */
   account?: Account | null;
+  /** 保存成功后回调（父组件用来 refetch 列表） */
+  onSaved?: () => void;
 }
 
 type Step = 'pick-type' | 'fill-form';
@@ -60,7 +63,7 @@ const DEFAULT_FORM: FormState = {
   includeInNetAsset: true,
 };
 
-export function AccountFormModal({ open, onClose, account }: AccountFormModalProps) {
+export function AccountFormModal({ open, onClose, account, onSaved }: AccountFormModalProps) {
   const isEdit = !!account;
   const [step, setStep] = useState<Step>(isEdit ? 'fill-form' : 'pick-type');
   const [pickedType, setPickedType] = useState<AccountType | null>(
@@ -68,6 +71,8 @@ export function AccountFormModal({ open, onClose, account }: AccountFormModalPro
   );
   const [form, setForm] = useState<FormState>(DEFAULT_FORM);
   const [submitted, setSubmitted] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const spaceId = useSpaceId();
 
   // 每次打开 / 切换编辑对象时，重置状态
@@ -87,10 +92,16 @@ export function AccountFormModal({ open, onClose, account }: AccountFormModalPro
         : DEFAULT_FORM,
     );
     setSubmitted(false);
+    setSaveError(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, account?.id]);
 
-  const tags = useLiveQuery(() => db.tags.orderBy('name').toArray(), []);
+  const { data: tags } = useApi<Tag[]>('/api/tags');
+  // 后端按 id 返回；表单下拉保持原来的按名称排序。
+  const tagsByName = useMemo(
+    () => [...(tags ?? [])].sort((a, b) => a.name.localeCompare(b.name, 'zh-Hans-CN')),
+    [tags],
+  );
 
   const trimmedName = form.name.trim();
   const nameInvalid = submitted && trimmedName.length === 0;
@@ -116,24 +127,32 @@ export function AccountFormModal({ open, onClose, account }: AccountFormModalPro
       if (!pickedType) setStep('pick-type');
       return;
     }
-    const now = Date.now();
-    const payload: Omit<Account, 'id'> = {
+    const remark = form.remark.trim();
+    // 后端 create/update 接受的字段：name/type/balance/remark/tagIds/includeInNetAsset/spaceId
+    const payload = {
       type: pickedType,
       name: trimmedName,
       balance: parseAmount(form.balance),
-      remark: form.remark.trim() || undefined,
+      remark: remark === '' ? null : remark,
       tagIds: form.tagIds,
       includeInNetAsset: form.includeInNetAsset,
       spaceId: account?.spaceId ?? spaceId,
-      createdAt: account?.createdAt ?? now,
-      updatedAt: now,
     };
-    if (account?.id != null) {
-      await db.accounts.update(account.id, payload);
-    } else {
-      await db.accounts.add(payload);
+    setSaving(true);
+    setSaveError(null);
+    try {
+      if (account?.id != null) {
+        await apiFetch(`/api/accounts/${account.id}`, 'PUT', payload);
+      } else {
+        await apiFetch('/api/accounts', 'POST', payload);
+      }
+      onSaved?.();
+      handleClose();
+    } catch (e) {
+      setSaveError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSaving(false);
     }
-    handleClose();
   }
 
   return (
@@ -166,10 +185,10 @@ export function AccountFormModal({ open, onClose, account }: AccountFormModalPro
           ) : (
             <Button
               variant="primary"
-              disabled={!canConfirm}
+              disabled={!canConfirm || saving}
               onClick={handleConfirm}
             >
-              确认
+              {saving ? '保存中…' : '确认'}
             </Button>
           )}
         </>
@@ -185,8 +204,9 @@ export function AccountFormModal({ open, onClose, account }: AccountFormModalPro
           type={pickedType!}
           form={form}
           setForm={setForm}
-          tags={tags ?? []}
+          tags={tagsByName}
           submitted={submitted}
+          saveError={saveError}
           nameInvalid={nameInvalid}
           nameTooLong={nameTooLong}
           remarkTooLong={remarkTooLong}
@@ -311,6 +331,8 @@ interface FormStepProps {
   nameInvalid: boolean;
   nameTooLong: boolean;
   remarkTooLong: boolean;
+  /** 保存失败时的服务端错误 */
+  saveError?: string | null;
 }
 
 function FormStep({
@@ -322,6 +344,7 @@ function FormStep({
   nameInvalid,
   nameTooLong,
   remarkTooLong,
+  saveError,
 }: FormStepProps) {
   const meta = ACCOUNT_TYPE_META[type];
 
@@ -416,6 +439,10 @@ function FormStep({
           {nameTooLong && `账户名称不能超过 ${NAME_LIMIT} 字；`}
           {remarkTooLong && `备注不能超过 ${REMARK_LIMIT} 字；`}
         </div>
+      )}
+
+      {saveError && (
+        <div className="text-xs text-expense">保存失败：{saveError}</div>
       )}
     </div>
   );

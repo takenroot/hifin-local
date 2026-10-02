@@ -3,8 +3,7 @@
  *
  * merchants 表 CRUD：名称 + 备注
  */
-import { useEffect, useState } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
+import { useEffect, useMemo, useState } from 'react';
 import {
   IconPlus,
   IconPencil,
@@ -19,18 +18,22 @@ import {
   Modal,
   Textarea,
 } from '@/components/ui';
-import { db, type Merchant } from '@/db';
+import { apiFetch, useApi } from '@/hooks/useApi';
+import type { Merchant } from '@/db';
+import { restDelete, toMerchants, type RestMerchantRow } from '../restApi';
 
 export function MerchantsSection() {
-  const merchants = useLiveQuery(
-    () => db.merchants.orderBy('name').toArray(),
-    [],
+  const { data, loading, refetch } = useApi<RestMerchantRow[]>('/api/merchants');
+  const merchants = useMemo(
+    () =>
+      toMerchants(data ?? []).sort((a, b) => a.name.localeCompare(b.name, 'zh-CN')),
+    [data],
   );
   const [editing, setEditing] = useState<Merchant | null>(null);
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState<Merchant | null>(null);
 
-  const isEmpty = (merchants?.length ?? 0) === 0;
+  const isEmpty = !loading && merchants.length === 0;
 
   return (
     <Card
@@ -77,7 +80,7 @@ export function MerchantsSection() {
               </tr>
             </thead>
             <tbody>
-              {(merchants ?? []).map((m) => (
+              {merchants.map((m) => (
                 <tr
                   key={m.id}
                   className="border-b border-border dark:border-border-dark last:border-b-0"
@@ -121,15 +124,18 @@ export function MerchantsSection() {
       <MerchantFormModal
         open={creating}
         onClose={() => setCreating(false)}
+        onSaved={refetch}
       />
       <MerchantFormModal
         open={!!editing}
         merchant={editing ?? undefined}
         onClose={() => setEditing(null)}
+        onSaved={refetch}
       />
       <DeleteMerchantModal
         merchant={deleting}
         onClose={() => setDeleting(null)}
+        onDeleted={refetch}
       />
     </Card>
   );
@@ -139,10 +145,12 @@ function MerchantFormModal({
   open,
   merchant,
   onClose,
+  onSaved,
 }: {
   open: boolean;
   merchant?: Merchant;
   onClose: () => void;
+  onSaved?: () => void;
 }) {
   const isEdit = !!merchant;
   const [name, setName] = useState('');
@@ -167,10 +175,11 @@ function MerchantFormModal({
     try {
       const payload = { name: nm, remark: remark.trim() || undefined };
       if (isEdit && merchant?.id != null) {
-        await db.merchants.update(merchant.id, payload);
+        await apiFetch(`/api/merchants/${merchant.id}`, 'PUT', payload);
       } else {
-        await db.merchants.add(payload);
+        await apiFetch('/api/merchants', 'POST', payload);
       }
+      onSaved?.();
       onClose();
     } catch (e) {
       setError('保存失败：' + (e as Error).message);
@@ -233,18 +242,28 @@ function MerchantFormModal({
 function DeleteMerchantModal({
   merchant,
   onClose,
+  onDeleted,
 }: {
   merchant: Merchant | null;
   onClose: () => void;
+  onDeleted?: () => void;
 }) {
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (merchant) setError(null);
+  }, [merchant]);
 
   async function handleConfirm() {
     if (!merchant?.id) return;
     setBusy(true);
     try {
-      await db.merchants.delete(merchant.id);
+      await restDelete(`/api/merchants/${merchant.id}`);
+      onDeleted?.();
       onClose();
+    } catch (e) {
+      setError('删除失败：' + (e as Error).message);
     } finally {
       setBusy(false);
     }
@@ -275,6 +294,11 @@ function DeleteMerchantModal({
         <div className="text-xs text-text-muted">
           该商户从引用它的流水中解除；流水仍保留。
         </div>
+        {error && (
+          <div className="text-xs text-expense bg-expense-soft dark:bg-expense-soft-dark px-3 py-2 rounded-lg">
+            {error}
+          </div>
+        )}
       </div>
     </Modal>
   );

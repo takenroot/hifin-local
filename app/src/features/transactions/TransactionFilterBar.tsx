@@ -3,9 +3,9 @@
  */
 import { useMemo } from 'react';
 import dayjs from 'dayjs';
-import { useLiveQuery } from 'dexie-react-hooks';
 import { IconFilter, IconX } from '@tabler/icons-react';
-import { db, type Category, type Account, type TransactionType } from '@/db';
+import { type Category, type Account, type TransactionType } from '@/db';
+import { useApi } from '@/hooks/useApi';
 import { Select } from '@/components/ui';
 import { Input } from '@/components/ui';
 import type { TxFilter } from './balance';
@@ -13,6 +13,8 @@ import type { TxFilter } from './balance';
 interface Props {
   filter: TxFilter;
   onChange: (next: TxFilter) => void;
+  /** 父级写操作版本号，保证账户/分类下拉与列表同步刷新 */
+  version?: number;
 }
 
 const TYPE_OPTS: Array<{ label: string; value: string }> = [
@@ -23,13 +25,15 @@ const TYPE_OPTS: Array<{ label: string; value: string }> = [
   { label: '不计收支', value: 'excluded' },
 ];
 
-export function TransactionFilterBar({ filter, onChange }: Props) {
-  const categories = useLiveQuery(() => db.categories.toArray(), [], [] as Category[]);
-  const accounts = useLiveQuery(() => db.accounts.toArray(), [], [] as Account[]);
+export function TransactionFilterBar({ filter, onChange, version = 0 }: Props) {
+  const { data: categories } = useApi<Category[]>('/api/categories', [version]);
+  const { data: accounts } = useApi<Account[]>('/api/accounts', [version]);
+  const categoryList = categories ?? [];
+  const accountList = accounts ?? [];
 
   const categoryOptions = useMemo(() => {
     const groups = new Map<string, Category[]>();
-    for (const c of categories) {
+    for (const c of categoryList) {
       const arr = groups.get(c.group) ?? [];
       arr.push(c);
       groups.set(c.group, arr);
@@ -44,14 +48,14 @@ export function TransactionFilterBar({ filter, onChange }: Props) {
       }
     }
     return opts;
-  }, [categories]);
+  }, [categoryList]);
 
   const accountOptions = useMemo(
     () => [
       { label: '全部账户', value: '' },
-      ...accounts.map((a) => ({ label: a.name, value: String(a.id) })),
+      ...accountList.map((a) => ({ label: a.name, value: String(a.id) })),
     ],
-    [accounts],
+    [accountList],
   );
 
   const fromStr = filter.from ? dayjs(filter.from).format('YYYY-MM-DD') : '';

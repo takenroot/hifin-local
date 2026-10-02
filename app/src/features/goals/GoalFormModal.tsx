@@ -6,7 +6,6 @@
  * - 编辑模式直接进入第二步
  */
 import { useEffect, useMemo, useState } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
 import clsx from 'clsx';
 import {
   IconChevronLeft,
@@ -22,8 +21,9 @@ import {
   Modal,
   Select,
 } from '@/components/ui';
-import { db, type Account, type Goal, type GoalKind, useSpaceId } from '@/db';
+import { type Account, type Goal, type GoalKind, useSpaceId } from '@/db';
 import { filterBySpace } from '@/space';
+import { useApi, apiFetch } from '@/hooks/useApi';
 import {
   COLOR_CHOICES,
   REPAYMENT_SUBTYPES,
@@ -39,6 +39,10 @@ interface Props {
   onClose: () => void;
   /** 编辑时传入 */
   goal?: Goal;
+  /** 父级写操作版本号，驱动账户下拉重新拉取 */
+  version?: number;
+  /** 保存成功后通知父级刷新列表 */
+  onSaved?: () => void;
 }
 
 type Step = 'pick-kind' | 'pick-subtype' | 'fill-form';
@@ -86,17 +90,17 @@ function formFromGoal(g: Goal): FormState {
   };
 }
 
-export function GoalFormModal({ open, onClose, goal }: Props) {
+export function GoalFormModal({ open, onClose, goal, version = 0, onSaved }: Props) {
   const isEdit = !!goal;
   const [step, setStep] = useState<Step>(isEdit ? 'fill-form' : 'pick-kind');
   const [form, setForm] = useState<FormState>(DEFAULT_FORM);
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const accountsAll = useLiveQuery(
-    () => db.accounts.orderBy('name').toArray(),
-    [],
-  );
   const spaceId = useSpaceId();
+  // spaceId === 0 表示"全部空间"，此时不拼 spaceId 让服务端返回全量
+  const spaceQ = spaceId === 0 ? '' : `?spaceId=${spaceId}`;
+  const { data: accountsAll } = useApi<Account[]>(`/api/accounts${spaceQ}`, [version]);
   const accounts = useMemo(
     () => filterBySpace(accountsAll ?? [], spaceId),
     [accountsAll, spaceId],
@@ -107,6 +111,7 @@ export function GoalFormModal({ open, onClose, goal }: Props) {
     setStep(isEdit ? 'fill-form' : 'pick-kind');
     setForm(goal ? formFromGoal(goal) : DEFAULT_FORM);
     setSubmitted(false);
+    setError(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, goal?.id]);
 
@@ -136,27 +141,32 @@ export function GoalFormModal({ open, onClose, goal }: Props) {
   async function handleConfirm() {
     setSubmitted(true);
     if (!canFillConfirm) return;
+    setError(null);
     const deadlineTs = fromDateInput(form.deadline);
-    const now = Date.now();
-    const payload: Omit<Goal, 'id'> = {
+    // 外键 accountId 用 null 表达"不关联账户"（服务端 parseAccountId 接受 null）
+    const payload: Record<string, unknown> = {
       kind: form.kind,
       subtype: form.subtype,
       name: trimmedName,
       targetAmount: parseAmount(form.targetAmount),
       currentAmount: parseAmount(form.currentAmount),
-      deadline: deadlineTs,
-      accountId: form.accountId,
+      deadline: deadlineTs ?? null,
+      accountId: form.accountId ?? null,
       icon: form.icon,
       color: form.color,
       spaceId: goal?.spaceId ?? spaceId,
-      createdAt: goal?.createdAt ?? now,
     };
-    if (goal?.id != null) {
-      await db.goals.update(goal.id, payload);
-    } else {
-      await db.goals.add(payload);
+    try {
+      if (goal?.id != null) {
+        await apiFetch(`/api/goals/${goal.id}`, 'PUT', payload);
+      } else {
+        await apiFetch('/api/goals', 'POST', payload);
+      }
+      onSaved?.();
+      onClose();
+    } catch (e) {
+      setError((e as Error).message ?? '保存失败');
     }
-    onClose();
   }
 
   return (
@@ -217,6 +227,11 @@ export function GoalFormModal({ open, onClose, goal }: Props) {
         </>
       }
     >
+      {error && (
+        <div className="mb-4 text-sm text-expense bg-expense-soft dark:bg-expense-soft-dark rounded-xl px-3 py-2">
+          {error}
+        </div>
+      )}
       {step === 'pick-kind' && !isEdit ? (
         <KindPicker
           picked={form.kind}

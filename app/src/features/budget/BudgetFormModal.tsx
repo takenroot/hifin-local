@@ -4,10 +4,10 @@
  * 字段：名称、关联分类（可空 = 总预算）、金额、周期（月度 / 年度）
  */
 import { useEffect, useMemo, useState } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
 import { IconCheck } from '@tabler/icons-react';
 import { Button, Input, Modal, Select } from '@/components/ui';
-import { db, type Budget, type Category, type BudgetPeriod, useSpaceId } from '@/db';
+import { type Budget, type Category, type BudgetPeriod, useSpaceId } from '@/db';
+import { useApi, apiFetch } from '@/hooks/useApi';
 import { parseAmount } from './format';
 
 interface Props {
@@ -15,6 +15,10 @@ interface Props {
   onClose: () => void;
   /** 编辑时传入 */
   budget?: Budget;
+  /** 父级写操作版本号，驱动分类下拉重新拉取 */
+  version?: number;
+  /** 保存成功后通知父级刷新列表 */
+  onSaved?: () => void;
 }
 
 interface FormState {
@@ -43,21 +47,20 @@ function formFromBudget(b: Budget): FormState {
   };
 }
 
-export function BudgetFormModal({ open, onClose, budget }: Props) {
+export function BudgetFormModal({ open, onClose, budget, version = 0, onSaved }: Props) {
   const isEdit = !!budget;
   const [form, setForm] = useState<FormState>(DEFAULT_FORM);
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const spaceId = useSpaceId();
 
-  const categories = useLiveQuery(
-    () => db.categories.toArray(),
-    [],
-  ) as Category[] | undefined;
+  const { data: categories } = useApi<Category[]>('/api/categories', [version]);
 
   useEffect(() => {
     if (!open) return;
     setForm(budget ? formFromBudget(budget) : DEFAULT_FORM);
     setSubmitted(false);
+    setError(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, budget?.id]);
 
@@ -99,21 +102,26 @@ export function BudgetFormModal({ open, onClose, budget }: Props) {
   async function handleConfirm() {
     setSubmitted(true);
     if (!canConfirm) return;
-    const now = Date.now();
-    const payload: Omit<Budget, 'id'> = {
+    setError(null);
+    // categoryId 用 null 表达"总预算"（服务端 parseCategoryId 接受 null）
+    const payload: Record<string, unknown> = {
       name: trimmedName,
-      categoryId: form.categoryId,
+      categoryId: form.categoryId ?? null,
       amount: parseAmount(form.amount),
       period: form.period,
       spaceId: budget?.spaceId ?? spaceId,
-      createdAt: budget?.createdAt ?? now,
     };
-    if (budget?.id != null) {
-      await db.budgets.update(budget.id, payload);
-    } else {
-      await db.budgets.add(payload);
+    try {
+      if (budget?.id != null) {
+        await apiFetch(`/api/budgets/${budget.id}`, 'PUT', payload);
+      } else {
+        await apiFetch('/api/budgets', 'POST', payload);
+      }
+      onSaved?.();
+      onClose();
+    } catch (e) {
+      setError((e as Error).message ?? '保存失败');
     }
-    onClose();
   }
 
   return (
@@ -207,6 +215,12 @@ export function BudgetFormModal({ open, onClose, budget }: Props) {
             />
           </Field>
         </div>
+
+        {error && (
+          <div className="text-sm text-expense bg-expense-soft dark:bg-expense-soft-dark rounded-xl px-3 py-2">
+            {error}
+          </div>
+        )}
 
         {submitted && (nameInvalid || amountInvalid) && (
           <div className="text-xs text-expense">

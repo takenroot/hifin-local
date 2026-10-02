@@ -1,8 +1,13 @@
 /**
  * 设置 → 数据安全
  *
- * - 导出全部表为 JSON 下载
- * - 清空数据库（二次确认）
+ * - 导出：逐个拉取 REST 端点聚合成一份 JSON 下载（不再读 IndexedDB）
+ * - 清空：core 没有 POST /api/reset，因此前端逐表 DELETE
+ *
+ * core 侧的两处硬限制（前端如实提示，不做静默吞掉）：
+ *   1. /api/categories 只有 GET + POST，没有 DELETE —— 分类无法清空；
+ *   2. /api/spaces/:id 对默认空间（id=1）与非空空间返回 409。
+ * 所有 DELETE 端点返回 204 空体，因此不走 apiFetch。
  */
 import { useState } from 'react';
 import {
@@ -12,30 +17,121 @@ import {
   IconShieldLock,
 } from '@tabler/icons-react';
 import { Button, Card, Modal } from '@/components/ui';
-import { db } from '@/db';
+import { kvGet, restDelete } from '../restApi';
 
-/** Dexie 表名 -> DB key 列表 */
-const ALL_TABLES = [
-  'accounts',
-  'transactions',
-  'goals',
-  'categories',
-  'tags',
-  'merchants',
-  'reports',
-  'aiModels',
-  'kv',
-] as const;
+/** 导出覆盖的资源（导出键名沿用原 Dexie 表名，方便旧备份对照）。 */
+const EXPORT_SOURCES: Array<{ key: string; url: string }> = [
+  { key: 'accounts', url: '/api/accounts' },
+  { key: 'transactions', url: '/api/transactions' },
+  { key: 'goals', url: '/api/goals' },
+  { key: 'categories', url: '/api/categories' },
+  { key: 'tags', url: '/api/tags' },
+  { key: 'merchants', url: '/api/merchants' },
+  { key: 'budgets', url: '/api/budgets' },
+  { key: 'rules', url: '/api/rules' },
+  { key: 'reports', url: '/api/reports' },
+  { key: 'aiModels', url: '/api/ai-models?hideApiKey=0' },
+  { key: 'spaces', url: '/api/spaces' },
+];
 
-type TableName = (typeof ALL_TABLES)[number];
+/** kv 没有"列出全部键"的端点，按已知键逐个取。 */
+const EXPORT_KV_KEYS = ['nickname', 'userId', 'email', 'ai.defaultModelId'];
 
-async function exportAll(): Promise<Record<TableName, unknown[]>> {
-  const out = {} as Record<TableName, unknown[]>;
-  for (const t of ALL_TABLES) {
-    // 通过 as any 避免把 Table union 写得过于复杂
-    out[t] = await (db as unknown as Record<TableName, { toArray: () => Promise<unknown[]> }>)[t].toArray();
+/**
+ * 清空顺序：先删子表再删父表。
+ * - categories 无 DELETE 端点，跳过；
+ * - spaces 只删非默认且已清空的（否则 409）。
+ */
+const CLEAR_ORDER: Array<{ key: string; url: string }> = [
+  { key: 'transactions', url: '/api/transactions' },
+  { key: 'budgets', url: '/api/budgets' },
+  { key: 'goals', url: '/api/goals' },
+  { key: 'reports', url: '/api/reports' },
+  { key: 'rules', url: '/api/rules' },
+  { key: 'tags', url: '/api/tags' },
+  { key: 'merchants', url: '/api/merchants' },
+  { key: 'aiModels', url: '/api/ai-models' },
+  { key: 'accounts', url: '/api/accounts' },
+];
+
+async function fetchJson<T>(url: string): Promise<T> {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`HTTP ${r.status}: ${url}`);
+  return (await r.json()) as T;
+}
+
+interface IdRow {
+  id?: number | null;
+}
+
+async function exportAll(): Promise<Record<string, unknown>> {
+  const out: Record<string, unknown> = {};
+
+  // 集合型资源并行拉取；任一失败只记录，不中断整体导出
+  const results = await Promise.allSettled(
+    EXPORT_SOURCES.map(async (s) => [s.key, await fetchJson<unknown>(s.url)] as const),
+  );
+  for (let i = 0; i < results.length; i++) {
+    const r = results[i];
+    const key = EXPORT_SOURCES[i].key;
+    out[key] = r.status === 'fulfilled' ? r.value[1] : { error: String(r.reason) };
   }
+
+  const kv: Record<string, unknown> = {};
+  for (const k of EXPORT_KV_KEYS) {
+    try {
+      kv[k] = (await kvGet(k)) ?? null;
+    } catch (e) {
+      kv[k] = { error: String(e) };
+    }
+  }
+  out.kv = kv;
+
   return out;
+}
+
+async function clearAll(): Promise<{ cleared: string[]; skipped: string[] }> {
+  const cleared: string[] = [];
+  const skipped: string[] = [];
+
+  for (const t of CLEAR_ORDER) {
+    try {
+      const rows = await fetchJson<IdRow[]>(t.url);
+      for (const row of rows) {
+        if (row.id == null) continue;
+        try {
+          await restDelete(`${t.url}/${row.id}`);
+        } catch {
+          // 单条失败不阻断整表
+        }
+      }
+      cleared.push(t.key);
+    } catch (e) {
+      skipped.push(`${t.key}（${String(e)}）`);
+    }
+  }
+
+  // 空间：先删数据再删空间；默认空间 id=1 始终 409，忽略
+  try {
+    const spaces = await fetchJson<IdRow[]>('/api/spaces');
+    for (const s of spaces) {
+      if (s.id == null || s.id === 1) continue;
+      try {
+        await restDelete(`/api/spaces/${s.id}`);
+        cleared.push(`spaces#${s.id}`);
+      } catch {
+        // 非空空间 409：保留并提示
+        skipped.push(`spaces#${s.id}（空间非空，服务端拒绝删除）`);
+      }
+    }
+  } catch (e) {
+    skipped.push(`spaces（${String(e)}）`);
+  }
+
+  // categories 无 DELETE 端点
+  skipped.push('categories（服务端未提供删除端点）');
+
+  return { cleared, skipped };
 }
 
 function downloadJson(data: unknown, filename: string) {
@@ -59,6 +155,7 @@ export function SecuritySection() {
   const [clearOpen, setClearOpen] = useState(false);
   const [confirmText, setConfirmText] = useState('');
   const [clearing, setClearing] = useState(false);
+  const [clearResult, setClearResult] = useState<string | null>(null);
 
   async function handleExport() {
     setExporting(true);
@@ -71,7 +168,8 @@ export function SecuritySection() {
         .replace(/\..+$/, '');
       downloadJson(
         {
-          version: 1,
+          version: 2,
+          source: 'hifin-core REST',
           exportedAt: Date.now(),
           data,
         },
@@ -90,18 +188,21 @@ export function SecuritySection() {
   async function handleClear() {
     if (confirmText !== '清空数据') return;
     setClearing(true);
+    setClearResult(null);
     try {
-      // 逐表 clear，保证 seed 不被同时干掉时也能完整清除
-      for (const t of ALL_TABLES) {
-        await (
-          db as unknown as Record<TableName, { clear: () => Promise<void> }>
-        )[t].clear();
-      }
+      const { cleared, skipped } = await clearAll();
+      setClearResult(
+        [
+          cleared.length > 0 ? `已清空：${cleared.join('、')}` : null,
+          skipped.length > 0 ? `未清空：${skipped.join('；')}` : null,
+        ]
+          .filter(Boolean)
+          .join(' | '),
+      );
       setClearOpen(false);
       setConfirmText('');
-      // 重新跑 seed，使 categories / tags 仍有默认
-      // 重新载入页面以确保 jotai 状态与 db 状态同步
-      window.location.reload();
+      // 不再自动 reload：core 的 ensureSeed 只在服务启动时跑，
+      // reload 不会补回种子数据，反而会把上面的清空结果提示冲掉。
     } finally {
       setClearing(false);
     }
@@ -112,8 +213,8 @@ export function SecuritySection() {
       <Card title="导出数据">
         <div className="space-y-3 max-w-[560px]">
           <div className="text-sm text-text-muted">
-            导出全部表为 JSON 文件（含账户、流水、目标、分类、标签、商户、报表、AI
-            模型与偏好），便于备份或迁移。
+            逐个拉取本地 REST 服务（core）上的全部资源，聚合为一份 JSON 文件（含账户、流水、目标、分类、标签、商户、预算、规则、报表、AI
+            模型、空间与偏好设置），便于备份或迁移。
           </div>
           <div className="flex items-center gap-3">
             <Button
@@ -136,8 +237,11 @@ export function SecuritySection() {
           <div className="flex items-start gap-2 p-3 rounded-xl bg-expense-soft dark:bg-expense-soft-dark text-expense text-sm">
             <IconAlertTriangle size={16} className="flex-none mt-0.5" />
             <div>
-              该操作将<strong>永久删除</strong>本地全部数据，包括账户、流水、目标、分类、标签、商户、报表与 AI
-              模型配置。请先导出备份。清空后默认分类 / 标签将自动重新写入。
+              该操作将<strong>永久删除</strong>本地服务上的全部数据，包括账户、流水、目标、标签、商户、报表、规则、预算与 AI
+              模型配置。请先导出备份。
+              <div className="mt-1 text-xs">
+                注：服务端未提供分类删除端点，分类与默认空间（id=1）会保留。
+              </div>
             </div>
           </div>
           <Button
@@ -147,6 +251,9 @@ export function SecuritySection() {
           >
             清空数据库
           </Button>
+          {clearResult && (
+            <div className="text-xs text-text-muted break-words">{clearResult}</div>
+          )}
         </div>
       </Card>
 

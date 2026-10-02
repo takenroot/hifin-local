@@ -4,10 +4,9 @@
  * - 类型 Tab：支出 / 收入 / 转账 / 不计收支
  * - 名称、日期、金额、分类（按类型过滤 + optgroup 分组）、
  *   账户、转账时的"转入账户"、备注、标签多选、商户、计入资产
- * - 保存：在 Dexie 事务内回滚旧值 -> 应用新值 -> 写流水 / 更新账户余额
+ * - 保存：POST/PUT /api/transactions，账户余额联动由 core 在事务内完成
  */
 import { useEffect, useMemo, useState } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
 import dayjs from 'dayjs';
 import { Modal, Input, Textarea, Select, Switch, Button, Badge } from '@/components/ui';
 import {
@@ -19,9 +18,9 @@ import {
   IconBuildingStore,
   IconWand,
 } from '@tabler/icons-react';
-import { db, type Account, type Category, type Tag, type Merchant, type Transaction, type TransactionType, type TxRule, useSpaceId } from '@/db';
+import { type Account, type Category, type Tag, type Merchant, type Transaction, type TransactionType, type TxRule, useSpaceId } from '@/db';
 import { filterBySpace } from '@/space';
-import { deltasOf } from './balance';
+import { useApi, apiFetch } from '@/hooks/useApi';
 import { toDatetimeLocal } from './format';
 import { applyRules } from '@/features/rules/engine';
 import clsx from 'clsx';
@@ -31,6 +30,10 @@ interface Props {
   onClose: () => void;
   /** 编辑时传入；新建时为 undefined */
   editing?: Transaction | null;
+  /** 父级递增的版本号：任一写操作后自增，触发本模态重新拉取下拉数据 */
+  version?: number;
+  /** 保存成功后通知父级刷新列表 */
+  onSaved?: () => void;
 }
 
 type TypeTab = TransactionType;
@@ -58,16 +61,20 @@ function accountsOfType(
 
 /* ---------------- component ---------------- */
 
-export function TransactionFormModal({ open, onClose, editing }: Props) {
-  const accountsAll = useLiveQuery(() => db.accounts.toArray(), [], [] as Account[]);
-  const categories = useLiveQuery(() => db.categories.toArray(), [], [] as Category[]);
-  const tags = useLiveQuery(() => db.tags.toArray(), [], [] as Tag[]);
-  const merchants = useLiveQuery(() => db.merchants.toArray(), [], [] as Merchant[]);
-  const rules = useLiveQuery(() => db.rules.toArray(), [], [] as TxRule[]);
+export function TransactionFormModal({ open, onClose, editing, version = 0, onSaved }: Props) {
   const spaceId = useSpaceId();
+  // spaceId === 0 表示"全部空间"，此时不拼 spaceId 让服务端返回全量
+  const spaceQ = spaceId === 0 ? '' : `?spaceId=${spaceId}`;
+
+  const { data: accountsAll } = useApi<Account[]>(`/api/accounts${spaceQ}`, [version]);
+  const { data: categories } = useApi<Category[]>('/api/categories', [version]);
+  const { data: tags } = useApi<Tag[]>('/api/tags', [version]);
+  const { data: merchants } = useApi<Merchant[]>('/api/merchants', [version]);
+  const { data: rules } = useApi<TxRule[]>('/api/rules', [version]);
+
   // 账户选项限定为当前空间，避免在"工作空间"里选到"家庭空间"的账户
   const accounts = useMemo(
-    () => filterBySpace(accountsAll, spaceId),
+    () => filterBySpace(accountsAll ?? [], spaceId),
     [accountsAll, spaceId],
   );
 
@@ -139,7 +146,7 @@ export function TransactionFormModal({ open, onClose, editing }: Props) {
   // 可选分类（按类型过滤 + 分组）
   const categoryOptions = useMemo(() => {
     if (type !== 'expense' && type !== 'income') return [];
-    const filtered = categories.filter((c) => c.type === type);
+    const filtered = (categories ?? []).filter((c) => c.type === type);
     const groups = new Map<string, Category[]>();
     for (const c of filtered) {
       const arr = groups.get(c.group) ?? [];
@@ -171,7 +178,7 @@ export function TransactionFormModal({ open, onClose, editing }: Props) {
   }, [accounts, accountId]);
 
   const merchantOptions = useMemo(
-    () => merchants.map((m) => ({ label: m.name, value: String(m.id) })),
+    () => (merchants ?? []).map((m) => ({ label: m.name, value: String(m.id) })),
     [merchants],
   );
 
@@ -188,7 +195,7 @@ export function TransactionFormModal({ open, onClose, editing }: Props) {
       setSuggestedCategoryId(undefined);
       return;
     }
-    const catId = applyRules({ name: trimmed, remark: remark }, rules);
+    const catId = applyRules({ name: trimmed, remark: remark }, rules ?? []);
     setSuggestedCategoryId(catId === null ? undefined : catId);
   }
 
@@ -200,7 +207,7 @@ export function TransactionFormModal({ open, onClose, editing }: Props) {
 
   const suggestedCategory =
     suggestedCategoryId !== undefined
-      ? categories.find((c) => c.id === suggestedCategoryId)
+      ? categories?.find((c) => c.id === suggestedCategoryId)
       : undefined;
 
   /* -------- validate & save -------- */
@@ -212,7 +219,9 @@ export function TransactionFormModal({ open, onClose, editing }: Props) {
     if (!accountId) return '请选择账户';
     if (type === 'transfer' && !toAccountId) return '请选择转入账户';
     if (type === 'transfer' && accountId === toAccountId) return '转出与转入账户必须不同';
-    if (type !== 'excluded' && (amount === '' || Number(amount) <= 0)) {
+    // 服务端 transactions.amount 有 CHECK(amount > 0) 约束，
+    // 因此"不计收支"也必须给一个正数金额，否则 POST/PUT 会被拒绝。
+    if (amount === '' || Number(amount) <= 0) {
       return '金额必须大于 0';
     }
     if (type !== 'excluded' && type !== 'transfer' && !categoryId) {
@@ -232,54 +241,41 @@ export function TransactionFormModal({ open, onClose, editing }: Props) {
     try {
       const finalAmount = amount === '' ? 0 : Math.abs(Number(amount));
       const dateTs = dayjs(dateStr).valueOf();
-      const txBase: Transaction = {
+      const txName = name.trim() || (type === 'transfer' ? '转账' : '不计收支');
+
+      // 余额联动（新建 / 编辑回滚旧值 / 再应用新值）全部由 core 在事务内完成。
+      //
+      // PUT 是"部分更新"：未出现的字段保持原值；外键字段若传 null 会被
+      // Number(null) 转成 0 写成悬空引用，所以只在真的有值时才带上。
+      // remark / tagIds 则可以安全地用空值覆盖，用来清空。
+      const payload: Record<string, unknown> = {
         type,
-        name: name.trim() || (type === 'transfer' ? '转账' : '不计收支'),
+        name: txName,
         amount: finalAmount,
         date: dateTs,
+        // accountId 必填（validate() 已保证有值）
         accountId: accountId as number,
-        toAccountId: type === 'transfer' ? toAccountId : undefined,
-        categoryId: type === 'expense' || type === 'income' ? categoryId : undefined,
-        remark: remark.trim() || undefined,
-        tagIds: tagIds.length > 0 ? tagIds : undefined,
-        merchantId,
         includeInAsset,
         spaceId: editing?.spaceId ?? spaceId,
-        createdAt: editing?.createdAt ?? Date.now(),
+        remark: remark.trim(),
+        tagIds,
       };
+      if ((type === 'expense' || type === 'income') && categoryId !== undefined) {
+        payload.categoryId = categoryId;
+      }
+      if (type === 'transfer' && toAccountId !== undefined) {
+        payload.toAccountId = toAccountId;
+      }
+      if (merchantId !== undefined) {
+        payload.merchantId = merchantId;
+      }
 
-      await db.transaction('rw', db.transactions, db.accounts, async () => {
-        // 编辑时：先回滚老的影响
-        if (editing?.id !== undefined) {
-          const oldTx = await db.transactions.get(editing.id);
-          if (oldTx) {
-            for (const d of deltasOf(oldTx)) {
-              const acc = await db.accounts.get(d.accountId);
-              if (acc) {
-                acc.balance = Number((acc.balance - d.delta).toFixed(2));
-                acc.updatedAt = Date.now();
-                await db.accounts.put(acc);
-              }
-            }
-          }
-        }
-        // 应用新影响
-        for (const d of deltasOf(txBase)) {
-          const acc = await db.accounts.get(d.accountId);
-          if (acc) {
-            acc.balance = Number((acc.balance + d.delta).toFixed(2));
-            acc.updatedAt = Date.now();
-            await db.accounts.put(acc);
-          }
-        }
-        // 写流水
-        if (editing?.id !== undefined) {
-          await db.transactions.put({ ...txBase, id: editing.id });
-        } else {
-          await db.transactions.add(txBase);
-        }
-      });
-
+      if (editing?.id !== undefined) {
+        await apiFetch(`/api/transactions/${editing.id}`, 'PUT', payload);
+      } else {
+        await apiFetch('/api/transactions', 'POST', payload);
+      }
+      onSaved?.();
       onClose();
     } catch (e) {
       setError((e as Error).message ?? '保存失败');
@@ -358,20 +354,18 @@ export function TransactionFormModal({ open, onClose, editing }: Props) {
         </Field>
 
         {/* 金额 */}
-        {type !== 'excluded' && (
-          <Field label="金额 *">
-            <Input
-              type="number"
-              step="0.01"
-              min="0"
-              prefix={<span className="text-sm">¥</span>}
-              value={amount === '' ? '' : String(amount)}
-              onChange={(e) => setAmount(e.target.value === '' ? '' : Number(e.target.value))}
-              placeholder="0.00"
-              block
-            />
-          </Field>
-        )}
+        <Field label="金额 *">
+          <Input
+            type="number"
+            step="0.01"
+            min="0"
+            prefix={<span className="text-sm">¥</span>}
+            value={amount === '' ? '' : String(amount)}
+            onChange={(e) => setAmount(e.target.value === '' ? '' : Number(e.target.value))}
+            placeholder="0.00"
+            block
+          />
+        </Field>
 
         {/* 分类 */}
         {(type === 'expense' || type === 'income') && (
@@ -453,10 +447,10 @@ export function TransactionFormModal({ open, onClose, editing }: Props) {
         </Field>
 
         {/* 标签多选 */}
-        {tags.length > 0 && (
+        {(tags?.length ?? 0) > 0 && (
           <Field label="标签">
             <div className="flex flex-wrap gap-1.5">
-              {tags.map((t) => {
+              {(tags ?? []).map((t) => {
                 const active = tagIds.includes(t.id as number);
                 return (
                   <button
@@ -486,7 +480,7 @@ export function TransactionFormModal({ open, onClose, editing }: Props) {
         )}
 
         {/* 商户 */}
-        {merchants.length > 0 && (
+        {(merchants?.length ?? 0) > 0 && (
           <Field label="商户">
             <div className="flex items-center gap-2">
               <IconBuildingStore size={16} className="text-text-muted" />

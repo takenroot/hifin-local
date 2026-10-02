@@ -5,11 +5,10 @@
  * - 拖拽 / 点击上传 CSV，文件大小校验
  * - 平台选择（支付宝 / 微信 / 银行 / 通用）
  * - 解析按钮 → 解析 + 预览
- * - 确认导入（在事务内写 transactions + 更新 balance）
+ * - 确认导入：逐条 POST /api/transactions（余额联动由 core 完成），历史写入 /api/kv
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import dayjs from 'dayjs';
-import { useLiveQuery } from 'dexie-react-hooks';
 import {
   IconUpload,
   IconFileSpreadsheet,
@@ -21,15 +20,16 @@ import {
 } from '@tabler/icons-react';
 import clsx from 'clsx';
 import { Tabs, Button, Select, Badge } from '@/components/ui';
-import { db, type Account, type Category, type Transaction, type TxRule, useSpaceId } from '@/db';
+import { type Account, type Category, type TxRule, useSpaceId } from '@/db';
 import { filterBySpace } from '@/space';
+import { useApi, apiFetch } from '@/hooks/useApi';
 import { PLATFORMS, parseCsvText, type ParsedTx } from './csv';
-import { deltasOf } from './balance';
 import { formatMoney } from './format';
 import { applyRules } from '@/features/rules/engine';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const IMPORT_HISTORY_KEY = 'transaction:import-history';
+const IMPORT_HISTORY_URL = `/api/kv/${encodeURIComponent(IMPORT_HISTORY_KEY)}`;
 
 interface ImportBatch {
   id: string;
@@ -38,6 +38,18 @@ interface ImportBatch {
   total: number;
   imported: number;
   at: number;
+}
+
+/** 读导入历史；键不存在时服务端返回 404，视作空历史。 */
+async function readImportHistory(): Promise<ImportBatch[]> {
+  try {
+    const r = await fetch(IMPORT_HISTORY_URL);
+    if (!r.ok) return [];
+    const json = (await r.json()) as { value?: ImportBatch[] };
+    return Array.isArray(json.value) ? json.value : [];
+  } catch {
+    return [];
+  }
 }
 
 function readFileText(file: File): Promise<string> {
@@ -49,7 +61,7 @@ function readFileText(file: File): Promise<string> {
   });
 }
 
-export function TransactionImportView() {
+export function TransactionImportView({ onImported }: { onImported?: () => void }) {
   const [activeTab, setActiveTab] = useState<'import' | 'history'>('import');
 
   return (
@@ -59,7 +71,7 @@ export function TransactionImportView() {
         activeKey={activeTab}
         onChange={(k) => setActiveTab(k as 'import' | 'history')}
         items={[
-          { key: 'import', label: '账单导入', content: <ImportPanel /> },
+          { key: 'import', label: '账单导入', content: <ImportPanel onImported={onImported} /> },
           { key: 'history', label: '历史记录', content: <HistoryPanel /> },
         ]}
       />
@@ -69,17 +81,17 @@ export function TransactionImportView() {
 
 /* -------- 导入面板 -------- */
 
-function ImportPanel() {
-  const accountsAll = useLiveQuery(() => db.accounts.toArray(), [], [] as Account[]);
-  const rules = useLiveQuery(() => db.rules.toArray(), [], [] as TxRule[]);
-  const categories = useLiveQuery(
-    () => db.categories.toArray(),
-    [],
-    [] as Category[],
-  );
+function ImportPanel({ onImported }: { onImported?: () => void }) {
   const spaceId = useSpaceId();
+  // spaceId === 0 表示"全部空间"，此时不拼 spaceId 让服务端返回全量
+  const spaceQ = spaceId === 0 ? '' : `?spaceId=${spaceId}`;
+
+  const { data: accountsAll } = useApi<Account[]>(`/api/accounts${spaceQ}`);
+  const { data: rules } = useApi<TxRule[]>('/api/rules');
+  const { data: categories } = useApi<Category[]>('/api/categories');
+
   const accounts = useMemo(
-    () => filterBySpace(accountsAll, spaceId),
+    () => filterBySpace(accountsAll ?? [], spaceId),
     [accountsAll, spaceId],
   );
 
@@ -105,7 +117,7 @@ function ImportPanel() {
 
   const categoryMap = useMemo(() => {
     const m = new Map<number, Category>();
-    for (const c of categories) {
+    for (const c of categories ?? []) {
       if (c.id != null) m.set(c.id, c);
     }
     return m;
@@ -147,7 +159,7 @@ function ImportPanel() {
         if (it.rawLine || !it.date || it.amount <= 0) return;
         const suggested = applyRules(
           { name: it.merchant, merchant: it.merchant, remark: it.remark },
-          rules,
+          rules ?? [],
         );
         if (suggested != null) next[idx] = suggested;
       });
@@ -212,57 +224,59 @@ function ImportPanel() {
     setImporting(true);
     setParseError(null);
     try {
-      await db.transaction('rw', db.transactions, db.accounts, db.kv, async () => {
-        const now = Date.now();
-        for (let i = 0; i < items.length; i++) {
-          const it = items[i];
-          if (it.rawLine || !it.date || it.amount <= 0) continue;
-          const catId = resolvedCategory(i);
-          const tx: Transaction = {
-            type: it.type,
-            name: it.merchant || (it.type === 'transfer' ? '转账' : '导入流水'),
-            amount: it.amount,
-            date: it.date,
-            accountId,
-            toAccountId: undefined,
-            // 仅在 支出/收入 类型下保留分类
-            categoryId:
-              catId != null && (it.type === 'expense' || it.type === 'income')
-                ? catId
-                : undefined,
-            remark: it.remark,
-            includeInAsset: true,
-            spaceId,
-            createdAt: now,
-          };
-          const id = await db.transactions.add(tx);
-          // 应用余额影响
-          const finalTx = { ...tx, id };
-          for (const d of deltasOf(finalTx)) {
-            const acc = await db.accounts.get(d.accountId);
-            if (acc) {
-              acc.balance = Number((acc.balance + d.delta).toFixed(2));
-              acc.updatedAt = Date.now();
-              await db.accounts.put(acc);
-            }
-          }
-        }
-        // 写历史
-        const batch: ImportBatch = {
-          id: `imp-${now}-${Math.random().toString(36).slice(2, 6)}`,
-          platform,
-          fileName: file?.name ?? '',
-          total: items.length,
-          imported: valid.length,
-          at: now,
+      // 逐条 POST：core 尚无批量端点，因此循环调用。
+      // 注意这不再是原子的——中途失败会留下已导入的部分，这里如实回报失败条数。
+      let succeeded = 0;
+      let failed = 0;
+      for (let i = 0; i < items.length; i++) {
+        const it = items[i];
+        if (it.rawLine || !it.date || it.amount <= 0) continue;
+        const catId = resolvedCategory(i);
+        const payload: Record<string, unknown> = {
+          type: it.type,
+          name: it.merchant || (it.type === 'transfer' ? '转账' : '导入流水'),
+          amount: it.amount,
+          date: it.date,
+          accountId,
+          remark: it.remark,
+          includeInAsset: true,
+          spaceId,
         };
-        const prev = ((await db.kv.get(IMPORT_HISTORY_KEY))?.value as ImportBatch[] | undefined) ?? [];
-        await db.kv.put({ key: IMPORT_HISTORY_KEY, value: [batch, ...prev].slice(0, 50) });
+        // 仅在 支出/收入 类型下带分类，避免写入 null 外键
+        if (catId != null && (it.type === 'expense' || it.type === 'income')) {
+          payload.categoryId = catId;
+        }
+        try {
+          await apiFetch('/api/transactions', 'POST', payload);
+          succeeded++;
+        } catch {
+          failed++;
+        }
+      }
+
+      // 写导入历史
+      const now = Date.now();
+      const batch: ImportBatch = {
+        id: `imp-${now}-${Math.random().toString(36).slice(2, 6)}`,
+        platform,
+        fileName: file?.name ?? '',
+        total: items.length,
+        imported: succeeded,
+        at: now,
+      };
+      const prev = await readImportHistory();
+      await apiFetch(IMPORT_HISTORY_URL, 'PUT', {
+        value: [batch, ...prev].slice(0, 50),
       });
+
       setImportResult({
-        imported: valid.length,
+        imported: succeeded,
         skipped: items.length - valid.length,
       });
+      if (failed > 0) {
+        setParseError(`有 ${failed} 条流水导入失败（可能重复或数据不合法），其余已成功写入`);
+      }
+      onImported?.();
       setItems([]);
       setSuggestions({});
       setOverrides({});
@@ -473,7 +487,7 @@ function ImportPanel() {
                             </button>
                           ) : (
                             <CategoryPicker
-                              categories={categories}
+                              categories={categories ?? []}
                               value={undefined}
                               onChange={(v) => overrideCategory(i, v)}
                             />
@@ -540,8 +554,9 @@ function CategoryPicker({
 /* -------- 历史面板 -------- */
 
 function HistoryPanel() {
-  const kv = useLiveQuery(() => db.kv.get(IMPORT_HISTORY_KEY), []);
-  const batches = (kv?.value as ImportBatch[] | undefined) ?? [];
+  // 键不存在时服务端返回 404，useApi 会置 error 且 data 保持 null → 视为暂无记录
+  const { data: kv } = useApi<{ key: string; value: ImportBatch[] }>(IMPORT_HISTORY_URL);
+  const batches = kv?.value ?? [];
 
   if (batches.length === 0) {
     return (

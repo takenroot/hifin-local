@@ -1,23 +1,29 @@
 /**
  * 设置 → 当前空间 / 空间配置
  *
- * - 展示 spaceIdAtom 当前空间名（来自 db.spaces，"全部空间"以 sid=0 表示）
+ * - 展示 spaceIdAtom 当前空间名（来自 GET /api/spaces，"全部空间"以 sid=0 表示）
  * - 多空间管理入口：可直接在侧边栏顶部"添加空间"完成创建；
  *   设置页只提供"当前空间"只读视图与说明，避免与侧边栏重复。
  */
 import { useAtomValue } from 'jotai';
-import { useLiveQuery } from 'dexie-react-hooks';
+import { useMemo } from 'react';
 import { Card } from '@/components/ui';
+import { useApi } from '@/hooks/useApi';
 import { spaceIdAtom } from '@/store/atoms';
-import { db, type Space } from '@/db';
+import type { Space } from '@/db';
+import { toSpaces, type RestSpaceRow } from '../restApi';
 import { ALL_SPACES_ID } from '@/space';
 
 const ALL_SPACES_LABEL = '全部空间';
 
 export function SpaceSection() {
   const spaceId = useAtomValue(spaceIdAtom);
-  const spaces: Space[] =
-    useLiveQuery(() => db.spaces.orderBy('name').toArray(), []) ?? [];
+  const { data } = useApi<RestSpaceRow[]>('/api/spaces');
+  // 迁移前是 orderBy('name')，这里按名称排序保持一致
+  const spaces: Space[] = useMemo(
+    () => toSpaces(data ?? []).sort((a, b) => a.name.localeCompare(b.name, 'zh-CN')),
+    [data],
+  );
 
   const label = (() => {
     if (spaceId === ALL_SPACES_ID) return ALL_SPACES_LABEL;

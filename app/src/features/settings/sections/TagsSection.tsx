@@ -3,8 +3,7 @@
  *
  * tags 表 CRUD：名称 + 颜色圆点
  */
-import { useEffect, useState } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
+import { useEffect, useMemo, useState } from 'react';
 import {
   IconPlus,
   IconPencil,
@@ -18,7 +17,9 @@ import {
   Input,
   Modal,
 } from '@/components/ui';
-import { db, type Tag } from '@/db';
+import { apiFetch, useApi } from '@/hooks/useApi';
+import type { Tag } from '@/db';
+import { restDelete, toTags, type RestTagRow } from '../restApi';
 
 const COLOR_OPTIONS = [
   '#6366f1',
@@ -34,12 +35,16 @@ const COLOR_OPTIONS = [
 ];
 
 export function TagsSection() {
-  const tags = useLiveQuery(() => db.tags.orderBy('name').toArray(), []);
+  const { data, loading, refetch } = useApi<RestTagRow[]>('/api/tags');
+  const tags = useMemo(
+    () => toTags(data ?? []).sort((a, b) => a.name.localeCompare(b.name, 'zh-CN')),
+    [data],
+  );
   const [editing, setEditing] = useState<Tag | null>(null);
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState<Tag | null>(null);
 
-  const isEmpty = (tags?.length ?? 0) === 0;
+  const isEmpty = !loading && tags.length === 0;
 
   return (
     <Card
@@ -86,7 +91,7 @@ export function TagsSection() {
               </tr>
             </thead>
             <tbody>
-              {(tags ?? []).map((t) => (
+              {tags.map((t) => (
                 <tr
                   key={t.id}
                   className="border-b border-border dark:border-border-dark last:border-b-0"
@@ -130,15 +135,21 @@ export function TagsSection() {
         </div>
       )}
 
-      <TagFormModal open={creating} onClose={() => setCreating(false)} />
+      <TagFormModal
+        open={creating}
+        onClose={() => setCreating(false)}
+        onSaved={refetch}
+      />
       <TagFormModal
         open={!!editing}
         tag={editing ?? undefined}
         onClose={() => setEditing(null)}
+        onSaved={refetch}
       />
       <DeleteTagModal
         tag={deleting}
         onClose={() => setDeleting(null)}
+        onDeleted={refetch}
       />
     </Card>
   );
@@ -148,10 +159,12 @@ function TagFormModal({
   open,
   tag,
   onClose,
+  onSaved,
 }: {
   open: boolean;
   tag?: Tag;
   onClose: () => void;
+  onSaved?: () => void;
 }) {
   const isEdit = !!tag;
   const [name, setName] = useState('');
@@ -176,10 +189,11 @@ function TagFormModal({
     try {
       const payload = { name: nm, color };
       if (isEdit && tag?.id != null) {
-        await db.tags.update(tag.id, payload);
+        await apiFetch(`/api/tags/${tag.id}`, 'PUT', payload);
       } else {
-        await db.tags.add(payload);
+        await apiFetch('/api/tags', 'POST', payload);
       }
+      onSaved?.();
       onClose();
     } catch (e) {
       setError('保存失败：' + (e as Error).message);
@@ -249,18 +263,28 @@ function TagFormModal({
 function DeleteTagModal({
   tag,
   onClose,
+  onDeleted,
 }: {
   tag: Tag | null;
   onClose: () => void;
+  onDeleted?: () => void;
 }) {
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (tag) setError(null);
+  }, [tag]);
 
   async function handleConfirm() {
     if (!tag?.id) return;
     setBusy(true);
     try {
-      await db.tags.delete(tag.id);
+      await restDelete(`/api/tags/${tag.id}`);
+      onDeleted?.();
       onClose();
+    } catch (e) {
+      setError('删除失败：' + (e as Error).message);
     } finally {
       setBusy(false);
     }
@@ -291,6 +315,11 @@ function DeleteTagModal({
         <div className="text-xs text-text-muted">
           该标签将从引用它的账户 / 流水中解除。
         </div>
+        {error && (
+          <div className="text-xs text-expense bg-expense-soft dark:bg-expense-soft-dark px-3 py-2 rounded-lg">
+            {error}
+          </div>
+        )}
       </div>
     </Modal>
   );

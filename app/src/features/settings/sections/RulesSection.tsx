@@ -11,7 +11,6 @@
  * 表格按 priority 降序展示；空态引导用户创建第一条规则。
  */
 import { useEffect, useMemo, useState } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
 import {
   IconPlus,
   IconPencil,
@@ -28,7 +27,15 @@ import {
   Select,
   Switch,
 } from '@/components/ui';
-import { db, type Category, type RuleMatchField, type TxRule } from '@/db';
+import { apiFetch, useApi } from '@/hooks/useApi';
+import type { Category, RuleMatchField, TxRule } from '@/db';
+import {
+  restDelete,
+  toCategories,
+  toRules,
+  type RestCategoryRow,
+  type RestRuleRow,
+} from '../restApi';
 
 const MATCH_FIELD_OPTIONS: Array<{ label: string; value: RuleMatchField }> = [
   { label: '流水名称', value: 'name' },
@@ -43,14 +50,11 @@ const MATCH_FIELD_LABEL: Record<RuleMatchField, string> = {
 };
 
 export function RulesSection() {
-  const rules = useLiveQuery(
-    () => db.rules.orderBy('priority').reverse().toArray(),
-    [],
-  );
-  const categories = useLiveQuery(
-    () => db.categories.orderBy('type').toArray(),
-    [],
-  ) as Category[] | undefined;
+  // core 的 GET /api/rules 已按 priority DESC, id ASC 排序
+  const { data: ruleRows, loading, refetch } = useApi<RestRuleRow[]>('/api/rules');
+  const { data: categoryRows } = useApi<RestCategoryRow[]>('/api/categories');
+  const rules = useMemo(() => toRules(ruleRows ?? []), [ruleRows]);
+  const categories = useMemo(() => toCategories(categoryRows ?? []), [categoryRows]);
 
   const [editing, setEditing] = useState<TxRule | null>(null);
   const [creating, setCreating] = useState(false);
@@ -58,13 +62,13 @@ export function RulesSection() {
 
   const categoryMap = useMemo(() => {
     const m = new Map<number, Category>();
-    for (const c of categories ?? []) {
+    for (const c of categories) {
       if (c.id != null) m.set(c.id, c);
     }
     return m;
   }, [categories]);
 
-  const isEmpty = (rules?.length ?? 0) === 0;
+  const isEmpty = !loading && rules.length === 0;
 
   return (
     <Card
@@ -116,7 +120,7 @@ export function RulesSection() {
               </tr>
             </thead>
             <tbody>
-              {(rules ?? []).map((r) => {
+              {rules.map((r) => {
                 const cat = r.categoryId != null ? categoryMap.get(r.categoryId) : undefined;
                 return (
                   <tr
@@ -157,7 +161,7 @@ export function RulesSection() {
                       <Switch
                         size="sm"
                         checked={r.enabled}
-                        onChange={(v) => toggleEnabled(r, v)}
+                        onChange={(v) => toggleEnabled(r, v, refetch)}
                       />
                     </td>
                     <td className="py-3 pr-4">
@@ -190,23 +194,30 @@ export function RulesSection() {
 
       <RuleFormModal
         open={creating}
-        categories={categories ?? []}
+        categories={categories}
         onClose={() => setCreating(false)}
+        onSaved={refetch}
       />
       <RuleFormModal
         open={!!editing}
         rule={editing ?? undefined}
-        categories={categories ?? []}
+        categories={categories}
         onClose={() => setEditing(null)}
+        onSaved={refetch}
       />
-      <DeleteRuleModal rule={deleting} onClose={() => setDeleting(null)} />
+      <DeleteRuleModal
+        rule={deleting}
+        onClose={() => setDeleting(null)}
+        onDeleted={refetch}
+      />
     </Card>
   );
 }
 
-async function toggleEnabled(rule: TxRule, v: boolean) {
+async function toggleEnabled(rule: TxRule, v: boolean, refetch: () => void) {
   if (rule.id == null) return;
-  await db.rules.update(rule.id, { enabled: v });
+  await apiFetch(`/api/rules/${rule.id}`, 'PUT', { enabled: v });
+  refetch();
 }
 
 /* ─────────── 表单模态 ─────────── */
@@ -216,6 +227,7 @@ interface RuleFormModalProps {
   rule?: TxRule;
   categories: Category[];
   onClose: () => void;
+  onSaved?: () => void;
 }
 
 function RuleFormModal({
@@ -223,6 +235,7 @@ function RuleFormModal({
   rule,
   categories,
   onClose,
+  onSaved,
 }: RuleFormModalProps) {
   const isEdit = !!rule;
   const [keyword, setKeyword] = useState('');
@@ -289,13 +302,12 @@ function RuleFormModal({
         enabled,
       };
       if (isEdit && rule?.id != null) {
-        await db.rules.update(rule.id, payload);
+        await apiFetch(`/api/rules/${rule.id}`, 'PUT', payload);
       } else {
-        await db.rules.add({
-          ...payload,
-          createdAt: Date.now(),
-        });
+        // core 的 POST 由服务端写 createdAt
+        await apiFetch('/api/rules', 'POST', payload);
       }
+      onSaved?.();
       onClose();
     } catch (e) {
       setError('保存失败：' + (e as Error).message);
@@ -376,18 +388,28 @@ function RuleFormModal({
 function DeleteRuleModal({
   rule,
   onClose,
+  onDeleted,
 }: {
   rule: TxRule | null;
   onClose: () => void;
+  onDeleted?: () => void;
 }) {
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (rule) setError(null);
+  }, [rule]);
 
   async function handleConfirm() {
     if (!rule?.id) return;
     setBusy(true);
     try {
-      await db.rules.delete(rule.id);
+      await restDelete(`/api/rules/${rule.id}`);
+      onDeleted?.();
       onClose();
+    } catch (e) {
+      setError('删除失败：' + (e as Error).message);
     } finally {
       setBusy(false);
     }
@@ -418,6 +440,11 @@ function DeleteRuleModal({
         <div className="text-xs text-text-muted">
           删除后，已应用该规则的流水不会自动还原。
         </div>
+        {error && (
+          <div className="text-xs text-expense bg-expense-soft dark:bg-expense-soft-dark px-3 py-2 rounded-lg">
+            {error}
+          </div>
+        )}
       </div>
     </Modal>
   );

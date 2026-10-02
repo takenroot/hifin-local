@@ -3,10 +3,11 @@
  *
  * - 顶部"配置列表"卡片（展示默认配置，含实际 seed 数量统计）
  * - 下方：左侧分组树 + 右侧分类列表
- * - categories 表 CRUD：新增 / 编辑 / 删除；可按分组过滤
+ * - 数据源：GET /api/categories（REST 返回平铺列表，分组在前端按 group 聚合）
+ * - 写操作：core 仅提供 POST /api/categories，**没有** PUT / DELETE，
+ *   因此编辑与删除入口在服务端补齐前先禁用（不保留 Dexie 旁路）。
  */
 import { useEffect, useMemo, useState } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
 import {
   IconPlus,
   IconPencil,
@@ -25,7 +26,9 @@ import {
   Modal,
   Select,
 } from '@/components/ui';
-import { db, type Category, type CategoryType } from '@/db';
+import { apiFetch, useApi } from '@/hooks/useApi';
+import type { Category, CategoryType } from '@/db';
+import { toCategories, type RestCategoryRow } from '../restApi';
 import { formatDate } from '../format';
 
 const TYPE_LABEL: Record<CategoryType, string> = {
@@ -38,16 +41,17 @@ const TYPE_TONE: Record<CategoryType, 'expense' | 'income'> = {
   income: 'income',
 };
 
-export function CategoriesSection() {
-  const categories = useLiveQuery(
-    () => db.categories.orderBy('group').toArray(),
-    [],
-  );
+/** core 未提供分类的更新 / 删除端点，功能入口随之禁用。 */
+const CATEGORIES_MUTABLE = false;
 
-  // 实际分组与统计
+export function CategoriesSection() {
+  const { data, loading, refetch } = useApi<RestCategoryRow[]>('/api/categories');
+  const categories = useMemo(() => toCategories(data ?? []), [data]);
+
+  // 实际分组与统计（REST 平铺列表 → 前端按 group 聚合）
   const groups = useMemo(() => {
     const map = new Map<string, Category[]>();
-    for (const c of categories ?? []) {
+    for (const c of categories) {
       const arr = map.get(c.group) ?? [];
       arr.push(c);
       map.set(c.group, arr);
@@ -62,7 +66,7 @@ export function CategoriesSection() {
       .sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'));
   }, [categories]);
 
-  const totalCategories = categories?.length ?? 0;
+  const totalCategories = categories.length;
   const totalGroups = groups.length;
 
   const [activeGroup, setActiveGroup] = useState<string | null>(null);
@@ -140,7 +144,9 @@ export function CategoriesSection() {
           flush
         >
           <div className="p-3">
-            {groups.length === 0 ? (
+            {loading ? (
+              <div className="text-xs text-text-muted px-2 py-3">加载中…</div>
+            ) : groups.length === 0 ? (
               <div className="text-xs text-text-muted px-2 py-3">暂无分组</div>
             ) : (
               <ul className="space-y-0.5">
@@ -232,6 +238,7 @@ export function CategoriesSection() {
               items={currentGroup.items}
               onEdit={(c) => setEditing(c)}
               onDelete={(c) => setDeleting(c)}
+              mutable={CATEGORIES_MUTABLE}
             />
           )}
         </Card>
@@ -241,11 +248,13 @@ export function CategoriesSection() {
         open={creating}
         group={currentGroup?.name ?? ''}
         onClose={() => setCreating(false)}
+        onSaved={refetch}
       />
       <CategoryFormModal
         open={!!editing}
         category={editing ?? undefined}
         onClose={() => setEditing(null)}
+        onSaved={refetch}
       />
       <DeleteCategoryModal
         category={deleting}
@@ -259,10 +268,13 @@ function CategoryTable({
   items,
   onEdit,
   onDelete,
+  mutable,
 }: {
   items: Category[];
   onEdit: (c: Category) => void;
   onDelete: (c: Category) => void;
+  /** core 无 PUT/DELETE 端点时为 false，编辑/删除入口禁用 */
+  mutable: boolean;
 }) {
   return (
     <div className="overflow-x-auto">
@@ -303,16 +315,27 @@ function CategoryTable({
                   <button
                     type="button"
                     onClick={() => onEdit(c)}
-                    className="p-1.5 rounded-lg text-text-muted hover:bg-bg dark:hover:bg-bg-card-dark hover:text-text dark:hover:text-text-dark"
-                    title="编辑"
+                    disabled={!mutable}
+                    className={clsx(
+                      'p-1.5 rounded-lg text-text-muted',
+                      mutable &&
+                        'hover:bg-bg dark:hover:bg-bg-card-dark hover:text-text dark:hover:text-text-dark',
+                      !mutable && 'opacity-40 cursor-not-allowed',
+                    )}
+                    title={mutable ? '编辑' : '服务端暂未提供分类更新接口'}
                   >
                     <IconPencil size={14} />
                   </button>
                   <button
                     type="button"
                     onClick={() => onDelete(c)}
-                    className="p-1.5 rounded-lg text-text-muted hover:bg-expense-soft hover:text-expense"
-                    title="删除"
+                    disabled={!mutable}
+                    className={clsx(
+                      'p-1.5 rounded-lg text-text-muted',
+                      mutable && 'hover:bg-expense-soft hover:text-expense',
+                      !mutable && 'opacity-40 cursor-not-allowed',
+                    )}
+                    title={mutable ? '删除' : '服务端暂未提供分类删除接口'}
                   >
                     <IconTrash size={14} />
                   </button>
@@ -359,6 +382,7 @@ interface CategoryFormModalProps {
   /** 创建时所在分组（编辑模式从 category.group 取） */
   group?: string;
   onClose: () => void;
+  onSaved?: () => void;
 }
 
 function CategoryFormModal({
@@ -366,6 +390,7 @@ function CategoryFormModal({
   category,
   group,
   onClose,
+  onSaved,
 }: CategoryFormModalProps) {
   const isEdit = !!category;
   const [name, setName] = useState('');
@@ -407,10 +432,12 @@ function CategoryFormModal({
         group: grp,
       };
       if (isEdit && category?.id != null) {
-        await db.categories.update(category.id, payload);
-      } else {
-        await db.categories.add(payload);
+        // core 未提供 PUT /api/categories/:id，编辑入口已在表格中禁用
+        setError('服务端暂未提供分类更新接口');
+        return;
       }
+      await apiFetch('/api/categories', 'POST', payload);
+      onSaved?.();
       onClose();
     } catch (e) {
       setError('保存失败：' + (e as Error).message);
@@ -540,34 +567,17 @@ function DeleteCategoryModal({
   category: Category | null;
   onClose: () => void;
 }) {
-  const [busy, setBusy] = useState(false);
-
-  async function handleConfirm() {
-    if (!category?.id) return;
-    setBusy(true);
-    try {
-      await db.categories.delete(category.id);
-      onClose();
-    } finally {
-      setBusy(false);
-    }
-  }
-
+  // core 未提供 DELETE /api/categories/:id：入口在表格中禁用，这里仅兜底文案。
   return (
     <Modal
       open={!!category}
-      onClose={() => (busy ? undefined : onClose())}
+      onClose={onClose}
       title="删除分类"
       width={420}
       footer={
-        <>
-          <Button variant="ghost" onClick={onClose} disabled={busy}>
-            取消
-          </Button>
-          <Button variant="danger" onClick={handleConfirm} disabled={busy}>
-            {busy ? '删除中…' : '确认删除'}
-          </Button>
-        </>
+        <Button variant="ghost" onClick={onClose}>
+          关闭
+        </Button>
       }
     >
       <div className="text-sm space-y-2">
@@ -577,6 +587,9 @@ function DeleteCategoryModal({
         </div>
         <div className="text-xs text-text-muted">
           该分类下的已有流水仍会保留，但「分类」字段将变为空。
+        </div>
+        <div className="text-xs text-expense">
+          当前服务端（core）尚未提供分类删除接口，此操作暂不可用。
         </div>
       </div>
     </Modal>

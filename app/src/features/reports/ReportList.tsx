@@ -4,9 +4,8 @@
  * - 空状态：引导新建
  * - 列表：卡片网格，每张卡显示报表名称 / 描述 / 模板 + 进入详情 + 删除
  */
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useLiveQuery } from 'dexie-react-hooks';
 import clsx from 'clsx';
 import {
   IconChartBar,
@@ -22,7 +21,9 @@ import {
   EmptyState,
   PageHeader,
 } from '@/components/ui';
-import { db, type Report } from '@/db';
+import type { Report } from '@/db';
+import { useApi } from '@/hooks/useApi';
+import { deleteReport, REPORTS_API, toReport, type RestReportRow } from './api';
 import { ReportFormModal } from './ReportFormModal';
 import { DeleteConfirmModal } from './DeleteConfirmModal';
 import { getTemplateKey, templateMeta } from './metadata';
@@ -33,16 +34,22 @@ export default function ReportList() {
   const [createOpen, setCreateOpen] = useState(false);
   const [deleting, setDeleting] = useState<Report | null>(null);
 
-  const reports = useLiveQuery(
-    () => db.reports.orderBy('createdAt').toArray(),
-    [],
+  const { data, loading, error, refetch } = useApi<RestReportRow[]>(REPORTS_API);
+  // 归一化 + 与迁移前一致的 createdAt 升序
+  const reports = useMemo(
+    () =>
+      (data ?? [])
+        .map(toReport)
+        .sort((a, b) => a.createdAt - b.createdAt),
+    [data],
   );
-  const isEmpty = (reports?.length ?? 0) === 0;
+  const isEmpty = !loading && reports.length === 0;
 
   async function handleDeleteConfirm() {
     if (!deleting?.id) return;
-    await db.reports.delete(deleting.id);
+    await deleteReport(deleting.id);
     setDeleting(null);
+    refetch();
   }
 
   return (
@@ -69,7 +76,11 @@ export default function ReportList() {
       />
 
       <div className="p-4 lg:p-8 max-w-[1200px]">
-        {isEmpty ? (
+        {loading ? (
+          <div className="text-sm text-text-muted">加载中…</div>
+        ) : error ? (
+          <div className="text-sm text-expense">加载失败：{error}</div>
+        ) : isEmpty ? (
           <Card>
             <EmptyState
               title="创建报表"
@@ -91,7 +102,7 @@ export default function ReportList() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {(reports ?? []).map((r) => (
+            {reports.map((r) => (
               <ReportCard
                 key={r.id}
                 report={r}
@@ -106,6 +117,7 @@ export default function ReportList() {
       <ReportFormModal
         open={createOpen}
         onClose={() => setCreateOpen(false)}
+        onSaved={refetch}
       />
       <DeleteConfirmModal
         open={!!deleting}

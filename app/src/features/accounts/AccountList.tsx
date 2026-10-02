@@ -7,7 +7,6 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { useLiveQuery } from 'dexie-react-hooks';
 import clsx from 'clsx';
 import {
   IconWallet,
@@ -19,9 +18,10 @@ import {
   EmptyState,
   PageHeader,
 } from '@/components/ui';
-import { db, type Account } from '@/db';
 import { useSpaceId } from '@/db';
-import { filterBySpace } from '@/space';
+import type { Account, Tag } from '@/db';
+import { useApi } from '@/hooks/useApi';
+import { toAccounts, type RestAccount } from './rest';
 import { formatMoney } from './format';
 import {
   ACCOUNT_TONE_BG,
@@ -37,16 +37,15 @@ export default function AccountList() {
   const [createOpen, setCreateOpen] = useState(false);
   const spaceId = useSpaceId();
 
-  const accounts = useLiveQuery(
-    () => db.accounts.orderBy('createdAt').toArray(),
-    [],
+  // 空间过滤直接拼 URL：spaceId=0 表示"全部空间"，不带参数由后端返回全量。
+  const spaceQuery = spaceId ? `?spaceId=${spaceId}` : '';
+  const { data, loading, error, refetch } = useApi<RestAccount[]>(
+    `/api/accounts${spaceQuery}`,
+    [spaceId],
   );
+  const { data: tags } = useApi<Tag[]>('/api/tags');
 
-  // 按当前空间过滤；sid=0 不过滤
-  const scopedAccounts = useMemo(
-    () => filterBySpace(accounts ?? [], spaceId),
-    [accounts, spaceId],
-  );
+  const accounts = useMemo(() => toAccounts(data), [data]);
 
   // ?create=1 自动打开新建模态
   useEffect(() => {
@@ -60,7 +59,7 @@ export default function AccountList() {
   }, [searchParams]);
 
   const { assets, debts, assetSum, debtSum } = useMemo(() => {
-    const list = scopedAccounts;
+    const list = accounts;
     const a = list.filter((x) => (ASSET_TYPES as readonly string[]).includes(x.type));
     const d = list.filter((x) => (DEBT_TYPES as readonly string[]).includes(x.type));
     let assetSumAcc = 0;
@@ -73,9 +72,9 @@ export default function AccountList() {
       assetSum: assetSumAcc,
       debtSum: debtSumAcc,
     };
-  }, [scopedAccounts]);
+  }, [accounts]);
 
-  const isEmpty = scopedAccounts.length === 0;
+  const isEmpty = accounts.length === 0;
 
   return (
     <div className="min-h-full bg-bg dark:bg-bg-dark">
@@ -96,7 +95,25 @@ export default function AccountList() {
       />
 
       <div className="p-4 lg:p-8 max-w-[1400px]">
-        {isEmpty ? (
+        {error ? (
+          <Card>
+            <EmptyState
+              title="加载失败"
+              description={`无法从服务端读取账户列表：${error}`}
+              action={
+                <Button variant="primary" onClick={refetch}>
+                  重试
+                </Button>
+              }
+            />
+          </Card>
+        ) : loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="h-40 rounded-xl bg-bg dark:bg-bg-card-dark animate-pulse" />
+            ))}
+          </div>
+        ) : isEmpty ? (
           <Card>
             <EmptyState
               title="创建账户"
@@ -126,6 +143,7 @@ export default function AccountList() {
               accounts={assets}
               total={assetSum}
               totalLabel="资产合计"
+              tags={tags ?? []}
             />
             <AccountSection
               title="负债"
@@ -133,12 +151,17 @@ export default function AccountList() {
               accounts={debts}
               total={debtSum}
               totalLabel="负债合计"
+              tags={tags ?? []}
             />
           </div>
         )}
       </div>
 
-      <AccountFormModal open={createOpen} onClose={() => setCreateOpen(false)} />
+      <AccountFormModal
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onSaved={refetch}
+      />
     </div>
   );
 }
@@ -153,12 +176,14 @@ function AccountSection({
   accounts,
   total,
   totalLabel,
+  tags,
 }: {
   title: string;
   tone: 'income' | 'expense';
   accounts: Account[];
   total: number;
   totalLabel: string;
+  tags: Tag[];
 }) {
   if (accounts.length === 0) return null;
   return (
@@ -179,24 +204,23 @@ function AccountSection({
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {accounts.map((acc) => (
-          <AccountCard key={acc.id} account={acc} />
+          <AccountCard key={acc.id} account={acc} tags={tags} />
         ))}
       </div>
     </section>
   );
 }
 
-function AccountCard({ account }: { account: Account }) {
+function AccountCard({ account, tags }: { account: Account; tags: Tag[] }) {
   const navigate = useNavigate();
   const meta = ACCOUNT_TYPE_META[account.type];
   const isDebt = account.type === 'credit' || account.type === 'debt';
-  const tags = useLiveQuery(
-    () =>
-      account.tagIds && account.tagIds.length > 0
-        ? db.tags.where('id').anyOf(account.tagIds).toArray()
-        : Promise.resolve([] as { id?: number; name: string }[]),
-    [account.tagIds],
-  );
+  // 标签随列表一次性拉取（/api/tags），此处按 id 本地关联，避免每张卡片单独请求。
+  const accountTags = useMemo(() => {
+    const ids = account.tagIds ?? [];
+    if (ids.length === 0) return [];
+    return tags.filter((t) => t.id != null && ids.includes(t.id));
+  }, [account.tagIds, tags]);
 
   return (
     <button
@@ -236,9 +260,9 @@ function AccountCard({ account }: { account: Account }) {
         </div>
       </div>
 
-      {(tags?.length ?? 0) > 0 && (
+      {accountTags.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-1">
-          {(tags ?? []).map((t) => (
+          {accountTags.map((t) => (
             <span
               key={t.id}
               className="inline-flex items-center px-2 h-5 rounded-md text-xs bg-bg dark:bg-bg-card-dark text-text-muted"

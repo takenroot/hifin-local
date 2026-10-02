@@ -6,7 +6,7 @@
  * - 结果缓存 30 分钟（kv 'weather.cache'），任何失败返回 null（UI 静默隐藏）
  */
 
-import { db } from '@/db';
+import { apiFetch } from '@/hooks/useApi';
 
 export interface CityPreset {
   name: string;
@@ -62,26 +62,34 @@ interface CachePayload {
   fetchedAt: number;
 }
 
-async function readCache(lat: number, lon: number): Promise<WeatherInfo | null> {
+/**
+ * 读取 kv（REST）。键不存在时后端返回 404 —— 属于正常状态（"还没设置过"），
+ * 一律返回 null，不向上抛错。
+ */
+async function kvGet<T>(key: string): Promise<T | null> {
   try {
-    const row = await db.kv.get(CACHE_KEY);
-    if (!row) return null;
-    const c = row.value as CachePayload;
-    const fresh = Date.now() - c.fetchedAt < CACHE_TTL;
-    const near = Math.abs(c.lat - lat) < 0.05 && Math.abs(c.lon - lon) < 0.05;
-    if (!fresh || !near) return null;
-    return { temperature: c.temperature, weathercode: c.weathercode, cityName: c.cityName };
+    const res = await fetch(`/api/kv/${key}`);
+    if (!res.ok) return null;
+    const row = (await res.json()) as { key: string; value: T | null };
+    return row.value ?? null;
   } catch {
     return null;
   }
 }
 
+async function readCache(lat: number, lon: number): Promise<WeatherInfo | null> {
+  const c = await kvGet<CachePayload>(CACHE_KEY);
+  if (!c || typeof c !== 'object') return null;
+  const fresh = Date.now() - c.fetchedAt < CACHE_TTL;
+  const near = Math.abs(c.lat - lat) < 0.05 && Math.abs(c.lon - lon) < 0.05;
+  if (!fresh || !near) return null;
+  return { temperature: c.temperature, weathercode: c.weathercode, cityName: c.cityName };
+}
+
 async function writeCache(w: WeatherInfo, lat: number, lon: number): Promise<void> {
   try {
-    await db.kv.put({
-      key: CACHE_KEY,
-      value: { ...w, lat, lon, fetchedAt: Date.now() } satisfies CachePayload,
-    });
+    const value = { ...w, lat, lon, fetchedAt: Date.now() } satisfies CachePayload;
+    await apiFetch(`/api/kv/${CACHE_KEY}`, 'PUT', { value });
   } catch {
     /* 缓存写失败无所谓 */
   }
@@ -89,21 +97,16 @@ async function writeCache(w: WeatherInfo, lat: number, lon: number): Promise<voi
 
 /** 读取用户选定城市（默认北京） */
 export async function getSavedCity(): Promise<CityPreset> {
-  try {
-    const row = await db.kv.get(CITY_KEY);
-    if (row) {
-      const name = (row.value as { name?: string })?.name;
-      const hit = CITY_PRESETS.find((c) => c.name === name);
-      if (hit) return hit;
-    }
-  } catch {
-    /* fallthrough */
+  const saved = await kvGet<{ name?: string }>(CITY_KEY);
+  if (saved && typeof saved === 'object') {
+    const hit = CITY_PRESETS.find((c) => c.name === saved.name);
+    if (hit) return hit;
   }
   return DEFAULT_CITY;
 }
 
 export async function saveCity(city: CityPreset): Promise<void> {
-  await db.kv.put({ key: CITY_KEY, value: { name: city.name } });
+  await apiFetch(`/api/kv/${CITY_KEY}`, 'PUT', { value: { name: city.name } });
 }
 
 function nearestCityName(lat: number, lon: number): string {

@@ -3,11 +3,13 @@
  *
  * - URL `?create=1` 自动打开新建模态
  * - 空状态：引导新建
- * - 列表：卡片网格，展示本期已花（实时聚合 transactions）、进度、剩余、超支红色警示
+ * - 列表：卡片网格，展示本期已花、进度、剩余、超支红色警示
+ *
+ * 「本期已花」由前端聚合：core 暂无 budget-spent 端点，因此拉取当前空间的
+ * 支出流水后按 (period, categoryId) 在本地求和。
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useLiveQuery } from 'dexie-react-hooks';
 import clsx from 'clsx';
 import {
   IconCirclePlus,
@@ -24,38 +26,63 @@ import {
   PageHeader,
   ProgressBar,
 } from '@/components/ui';
-import { db, type Budget, type Category, type Transaction, useSpaceId } from '@/db';
-import { filterBySpace } from '@/space';
+import { type Budget, type Category, useSpaceId } from '@/db';
+import { filterBySpace, type SpaceAware } from '@/space';
+import { useApi } from '@/hooks/useApi';
 import { BudgetFormModal } from './BudgetFormModal';
 import { DeleteConfirmModal } from './DeleteConfirmModal';
 import { formatMoney, periodLabel, periodRange } from './format';
+
+/** 已花聚合只需要这几个字段；categoryId 在 SQLite 里可空。 */
+interface ExpenseRow extends SpaceAware {
+  type: string;
+  amount: number;
+  date: number;
+  categoryId?: number | null;
+}
+
+/**
+ * DELETE 助手：core 的 DELETE 返回 204 空响应体，而 apiFetch 假定响应是 JSON，
+ * 成功路径反而会在 r.json() 上抛错，因此删除操作不能走 apiFetch。
+ */
+async function apiDelete(url: string): Promise<void> {
+  const r = await fetch(url, { method: 'DELETE' });
+  if (!r.ok) {
+    const text = await r.text().catch(() => '');
+    throw new Error(`HTTP ${r.status}: ${text.slice(0, 200)}`);
+  }
+}
 
 export default function BudgetList() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<Budget | null>(null);
   const [deleting, setDeleting] = useState<Budget | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const budgetsAll = useLiveQuery(
-    () => db.budgets.orderBy('createdAt').toArray(),
-    [],
-  ) as Budget[] | undefined;
-  const categories = useLiveQuery(
-    () => db.categories.toArray(),
-    [],
-  ) as Category[] | undefined;
-  const transactionsAll = useLiveQuery(
-    () => db.transactions.toArray(),
-    [],
-  ) as Transaction[] | undefined;
+  /** 全局写操作版本号：任一增删改成功后自增，驱动列表与已花聚合重新拉取 */
+  const [version, setVersion] = useState(0);
+  const bumpVersion = useCallback(() => setVersion((v) => v + 1), []);
+
   const spaceId = useSpaceId();
+  // spaceId === 0 表示"全部空间"，此时不拼 spaceId 让服务端返回全量
+  const spaceQ = spaceId === 0 ? '' : `?spaceId=${spaceId}`;
+
+  const { data: budgetsAll } = useApi<Budget[]>(`/api/budgets${spaceQ}`, [version]);
+  const { data: categories } = useApi<Category[]>('/api/categories', [version]);
+  // 已花只需支出；服务端已按 spaceId + type 过滤，减少传输量
+  const { data: expenses } = useApi<ExpenseRow[]>(
+    `/api/transactions${spaceQ}${spaceQ ? '&' : '?'}type=expense`,
+    [version],
+  );
+
   const budgets = useMemo(
     () => filterBySpace(budgetsAll ?? [], spaceId),
     [budgetsAll, spaceId],
   );
   const transactions = useMemo(
-    () => filterBySpace(transactionsAll ?? [], spaceId),
-    [transactionsAll, spaceId],
+    () => filterBySpace(expenses ?? [], spaceId),
+    [expenses, spaceId],
   );
 
   // ?create=1 自动打开新建模态
@@ -111,8 +138,13 @@ export default function BudgetList() {
 
   async function handleDeleteConfirm() {
     if (!deleting?.id) return;
-    await db.budgets.delete(deleting.id);
-    setDeleting(null);
+    try {
+      await apiDelete(`/api/budgets/${deleting.id}`);
+      setDeleting(null);
+      bumpVersion();
+    } catch (e) {
+      setError((e as Error).message ?? '删除失败');
+    }
   }
 
   return (
@@ -183,12 +215,21 @@ export default function BudgetList() {
       <BudgetFormModal
         open={createOpen}
         onClose={() => setCreateOpen(false)}
+        version={version}
+        onSaved={bumpVersion}
       />
       <BudgetFormModal
         open={!!editing}
         budget={editing ?? undefined}
         onClose={() => setEditing(null)}
+        version={version}
+        onSaved={bumpVersion}
       />
+      {error && (
+        <div className="mx-4 lg:mx-8 mb-4 text-sm text-expense bg-expense-soft dark:bg-expense-soft-dark rounded-xl px-3 py-2">
+          {error}
+        </div>
+      )}
       <DeleteConfirmModal
         open={!!deleting}
         title="删除预算"

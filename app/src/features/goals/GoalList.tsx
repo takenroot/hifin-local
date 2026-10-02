@@ -5,9 +5,8 @@
  * - 空状态：引导新建
  * - 列表：卡片网格，每张卡片展示进度 / 截止 / 快捷"存入/取出" / 编辑 / 删除
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useLiveQuery } from 'dexie-react-hooks';
 import clsx from 'clsx';
 import {
   IconTarget,
@@ -25,13 +24,26 @@ import {
   PageHeader,
   ProgressBar,
 } from '@/components/ui';
-import { db, type Account, type Goal, useSpaceId } from '@/db';
+import { type Account, type Goal, useSpaceId } from '@/db';
 import { filterBySpace } from '@/space';
+import { useApi } from '@/hooks/useApi';
 import { GoalFormModal } from './GoalFormModal';
 import { GoalAmountModal } from './GoalAmountModal';
 import { DeleteConfirmModal } from './DeleteConfirmModal';
 import { deadlineText, formatMoney } from './format';
 import { kindLabel } from './metadata';
+
+/**
+ * DELETE 助手：core 的 DELETE 返回 204 空响应体，而 apiFetch 假定响应是 JSON，
+ * 成功路径反而会在 r.json() 上抛错，因此删除操作不能走 apiFetch。
+ */
+async function apiDelete(url: string): Promise<void> {
+  const r = await fetch(url, { method: 'DELETE' });
+  if (!r.ok) {
+    const text = await r.text().catch(() => '');
+    throw new Error(`HTTP ${r.status}: ${text.slice(0, 200)}`);
+  }
+}
 
 export default function GoalList() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -42,13 +54,18 @@ export default function GoalList() {
     mode: 'deposit' | 'withdraw';
   } | null>(null);
   const [deleting, setDeleting] = useState<Goal | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const goalsAll = useLiveQuery(
-    () => db.goals.orderBy('createdAt').toArray(),
-    [],
-  );
-  const accountsAll = useLiveQuery(() => db.accounts.toArray(), []);
+  /** 全局写操作版本号：任一增删改成功后自增，驱动列表与下拉数据重新拉取 */
+  const [version, setVersion] = useState(0);
+  const bumpVersion = useCallback(() => setVersion((v) => v + 1), []);
+
   const spaceId = useSpaceId();
+  // spaceId === 0 表示"全部空间"，此时不拼 spaceId 让服务端返回全量
+  const spaceQ = spaceId === 0 ? '' : `?spaceId=${spaceId}`;
+
+  const { data: goalsAll } = useApi<Goal[]>(`/api/goals${spaceQ}`, [version]);
+  const { data: accountsAll } = useApi<Account[]>(`/api/accounts${spaceQ}`, [version]);
   const goals = useMemo(
     () => filterBySpace(goalsAll ?? [], spaceId),
     [goalsAll, spaceId],
@@ -80,8 +97,14 @@ export default function GoalList() {
 
   async function handleDeleteConfirm() {
     if (!deleting?.id) return;
-    await db.goals.delete(deleting.id);
-    setDeleting(null);
+    try {
+      // 账户余额贡献由 core 在删除时一并回滚
+      await apiDelete(`/api/goals/${deleting.id}`);
+      setDeleting(null);
+      bumpVersion();
+    } catch (e) {
+      setError((e as Error).message ?? '删除失败');
+    }
   }
 
   return (
@@ -145,11 +168,15 @@ export default function GoalList() {
       <GoalFormModal
         open={createOpen}
         onClose={() => setCreateOpen(false)}
+        version={version}
+        onSaved={bumpVersion}
       />
       <GoalFormModal
         open={!!editing}
         goal={editing ?? undefined}
         onClose={() => setEditing(null)}
+        version={version}
+        onSaved={bumpVersion}
       />
       <GoalAmountModal
         open={!!amountTarget}
@@ -161,7 +188,13 @@ export default function GoalList() {
             : undefined
         }
         onClose={() => setAmountTarget(null)}
+        onChanged={bumpVersion}
       />
+      {error && (
+        <div className="mx-4 lg:mx-8 mb-4 text-sm text-expense bg-expense-soft dark:bg-expense-soft-dark rounded-xl px-3 py-2">
+          {error}
+        </div>
+      )}
       <DeleteConfirmModal
         open={!!deleting}
         title="删除目标"

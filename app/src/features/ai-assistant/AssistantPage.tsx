@@ -1,15 +1,14 @@
 /**
  * AI 助手页 /ai
  *
- * - 左侧：模型选择（读 aiModels 表，空则引导到设置页）
+ * - 左侧：模型选择（读 /api/ai-models，空则引导到设置页）
  * - 中部：对话区（用户 / 助手 / 流式/非流式）
  * - 底部：输入框（Enter 发送，Shift+Enter 换行）
  *
  * 默认关闭：未配置任何模型时只显示配置引导，不发起任何请求。
  */
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useLiveQuery } from 'dexie-react-hooks';
 import dayjs from 'dayjs';
 import clsx from 'clsx';
 import {
@@ -29,9 +28,10 @@ import {
   Select,
   Textarea,
 } from '@/components/ui';
-import { db, useSpaceId } from '@/db';
-import { filterBySpace } from '@/space';
-import { buildFinancialSnapshot, snapshotToText } from './aggregate';
+import { useApi } from '@/hooks/useApi';
+import { useSpaceId } from '@/db';
+import type { AiModel } from '@/db';
+import { fetchFinancialSnapshot, snapshotToText } from './aggregate';
 import { chat, describeAiError, type ChatMessage } from './client';
 import {
   appendConversation,
@@ -42,19 +42,36 @@ import {
   setDefaultModelId,
 } from './storage';
 
+/** 编辑/调用都需要 apiKey 明文，因此关掉 core 的默认脱敏。 */
+const AI_MODELS_API = '/api/ai-models?hideApiKey=0';
+
+interface RestAiModelRow {
+  id: number;
+  name: string;
+  model: string;
+  endpoint: string;
+  apiKey?: string | null;
+}
+
+function toAiModel(r: RestAiModelRow): AiModel {
+  return {
+    id: r.id,
+    name: r.name,
+    model: r.model,
+    endpoint: r.endpoint,
+    apiKey: r.apiKey ?? undefined,
+  };
+}
+
 export default function AssistantPage() {
   const navigate = useNavigate();
-
-  const models = useLiveQuery(() => db.aiModels.orderBy('name').toArray(), []) ?? [];
-  const accountsAll = useLiveQuery(() => db.accounts.toArray(), []) ?? [];
-  const transactionsAll = useLiveQuery(() => db.transactions.toArray(), []) ?? [];
-  const goalsAll = useLiveQuery(() => db.goals.toArray(), []) ?? [];
-  const categories = useLiveQuery(() => db.categories.toArray(), []) ?? [];
   const spaceId = useSpaceId();
-  // AI 聚合用当前空间的数据（sid=0 不过滤）
-  const accounts = useMemo(() => filterBySpace(accountsAll, spaceId), [accountsAll, spaceId]);
-  const transactions = useMemo(() => filterBySpace(transactionsAll, spaceId), [transactionsAll, spaceId]);
-  const goals = useMemo(() => filterBySpace(goalsAll, spaceId), [goalsAll, spaceId]);
+
+  const { data: modelRows } = useApi<RestAiModelRow[]>(AI_MODELS_API);
+  const models = useMemo(
+    () => (modelRows ?? []).map(toAiModel).sort((a, b) => a.name.localeCompare(b.name, 'zh-CN')),
+    [modelRows],
+  );
 
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -118,16 +135,40 @@ export default function AssistantPage() {
     [models, selectedId],
   );
 
-  // 实时财务快照（每次进入都聚合一次，提交时再聚合确保最新）
-  const snapshotText = useMemo(() => {
-    const snap = buildFinancialSnapshot({
-      accounts,
-      transactions,
-      goals,
-      categories,
-    });
-    return snapshotToText(snap);
-  }, [accounts, transactions, goals, categories]);
+  // 实时财务快照：进入页面拉一次，提交前再拉一次确保最新
+  const [snapshotText, setSnapshotText] = useState('');
+  const snapshotAbortRef = useRef<AbortController | null>(null);
+
+  const refreshSnapshot = useCallback(async (): Promise<string> => {
+    try {
+      const snap = await fetchFinancialSnapshot(spaceId);
+      const text = snapshotToText(snap);
+      setSnapshotText(text);
+      return text;
+    } catch {
+      // 聚合失败不让整页崩：降级为空概况，聊天仍可继续
+      return snapshotText;
+    }
+  }, [spaceId, snapshotText]);
+
+  useEffect(() => {
+    snapshotAbortRef.current?.abort();
+    const ctrl = new AbortController();
+    snapshotAbortRef.current = ctrl;
+    let mounted = true;
+    void (async () => {
+      try {
+        const snap = await fetchFinancialSnapshot(spaceId);
+        if (mounted) setSnapshotText(snapshotToText(snap));
+      } catch {
+        if (mounted) setSnapshotText('');
+      }
+    })();
+    return () => {
+      mounted = false;
+      ctrl.abort();
+    };
+  }, [spaceId]);
 
   /** 切换模型：写入默认 id */
   async function handleSelectModel(id: number) {
@@ -163,7 +204,9 @@ export default function AssistantPage() {
     abortRef.current = controller;
 
     try {
-      const result = await chat(selectedModel, snapshotText, historyForModel, text, {
+      // 提交时重新聚合一次，确保用的是最新财务数据
+      const freshSnapshot = await refreshSnapshot();
+      const result = await chat(selectedModel, freshSnapshot, historyForModel, text, {
         signal: controller.signal,
       });
       const assistantMsg: ChatMessage = { role: 'assistant', content: result.text };
@@ -216,9 +259,10 @@ export default function AssistantPage() {
     abortRef.current = controller;
 
     try {
+      const freshSnapshot = await refreshSnapshot();
       const result = await chat(
         selectedModel,
-        snapshotText,
+        freshSnapshot,
         baseMessages.slice(-18),
         userMsg.content,
         { signal: controller.signal },

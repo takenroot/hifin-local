@@ -5,7 +5,6 @@
  */
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useLiveQuery } from 'dexie-react-hooks';
 import dayjs from 'dayjs';
 import clsx from 'clsx';
 import {
@@ -21,7 +20,9 @@ import {
   Button,
   PageHeader,
 } from '@/components/ui';
-import { db, type Account, type Transaction, type TransactionType } from '@/db';
+import type { Account, Transaction, TransactionType, Tag } from '@/db';
+import { apiFetch, useApi } from '@/hooks/useApi';
+import { toAccount, toTransactions, type RestAccount, type RestTransaction } from './rest';
 import { formatMoney } from './format';
 import {
   ACCOUNT_TONE_BG,
@@ -42,35 +43,34 @@ export default function AccountDetail() {
   const params = useParams<{ id: string }>();
   const accountId = Number(params.id);
   const navigate = useNavigate();
+  const validId = Number.isFinite(accountId);
 
-  const account = useLiveQuery<Account | null | undefined>(
-    async () => {
-      if (!Number.isFinite(accountId)) return null;
-      const a = await db.accounts.get(accountId);
-      return a ?? null;
-    },
+  // core 未提供 GET /api/accounts/:id，这里拉列表后按 id 定位。
+  const {
+    data: allAccounts,
+    loading: loadingAccount,
+    error: accountError,
+    refetch: refetchAccount,
+  } = useApi<RestAccount[]>(validId ? '/api/accounts' : null, [accountId]);
+
+  const account = useMemo<Account | null>(() => {
+    if (!validId) return null;
+    const row = (allAccounts ?? []).find((a) => a.id === accountId);
+    return row ? toAccount(row) : null;
+  }, [allAccounts, accountId, validId]);
+
+  // 后端 accountId 参数已覆盖 (accountId = ? OR toAccountId = ?)，并按 date DESC 排序。
+  const { data: txRows, loading: loadingTx } = useApi<RestTransaction[]>(
+    validId ? `/api/transactions?accountId=${accountId}` : null,
     [accountId],
   );
+  const transactions: Transaction[] = useMemo(() => toTransactions(txRows), [txRows]);
 
-  const transactions = useLiveQuery(
-    () =>
-      Number.isFinite(accountId)
-        ? db.transactions
-            .where('accountId')
-            .equals(accountId)
-            .or('toAccountId')
-            .equals(accountId)
-            .reverse()
-            .sortBy('date')
-            .then((arr) => arr.sort((a, b) => b.date - a.date))
-        : Promise.resolve([] as Transaction[]),
-    [accountId],
-  );
-
-  const tags = useLiveQuery(() => db.tags.orderBy('name').toArray(), []);
+  const { data: tags } = useApi<Tag[]>('/api/tags');
 
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const tagMap = useMemo(() => {
     const m = new Map<number, string>();
@@ -78,44 +78,53 @@ export default function AccountDetail() {
     return m;
   }, [tags]);
 
-  if (account === undefined) {
-    return (
-      <div className="min-h-full bg-bg dark:bg-bg-dark">
-        <PageHeader
-          title="账户详情"
-          icon={<IconWallet size={18} />}
-          actions={
-            <Button
-              variant="ghost"
-              icon={<IconArrowLeft size={16} />}
-              onClick={() => navigate('/account/list')}
-            >
-              返回列表
-            </Button>
-          }
-        />
-        <div className="p-4 lg:p-8 text-sm text-text-muted">加载中…</div>
-      </div>
-    );
-  }
+  const headerActions = (
+    <Button
+      variant="ghost"
+      icon={<IconArrowLeft size={16} />}
+      onClick={() => navigate('/account/list')}
+    >
+      返回列表
+    </Button>
+  );
 
-  if (account === null) {
+  if (!validId) {
     return (
       <div className="min-h-full bg-bg dark:bg-bg-dark">
         <PageHeader
           title="账户不存在"
           icon={<IconWallet size={18} />}
-          actions={
-            <Button
-              variant="ghost"
-              icon={<IconArrowLeft size={16} />}
-              onClick={() => navigate('/account/list')}
-            >
-              返回列表
-            </Button>
-          }
+          actions={headerActions}
         />
         <div className="p-4 lg:p-8 text-sm text-text-muted">该账户已被删除或不存在。</div>
+      </div>
+    );
+  }
+
+  if (accountError) {
+    return (
+      <div className="min-h-full bg-bg dark:bg-bg-dark">
+        <PageHeader
+          title="账户详情"
+          icon={<IconWallet size={18} />}
+          actions={headerActions}
+        />
+        <div className="p-4 lg:p-8 text-sm text-expense">加载失败：{accountError}</div>
+      </div>
+    );
+  }
+
+  if (loadingAccount || account === null) {
+    return (
+      <div className="min-h-full bg-bg dark:bg-bg-dark">
+        <PageHeader
+          title={account === null && !loadingAccount ? '账户不存在' : '账户详情'}
+          icon={<IconWallet size={18} />}
+          actions={headerActions}
+        />
+        <div className="p-4 lg:p-8 text-sm text-text-muted">
+          {account === null && !loadingAccount ? '该账户已被删除或不存在。' : '加载中…'}
+        </div>
       </div>
     );
   }
@@ -125,7 +134,17 @@ export default function AccountDetail() {
 
   async function handleDelete() {
     if (!account?.id) return;
-    await db.accounts.delete(account.id);
+    setDeleteError(null);
+    try {
+      // 后端返回 204 无响应体；apiFetch 解析空 body 会抛错，但删除本身已生效。
+      await apiFetch(`/api/accounts/${account.id}`, 'DELETE');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (!msg.includes('Unexpected end of JSON') && !msg.includes('Unexpected token')) {
+        setDeleteError(`删除失败：${msg}`);
+        return;
+      }
+    }
     setDeleteOpen(false);
     navigate('/account/list');
   }
@@ -214,11 +233,13 @@ export default function AccountDetail() {
           <div className="flex items-center justify-between mb-4">
             <h3 className="section-title">关联流水</h3>
             <div className="text-xs text-text-muted">
-              共 {(transactions?.length ?? 0)} 条
+              共 {loadingTx ? '…' : transactions.length} 条
             </div>
           </div>
 
-          {(transactions?.length ?? 0) === 0 ? (
+          {loadingTx ? (
+            <div className="py-10 text-center text-sm text-text-muted">加载中…</div>
+          ) : transactions.length === 0 ? (
             <div className="py-10 text-center text-sm text-text-muted">
               暂无关联流水
               <div className="mt-3">
@@ -234,7 +255,7 @@ export default function AccountDetail() {
             </div>
           ) : (
             <ul className="divide-y divide-border dark:divide-border-dark -mx-2">
-              {(transactions ?? []).map((t) => (
+              {transactions.map((t) => (
                 <TransactionRow
                   key={t.id}
                   tx={t}
@@ -251,13 +272,18 @@ export default function AccountDetail() {
         open={editOpen}
         onClose={() => setEditOpen(false)}
         account={account}
+        onSaved={refetchAccount}
       />
       <DeleteConfirmModal
         open={deleteOpen}
-        onClose={() => setDeleteOpen(false)}
+        onClose={() => {
+          setDeleteError(null);
+          setDeleteOpen(false);
+        }}
         onConfirm={handleDelete}
         accountName={account.name}
-        relatedCount={transactions?.length ?? 0}
+        relatedCount={transactions.length}
+        errorMessage={deleteError}
       />
     </div>
   );

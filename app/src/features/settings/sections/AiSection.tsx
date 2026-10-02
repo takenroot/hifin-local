@@ -10,7 +10,6 @@
  * 测试连接：发一条最小 ping 到 endpoint，显示延迟或错误归因。
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
 import {
   IconPlus,
   IconPencil,
@@ -30,26 +29,46 @@ import {
   Input,
   Modal,
 } from '@/components/ui';
-import { db, type AiModel } from '@/db';
+import { apiFetch, useApi } from '@/hooks/useApi';
+import type { AiModel } from '@/db';
 import { ping, describeAiError } from '@/features/ai-assistant/client';
-import { setDefaultModelId } from '@/features/ai-assistant/storage';
+import {
+  getDefaultModelId,
+  setDefaultModelId,
+} from '@/features/ai-assistant/storage';
+import {
+  restDelete,
+  toAiModels,
+  type RestAiModelRow,
+} from '../restApi';
+
+/**
+ * hideApiKey=0：编辑模态需要回填 apiKey，默认列表会把 apiKey 脱敏成 null。
+ * 这是本地应用，明文只走本地 REST，不出网。
+ */
+const AI_MODELS_API = '/api/ai-models?hideApiKey=0';
 
 export function AiSection() {
-  const models = useLiveQuery(
-    () => db.aiModels.orderBy('name').toArray(),
-    [],
-  );
-  const defaultKv = useLiveQuery(() => db.kv.get('ai.defaultModelId'), []);
-  const defaultId =
-    typeof (defaultKv?.value as unknown) === 'number'
-      ? (defaultKv?.value as number)
-      : undefined;
+  const { data, loading, refetch } = useApi<RestAiModelRow[]>(AI_MODELS_API);
+  const models = useMemo(() => toAiModels(data ?? []), [data]);
+  const [defaultId, setDefaultId] = useState<number | undefined>(undefined);
+
+  // 默认模型 id 存 kv:ai.defaultModelId
+  useEffect(() => {
+    let mounted = true;
+    void getDefaultModelId().then((v) => {
+      if (mounted) setDefaultId(v);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const [editing, setEditing] = useState<AiModel | null>(null);
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState<AiModel | null>(null);
 
-  const isEmpty = (models?.length ?? 0) === 0;
+  const isEmpty = !loading && models.length === 0;
 
   const headerActions = (
     <Button
@@ -90,10 +109,11 @@ export function AiSection() {
           />
         ) : (
           <ModelsTable
-            models={models ?? []}
+            models={models}
             defaultId={defaultId}
             onEdit={(m) => setEditing(m)}
             onDelete={(m) => setDeleting(m)}
+            onDefaultChange={setDefaultId}
           />
         )}
       </Card>
@@ -102,24 +122,28 @@ export function AiSection() {
         open={creating}
         onClose={() => setCreating(false)}
         onSaved={() => setCreating(false)}
+        onAfterCreate={refetch}
       />
       <AiModelFormModal
         open={!!editing}
         model={editing ?? undefined}
         onClose={() => setEditing(null)}
         onSaved={() => setEditing(null)}
+        onAfterCreate={refetch}
       />
       <DeleteModelModal
         model={deleting}
         onClose={() => setDeleting(null)}
         onConfirm={async () => {
           if (!deleting?.id) return;
-          await db.aiModels.delete(deleting.id);
+          await restDelete(`/api/ai-models/${deleting.id}`);
           // 若删除的是默认模型，则清空默认 id
           if (defaultId != null && deleting.id === defaultId) {
             await setDefaultModelId(undefined);
+            setDefaultId(undefined);
           }
           setDeleting(null);
+          refetch();
         }}
       />
     </div>
@@ -137,11 +161,13 @@ function ModelsTable({
   defaultId,
   onEdit,
   onDelete,
+  onDefaultChange,
 }: {
   models: AiModel[];
   defaultId: number | undefined;
   onEdit: (m: AiModel) => void;
   onDelete: (m: AiModel) => void;
+  onDefaultChange: (id: number | undefined) => void;
 }) {
   // 每个模型的测试状态；key 为模型 id
   const [testState, setTestState] = useState<Record<number, TestState>>({});
@@ -187,6 +213,7 @@ function ModelsTable({
   async function setDefault(model: AiModel) {
     if (model.id == null) return;
     await setDefaultModelId(model.id);
+    onDefaultChange(model.id);
   }
 
   return (
@@ -328,9 +355,17 @@ interface AiModelFormModalProps {
   model?: AiModel;
   onClose: () => void;
   onSaved: () => void;
+  /** 写操作后触发列表 refetch（新建时还要据此判断"首个模型"） */
+  onAfterCreate?: () => void;
 }
 
-function AiModelFormModal({ open, model, onClose, onSaved }: AiModelFormModalProps) {
+function AiModelFormModal({
+  open,
+  model,
+  onClose,
+  onSaved,
+  onAfterCreate,
+}: AiModelFormModalProps) {
   const isEdit = !!model;
   const [name, setName] = useState('');
   const [modelName, setModelName] = useState('');
@@ -368,21 +403,20 @@ function AiModelFormModal({ open, model, onClose, onSaved }: AiModelFormModalPro
         apiKey: apiKey.trim() || undefined,
       };
       if (isEdit && model?.id != null) {
-        await db.aiModels.update(model.id, payload);
+        await apiFetch(`/api/ai-models/${model.id}`, 'PUT', payload);
       } else {
-        await db.aiModels.add({
-          ...payload,
-        } as AiModel);
+        // core 的 POST 会回传带 id 的新模型行
+        const created = await apiFetch<RestAiModelRow>('/api/ai-models', 'POST', payload);
         // 新建后自动设为默认（首个有效模型）
-        const total = await db.aiModels.count();
-        if (total === 1) {
-          const inserted = await db.aiModels.toArray();
-          const fresh = inserted[inserted.length - 1];
-          if (fresh?.id != null) {
-            await setDefaultModelId(fresh.id);
+        if (created?.id != null) {
+          const list = await fetch(AI_MODELS_API);
+          const all = list.ok ? ((await list.json()) as RestAiModelRow[]) : [];
+          if (all.length === 1) {
+            await setDefaultModelId(created.id);
           }
         }
       }
+      onAfterCreate?.();
       onSaved();
     } catch (e) {
       setError('保存失败：' + (e as Error).message);
@@ -446,7 +480,7 @@ function AiModelFormModal({ open, model, onClose, onSaved }: AiModelFormModalPro
           </div>
         )}
         <div className="text-xs text-text-muted">
-          所有字段仅保存在本地浏览器（IndexedDB）。提示：
+          所有字段仅保存在本地服务（core / SQLite），不会上传到任何远端。提示：
           <Badge tone="brand" className="ml-1 align-middle">本地</Badge>
         </div>
       </div>

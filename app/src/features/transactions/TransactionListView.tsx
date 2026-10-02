@@ -3,7 +3,6 @@
  */
 import { useMemo } from 'react';
 import dayjs from 'dayjs';
-import { useLiveQuery } from 'dexie-react-hooks';
 import {
   IconArrowsLeftRight,
   IconPencil,
@@ -16,7 +15,6 @@ import {
 } from '@tabler/icons-react';
 import clsx from 'clsx';
 import {
-  db,
   type Transaction,
   type Category,
   type Account,
@@ -25,27 +23,37 @@ import {
   useSpaceId,
 } from '@/db';
 import { filterBySpace } from '@/space';
+import { useApi } from '@/hooks/useApi';
 import { EmptyState } from '@/components/ui';
 import { applyFilter, summarize, type TxFilter } from './balance';
 import { formatMoney, groupKey } from './format';
+import { apiDelete, toTransaction, type RestTransaction } from './api';
 
 interface Props {
   filter: TxFilter;
   onEdit: (tx: Transaction) => void;
-  onRefresh?: () => void;
+  /** 父级递增的版本号：任一写操作后自增，触发本视图重新拉取 */
+  version?: number;
+  /** 本视图完成写操作后回调，通知父级刷新其它数据源 */
+  onChanged?: () => void;
 }
 
-export function TransactionListView({ filter, onEdit }: Props) {
-  const transactions = useLiveQuery(
-    () => db.transactions.orderBy('date').reverse().toArray(),
-    [],
-    [] as Transaction[],
-  );
-  const categories = useLiveQuery(() => db.categories.toArray(), [], [] as Category[]);
-  const accountsAll = useLiveQuery(() => db.accounts.toArray(), [], [] as Account[]);
-  const tags = useLiveQuery(() => db.tags.toArray(), [], [] as Tag[]);
-  const merchants = useLiveQuery(() => db.merchants.toArray(), [], [] as Merchant[]);
+export function TransactionListView({ filter, onEdit, version = 0, onChanged }: Props) {
   const spaceId = useSpaceId();
+  // spaceId === 0 表示"全部空间"，此时不拼 spaceId 让服务端返回全量
+  const spaceQ = spaceId === 0 ? '' : `?spaceId=${spaceId}`;
+
+  const { data: txRows, refetch: refetchTx } = useApi<RestTransaction[]>(
+    `/api/transactions${spaceQ}`,
+    [version],
+  );
+  const { data: categories } = useApi<Category[]>('/api/categories', [version]);
+  const { data: accountsAll } = useApi<Account[]>(`/api/accounts${spaceQ}`, [version]);
+  const { data: tags } = useApi<Tag[]>('/api/tags', [version]);
+  const { data: merchants } = useApi<Merchant[]>('/api/merchants', [version]);
+
+  // REST 行 → 前端类型（tagIds 是 JSON 文本，必须先还原成数组）
+  const transactions = useMemo(() => (txRows ?? []).map(toTransaction), [txRows]);
 
   // 空间隔离：只展示当前空间下的流水 + 账户（转账/选账户时也要限定）
   const scopedTx = useMemo(
@@ -53,7 +61,7 @@ export function TransactionListView({ filter, onEdit }: Props) {
     [transactions, spaceId],
   );
   const accounts = useMemo(
-    () => filterBySpace(accountsAll, spaceId),
+    () => filterBySpace(accountsAll ?? [], spaceId),
     [accountsAll, spaceId],
   );
 
@@ -95,27 +103,14 @@ export function TransactionListView({ filter, onEdit }: Props) {
   async function removeTx(tx: Transaction) {
     if (tx.id === undefined) return;
     if (!window.confirm(`删除「${tx.name}」？\n对应账户余额会自动回滚。`)) return;
-    await db.transaction('rw', db.transactions, db.accounts, async () => {
-      // 回滚：拿所有 deltas 抵消
-      const affected: Array<{ accountId: number; delta: number }> = [];
-      if (tx.type !== 'excluded') {
-        if (tx.type === 'expense') affected.push({ accountId: tx.accountId, delta: -tx.amount });
-        else if (tx.type === 'income') affected.push({ accountId: tx.accountId, delta: tx.amount });
-        else if (tx.type === 'transfer' && tx.toAccountId && tx.toAccountId !== tx.accountId) {
-          affected.push({ accountId: tx.accountId, delta: -tx.amount });
-          affected.push({ accountId: tx.toAccountId, delta: tx.amount });
-        }
-      }
-      for (const d of affected) {
-        const acc = await db.accounts.get(d.accountId);
-        if (acc) {
-          acc.balance = Number((acc.balance - d.delta).toFixed(2));
-          acc.updatedAt = Date.now();
-          await db.accounts.put(acc);
-        }
-      }
-      await db.transactions.delete(tx.id!);
-    });
+    try {
+      // 余额回滚由 core 的 DELETE 在事务内完成，前端不再自行算 delta
+      await apiDelete(`/api/transactions/${tx.id}`);
+      refetchTx();
+      onChanged?.();
+    } catch (e) {
+      window.alert(`删除失败：${(e as Error).message}`);
+    }
   }
 
   if (filtered.length === 0) {
@@ -150,10 +145,10 @@ export function TransactionListView({ filter, onEdit }: Props) {
                 <TxRow
                   key={t.id}
                   tx={t}
-                  categories={categories}
+                  categories={categories ?? []}
                   accounts={accounts}
-                  tags={tags}
-                  merchants={merchants}
+                  tags={tags ?? []}
+                  merchants={merchants ?? []}
                   onEdit={() => onEdit(t)}
                   onDelete={() => removeTx(t)}
                 />

@@ -5,11 +5,11 @@
  *   - 若 Report.config 存在，按 config.range 过滤交易并按 config.components 顺序渲染组件。
  *   - 否则按 Report.template 字段分发到四个老模板渲染器（向后兼容）。
  *
- * 数据均来自 db.accounts / db.transactions / db.categories 的 useLiveQuery，实时计算。
+ * 数据均来自 REST（/api/reports、/api/transactions、/api/accounts、
+ * /api/categories、/api/budgets），图表按模板在本地实时计算。
  */
 import { useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useLiveQuery } from 'dexie-react-hooks';
 import clsx from 'clsx';
 import {
   IconArrowLeft,
@@ -44,7 +44,22 @@ import {
   EmptyState,
   PageHeader,
 } from '@/components/ui';
-import { db, type Report } from '@/db';
+import { useApi } from '@/hooks/useApi';
+import type { Report } from '@/db';
+import {
+  deleteReport,
+  REPORTS_API,
+  toAccounts,
+  toBudgets,
+  toCategories,
+  toReport,
+  toTransactions,
+  type RestAccountRow,
+  type RestBudgetRow,
+  type RestCategoryRow,
+  type RestReportRow,
+  type RestTransactionRow,
+} from './api';
 import {
   calcNetAsset,
   distributionByAccount,
@@ -88,14 +103,14 @@ export default function ReportDetail() {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
-  const report = useLiveQuery<Report | null | undefined>(
-    async () => {
-      if (!Number.isFinite(reportId)) return null;
-      const r = await db.reports.get(reportId);
-      return r ?? null;
-    },
-    [reportId],
-  );
+  const { data, loading, error, refetch } = useApi<RestReportRow[]>(REPORTS_API);
+  // core 无 GET /api/reports/:id，从列表里定位当前报表
+  const report: Report | null | undefined = useMemo(() => {
+    if (!Number.isFinite(reportId)) return null;
+    if (loading) return undefined;
+    if (error) return null;
+    return (data ?? []).map(toReport).find((r) => r.id === reportId) ?? null;
+  }, [data, loading, error, reportId]);
 
   if (report === undefined) {
     return (
@@ -135,7 +150,7 @@ export default function ReportDetail() {
           }
         />
         <div className="p-4 lg:p-8 text-sm text-text-muted">
-          该报表已被删除或不存在。
+          {error ? `加载失败：${error}` : '该报表已被删除或不存在。'}
         </div>
       </div>
     );
@@ -143,7 +158,7 @@ export default function ReportDetail() {
 
   async function handleDeleteConfirm() {
     if (!report?.id) return;
-    await db.reports.delete(report.id);
+    await deleteReport(report.id);
     setDeleteOpen(false);
     navigate('/report/list');
   }
@@ -212,6 +227,7 @@ export default function ReportDetail() {
         open={editOpen}
         onClose={() => setEditOpen(false)}
         report={report}
+        onSaved={refetch}
       />
       <DeleteConfirmModal
         open={deleteOpen}
@@ -230,6 +246,32 @@ export default function ReportDetail() {
   );
 }
 
+/* ───────────────────── REST 数据 hooks ───────────────────── */
+
+/** 交易：GET /api/transactions → 归一化 includeInAsset（SQLite 0/1 → boolean） */
+function useReportTransactions() {
+  const { data } = useApi<RestTransactionRow[]>('/api/transactions');
+  return useMemo(() => toTransactions(data ?? []), [data]);
+}
+
+/** 账户：GET /api/accounts */
+function useReportAccounts() {
+  const { data } = useApi<RestAccountRow[]>('/api/accounts');
+  return useMemo(() => toAccounts(data ?? []), [data]);
+}
+
+/** 分类：GET /api/categories（平铺列表，按需在前端按 group 聚合） */
+function useReportCategories() {
+  const { data } = useApi<RestCategoryRow[]>('/api/categories');
+  return useMemo(() => toCategories(data ?? []), [data]);
+}
+
+/** 预算：GET /api/budgets */
+function useReportBudgets() {
+  const { data } = useApi<RestBudgetRow[]>('/api/budgets');
+  return useMemo(() => toBudgets(data ?? []), [data]);
+}
+
 /* ───────────────────── 自定义配置渲染器 ───────────────────── */
 
 function ConfigRenderer({
@@ -239,12 +281,9 @@ function ConfigRenderer({
   config: ReportConfig;
   rangeLabel: string;
 }) {
-  const transactions = useLiveQuery(
-    () => db.transactions.toArray(),
-    [],
-  ) ?? [];
-  const accounts = useLiveQuery(() => db.accounts.toArray(), []) ?? [];
-  const categories = useLiveQuery(() => db.categories.toArray(), []) ?? [];
+  const transactions = useReportTransactions();
+  const accounts = useReportAccounts();
+  const categories = useReportCategories();
 
   return (
     <div className="space-y-6">
@@ -645,10 +684,7 @@ function TemplateRenderer({ templateKey }: { templateKey: string }) {
 /* ─────────────────── 月度收支 ─────────────────── */
 
 function MonthlyTemplate() {
-  const transactions = useLiveQuery(
-    () => db.transactions.toArray(),
-    [],
-  ) ?? [];
+  const transactions = useReportTransactions();
 
   const data = useMemo(() => monthly12(transactions), [transactions]);
   const hasData = data.some((d) => d.income > 0 || d.expense > 0);
@@ -710,11 +746,8 @@ function MonthlyTemplate() {
 /* ─────────────────── 年度总结 ─────────────────── */
 
 function YearlyTemplate() {
-  const transactions = useLiveQuery(
-    () => db.transactions.toArray(),
-    [],
-  ) ?? [];
-  const accounts = useLiveQuery(() => db.accounts.toArray(), []) ?? [];
+  const transactions = useReportTransactions();
+  const accounts = useReportAccounts();
 
   const summary = useMemo(
     () => yearlySummary(transactions),
@@ -884,7 +917,7 @@ function SummaryCard({
 /* ─────────────────── 资产分布 ─────────────────── */
 
 function DistributionTemplate() {
-  const accounts = useLiveQuery(() => db.accounts.toArray(), []) ?? [];
+  const accounts = useReportAccounts();
   const [mode, setMode] = useState<'account' | 'type'>('account');
   const data: DistributionDatum[] = useMemo(
     () => (mode === 'account' ? distributionByAccount(accounts) : distributionByType(accounts)),
@@ -1009,15 +1042,9 @@ function DistributionTemplate() {
 /* ─────────────────── 预算执行 ─────────────────── */
 
 function BudgetTemplate() {
-  const budgets = useLiveQuery(
-    () => db.budgets.toArray(),
-    [],
-  ) ?? [];
-  const categories = useLiveQuery(() => db.categories.toArray(), []) ?? [];
-  const transactions = useLiveQuery(
-    () => db.transactions.toArray(),
-    [],
-  ) ?? [];
+  const budgets = useReportBudgets();
+  const categories = useReportCategories();
+  const transactions = useReportTransactions();
   const navigate = useNavigate();
 
   const now = new Date();
