@@ -47,6 +47,7 @@ const admUtils = requireCjs('adm-zip/util/utils') as { crc32(buf: Buffer): numbe
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const zipCrypto = requireCjs('adm-zip/methods/zipcrypto') as {
   encrypt(data: Buffer, header: { crc: number; flags: number }, pwd: string): Buffer;
+  decrypt(data: Buffer, header: { crc: number; flags: number }, pwd: string): Buffer;
 };
 
 const CORE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -218,6 +219,43 @@ function writePlainZip(name: string, entries: ZipEntryInput[]): string {
   return p;
 }
 
+/**
+ * 从磁盘上的加密 ZIP 里取出第一个条目的加密数据与头字段。
+ *
+ * 判定"某密码有没有蒙过 verification byte"必须用和 unzipBill 完全相同的那批字节，
+ * 所以这里从文件里读，而不是复用构造过程——ZipCrypto 的 salt 每次加密都随机生成，
+ * 写死密码名单只会得到一个碰运气、甚至悄悄失效的测试。
+ */
+function readFirstEncryptedEntry(encryptedZip: string): {
+  payload: Buffer;
+  header: { crc: number; flags: number };
+} {
+  const buf = readFileSync(encryptedZip);
+  if (buf.readUInt32LE(0) !== 0x04034b50) throw new Error('不是本地文件头，测试数据构造有误');
+  const flags = buf.readUInt16LE(6);
+  const crc = buf.readUInt32LE(14);
+  const compSize = buf.readUInt32LE(18); // 含 12 字节加密头
+  const start = 30 + buf.readUInt16LE(26) + buf.readUInt16LE(28); // 30 + 文件名 + extra
+  return { payload: buf.subarray(start, start + compSize), header: { crc, flags } };
+}
+
+/**
+ * 该密码是否恰好蒙过 ZipCrypto 的 1 字节 verification byte 校验。
+ * 过了校验，adm-zip 就认定密码正确并把（乱码）交给 zlib——这正是 ISSUE-003 的入口。
+ */
+function passesZipCryptoVerification(
+  payload: Buffer,
+  header: { crc: number; flags: number },
+  pwd: string,
+): boolean {
+  try {
+    zipCrypto.decrypt(payload, header, pwd);
+    return true; // 没抛 WRONG_PASSWORD 就是过了
+  } catch {
+    return false;
+  }
+}
+
 // ── unzipBill ───────────────────────────────────────────────
 
 describe('unzipBill', () => {
@@ -257,6 +295,64 @@ describe('unzipBill', () => {
     const zip = writeEncryptedZip('wrongpw.zip', [{ name: 'a.csv', content: 'x\n' }], ALIPAY_PASSWORD);
     expect(() => unzipBill(zip, '000000')).toThrow(BillPasswordError);
     expect(() => unzipBill(zip, '000000')).toThrow(/解压密码错误/);
+  });
+
+  // ISSUE-003 回归：ZipCrypto 密码校验只看 1 字节 verification byte，错误密码有
+  // 约 1/256 概率蒙混过关，adm-zip 便放行、zlib 拿到乱码后抛 inflate 家族错误。
+  // 这类"通过了校验的错误密码"过去全被归成 BillFormatError，通知文案会误导用户
+  // 去查文件而不是去看最新密码。单个密码只有 ~0.35% 概率撞上，所以这里用 20 个
+  // 各自蒙过校验的密码逐个钉死，任何一个漏成 BillFormatError 都算红。
+  it('20 个不同错误密码全部抛 BillPasswordError（不误判成 BillFormatError）', () => {
+    const zip = writeEncryptedZip('manywrongpw.zip', [{ name: 'a.csv', content: ALIPAY_CSV }], ALIPAY_PASSWORD);
+    const entry = readFirstEncryptedEntry(zip);
+
+    // 现挑 20 个恰好蒙过 verification byte 的错误密码。实测蒙混通过率约 1/290，
+    // 所以扫 20000 次期望能挑出 ~69 个，挑不满就是"蒙混通过"的推导坏了——
+    // 宁可当场红掉，也不要让本用例退化成只测普通错误密码的空转断言。
+    const wrongPasswords: string[] = [];
+    for (let i = 0; i < 20000 && wrongPasswords.length < 20; i++) {
+      const pwd = `w${String(i).padStart(7, '0')}`;
+      if (passesZipCryptoVerification(entry.payload, entry.header, pwd)) wrongPasswords.push(pwd);
+    }
+    expect(wrongPasswords.length).toBe(20);
+
+    const used = new Set<string>();
+    for (const pwd of wrongPasswords) {
+      expect(used.has(pwd), `密码 ${pwd} 重复，本用例要求 20 个不同的错误密码`).toBe(false);
+      used.add(pwd);
+
+      let thrown: unknown;
+      try {
+        unzipBill(zip, pwd);
+      } catch (e) {
+        thrown = e;
+      }
+      const detail = thrown instanceof Error ? `${thrown.name}: ${thrown.message}` : String(thrown);
+      expect(thrown, `错误密码 ${pwd} 竟然解压成功了`).toBeDefined();
+      expect(thrown, `错误密码 ${pwd} 抛的是 ${detail}，应为 BillPasswordError（ISSUE-003）`)
+        .toBeInstanceOf(BillPasswordError);
+      expect(thrown, `错误密码 ${pwd} 被误判为 BillFormatError（ISSUE-003）：${detail}`)
+        .not.toBeInstanceOf(BillFormatError);
+    }
+  });
+
+  // 兜住上面新加的 CRC 分支的边界：只有"压缩包确实是加密的"且调用方给了密码时，
+  // CRC 不符才算密码错误。未加密的包 CRC 对不上就是文件真损坏，必须照旧报格式错误，
+  // 否则用户会被引导去反复重输一个本来就没错的密码。
+  it('未加密的 ZIP 内容损坏时仍归 BillFormatError（不因给了密码就改判密码错误）', () => {
+    const zip = new AdmZip();
+    zip.addFile('bill.csv', Buffer.from('a,b\n1,2\n'));
+    const buf = zip.toBuffer();
+    // 只把本地文件头里的 CRC-32 改错：adm-zip 的校验读的是本地头那份
+    // （置了 descriptor 标志位才读中央目录那份），数据仍能正常 inflate，
+    // 拦下它的只剩 CRC 校验这一道，正好走到 unzipBill 的兜底分支。
+    expect(buf.readUInt32LE(0)).toBe(0x04034b50);
+    buf.writeUInt32LE((buf.readUInt32LE(14) ^ 0xffffffff) >>> 0, 14);
+    const p = tmpPath('corrupt-plain.zip');
+    writeFileSync(p, buf);
+
+    expect(() => unzipBill(p, ALIPAY_PASSWORD)).toThrow(BillFormatError);
+    expect(() => unzipBill(p, ALIPAY_PASSWORD)).toThrow(/CRC32 checksum failed/);
   });
 
   it('错误密码时不产生半拉解压结果', () => {

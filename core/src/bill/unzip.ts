@@ -9,7 +9,8 @@
  *   findBillCsv(files)                     → 从文件列表里挑出账单表格（.csv 优先，.txt 兜底）
  *
  * 错误按可判别类型抛出，调用方不必去猜错误文案：
- *   BillPasswordError    密码错误（adm-zip: "Wrong Password"）
+ *   BillPasswordError    密码错误（adm-zip: "Wrong Password"；密码错误蒙混过
+ *                        verification byte 时，对外表现为 zlib / CRC 类报错）
  *   BillFormatError      不是 ZIP / 文件不存在 / 压缩包损坏
  *   BillCsvNotFoundError 解压成功但里面没有可识别的账单表格
  */
@@ -29,7 +30,13 @@ export class BillError extends Error {
   }
 }
 
-/** 解压密码不正确 */
+/**
+ * 解压密码不正确。
+ *
+ * 不止 adm-zip 明说的 "Wrong Password"：ZipCrypto 密码校验只有 1 字节，
+ * 错误密码约 1/256 概率蒙混过关，adm-zip 便放行，后续表现为 zlib / CRC 报错——
+ * 归到 BillFormatError 会让用户去查文件，而不是去拿最新密码。详见 unzipBill 里的说明。
+ */
 export class BillPasswordError extends BillError {
   constructor(message = '解压密码错误：账单 ZIP 的密码不匹配') {
     super(message);
@@ -163,6 +170,71 @@ function looksLikeTempBillDir(dir: string): boolean {
 }
 
 /**
+ * zlib 错误码的形状：Z_DATA_ERROR / Z_BUF_ERROR / Z_MEM_ERROR / Z_VERSION_ERROR …
+ * Z_* 是 zlib 自己的命名空间，adm-zip 抛的 "Wrong Password" 之类不带这个前缀。
+ */
+const ZLIB_ERROR_CODE_RE = /^Z_[A-Z_]+$/;
+
+/**
+ * zlib inflate 家族的错误文案，**只在错误对象的 code 丢失时才用作兜底**。
+ *
+ * adm-zip 0.6 的同步解压直接把 zlib 的 error 原样抛出（已实测：methods/inflater.js
+ * 走 inflateRawSync，不包装），所以正常路径靠 code 判定即可，不受文案影响。
+ * 万一将来某个版本包了一层把 code 抹掉，就退回比对下面这组文案。
+ *
+ * 清单是拿本机 zlib 随机灌了几十万条乱码实测出来的（Node v24 / zlib 1.3.x），
+ * 加上 inflate.c 的全集：蒙混过关的乱码落在哪一条完全取决于运气，漏一条
+ * 就等于又留了一次偶发误判——开发这个 ISSUE 时就漏过 "invalid literal/length code"。
+ */
+const ZLIB_INFLATE_ERRORS = [
+  'invalid block type',
+  'invalid stored block lengths',
+  'invalid code lengths set',
+  'invalid bit length repeat',
+  'invalid code -- missing end-of-block',
+  'invalid literal/lengths set',
+  'invalid literal/length code',
+  'invalid distance code',
+  'invalid distance too far back',
+  'invalid distance too far',
+  'invalid too new length or distance',
+  'too many length or distance symbols',
+  'invalid compressed data',
+  'invalid window size',
+  'invalid zlib header',
+  'invalid gzip header',
+  'incorrect data check',
+  'incorrect length check',
+  'incorrect header check',
+  'unexpected end of file',
+  'unknown compression method',
+  'unknown header flags set',
+  'header crc mismatch',
+  'need dictionary',
+];
+
+/** adm-zip 的 CRC 校验失败文案（"ADM-ZIP: CRC32 checksum failed 账单.csv"） */
+const CRC_MISMATCH_RE = /crc32 checksum failed|bad crc|crc mismatch/i;
+
+/** 压缩包里是否真的有加密条目（general purpose bit flag 的 bit0） */
+function hasEncryptedEntries(zip: AdmZip): boolean {
+  return zip.getEntries().some((e) => (((e.header as { flags?: number } | undefined)?.flags ?? 0) & 0x0001) !== 0);
+}
+
+/**
+ * 这次解压失败是不是 zlib 报出来的（即"喂给 zlib 的数据本身就不合法"）。
+ *
+ * 优先看错误码：Z_* 前缀由 zlib 独占，比对文案更硬，也扛得住 zlib 换文案。
+ * code 拿不到时（被中间层包过）再退回来比对文案。
+ */
+function isZlibInflateError(e: unknown, msg: string): boolean {
+  const code = (e as { code?: unknown } | null | undefined)?.code;
+  if (typeof code === 'string' && ZLIB_ERROR_CODE_RE.test(code)) return true;
+  const lower = msg.toLowerCase();
+  return ZLIB_INFLATE_ERRORS.some((s) => lower.includes(s));
+}
+
+/**
  * 解压账单 ZIP，返回解出的文件绝对路径列表。
  *
  * @param zipPath  ZIP 路径
@@ -207,6 +279,24 @@ export function unzipBill(zipPath: string, password: string, outDir?: string): s
     // 也可能写 "Invalid password"，所以三种写法都认，兜底再兜一层裸 password。
     if (/wrong\s*password|invalid\s*password|password/i.test(msg)) {
       throw new BillPasswordError(`解压密码错误（${absZip}）：${msg}`);
+    }
+    // ISSUE-003：ZipCrypto 的密码校验只有 1 字节 verification byte，错误密码有
+    // 约 1/256 概率蒙混过关，于是 adm-zip 认定密码正确、照常往下走，zlib 收到的
+    // 却是解密乱码，只会抛 inflate 家族错误（invalid block type / incorrect data
+    // check / invalid distance …），轮不到它说 "Wrong Password"。这类报错发生在
+    // 调用方确实给了密码的前提下，就只可能出自密码错误——归到格式错误会让用户
+    // 去检查文件、而不是去看最新邮件/短信里的新密码。压根没给密码时，格式错误
+    // 仍然老老实实归 BillFormatError。
+    if (Boolean(password) && isZlibInflateError(e, msg)) {
+      throw new BillPasswordError(`解压密码错误（${absZip}）：密码未通过校验，解压出乱码（${msg}）`);
+    }
+    // 同一批乱码还有个小概率（实测约 0.5%）恰好拼出一棵"合法"的 deflate 树，
+    // 于是 zlib 解压没报错、改由 CRC 校验拦下。密码正确时 CRC 必然对得上，
+    // 所以对**加密条目**而言，调用方给了密码却 CRC 不符，同样只可能是密码不对。
+    // 特意加上 hasEncryptedEntries 这一层：未加密的压缩包 CRC 对不上是文件真损坏，
+    // 那种情况必须老老实实报格式错误，不能被密码错误的口径盖过去。
+    if (Boolean(password) && CRC_MISMATCH_RE.test(msg) && hasEncryptedEntries(zip)) {
+      throw new BillPasswordError(`解压密码错误（${absZip}）：密码未通过校验，解压内容校验失败（${msg}）`);
     }
     throw new BillFormatError(`ZIP 解压失败: ${msg}`);
   }
