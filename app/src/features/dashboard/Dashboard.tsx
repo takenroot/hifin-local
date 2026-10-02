@@ -65,6 +65,7 @@ import {
 import { useSpaceId } from '@/db';
 import type { Category, Goal } from '@/db';
 import { useApi } from '@/hooks/useApi';
+import { useAnimatedNumber } from '@/hooks/useAnimatedNumber';
 import { toAccounts, toTransactions, type RestAccount, type RestTransaction } from '@/features/accounts/rest';
 import { ChartTooltip, LINE_CURSOR } from '@/features/reports/chartTheme';
 
@@ -115,7 +116,7 @@ const PIE_COLORS = [
 
 /* 隐藏金额时显示的占位字符（与币种符号宽度接近） */
 const AMOUNT_HIDDEN_PREFIX = '¥ ';
-const AMOUNT_HIDDEN_BODY = '••••••';
+const AMOUNT_HIDDEN_BODY = '******';
 
 /**
  * 读取/写入看板顶栏"隐藏金额"开关的 localStorage key。
@@ -547,6 +548,8 @@ export default function Dashboard() {
                           stroke="#6366f1"
                           strokeWidth={2}
                           fill="url(#dashNetGradient)"
+                          animationDuration={800}
+                          animationEasing="ease-out"
                         />
                       </AreaChart>
                     </ResponsiveContainer>
@@ -1047,7 +1050,7 @@ interface StatCardProps {
   amount: number;
   delta: number;
   expenseMode?: boolean;
-  /** 看板顶栏"隐藏金额"开关：true 时用圆点占位金额 */
+  /** 看板顶栏"隐藏金额"开关：true 时用星号占位金额 */
   hide?: boolean;
   /** 验收脚本锚点（日历翻月脚本要断言"本月"口径不被日历月份带跑） */
   testId?: string;
@@ -1063,6 +1066,8 @@ function StatCard({ label, icon, tone, amount, delta, expenseMode, hide, testId 
       : tone;
   const valueClass = effectiveTone === 'income' ? 'text-income' : 'text-expense';
   const sign = delta > 0 ? '+' : '';
+  // 滚动数字：隐藏时目标压到 0（反正渲染星号），取消隐藏即从 0 重滚到真实金额
+  const animatedAmount = useAnimatedNumber(hide ? 0 : amount);
   return (
     <Card className="!p-5" data-testid={testId}>
       <div className="flex items-center justify-between">
@@ -1080,7 +1085,7 @@ function StatCard({ label, icon, tone, amount, delta, expenseMode, hide, testId 
         </Badge>
       </div>
       <div className={clsx('mt-3 text-2xl font-medium tabular-nums', valueClass)}>
-        <MaskMoney value={amount} hide={!!hide} />
+        {hide ? <MaskMoney value={amount} hide /> : <span>{formatMoney(animatedAmount)}</span>}
       </div>
       <div className="mt-1 text-xs text-text-muted dark:text-text-muted-dark">
         较上月 <span className={trendToneClass(delta, !!expenseMode)}>{formatPercent(delta)}</span>
@@ -1099,8 +1104,8 @@ interface MaskMoneyProps {
 }
 
 /**
- * 根据 hide 开关决定显示真实金额或圆点占位。
- *  - hide=true  时：渲染 "¥ ••••••"（与带符号的金额宽度相近，避免布局抖动）。
+ * 根据 hide 开关决定显示真实金额或星号占位。
+ *  - hide=true  时：渲染 "¥ ******"（与带符号的金额宽度相近，避免布局抖动）。
  *  - hide=false 时：走原有 formatMoney。
  */
 function MaskMoney({ value, hide, withSymbol = true, className }: MaskMoneyProps) {
