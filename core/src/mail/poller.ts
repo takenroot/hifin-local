@@ -242,6 +242,11 @@ export interface BillNotification {
   retry_count: number;
 }
 
+/**
+ * 通知列表过滤条件。
+ * bill_uid 由本文件在客户端二次过滤——notifications/store.js 的过滤项里只有
+ * status/type/limit，而状态机必须按邮件 uid 定位通知，不能只靠库里过滤。
+ */
 export interface BillNotificationFilter {
   status?: BillNotificationStatus;
   type?: BillNotificationType;
@@ -258,8 +263,8 @@ export interface BillNotificationStore {
   incrementRetry(id: number): number | undefined;
   resolveNotification(id: number): void;
   /**
-   * 改状态。可选：真实 store 若不提供，poller 会退化成"只清 retry_count 不改状态"，
-   * 逻辑本身照常跑完（通知留在 pending，用户仍能手动 resolve）。
+   * 改状态。可选能力：真实 store 若没有对应函数，poller 退化成"只清 retry_count、
+   * 不改状态"，状态机本身照常跑完（通知留在 pending，用户仍能手动 resolve）。
    */
   setNotificationStatus?(id: number, status: BillNotificationStatus): void;
 }
@@ -274,13 +279,18 @@ function safeCall<T>(fn: () => T, fallback: T): T {
 }
 
 /**
- * 把任意形状的通知模块适配成 BillNotificationStore。
+ * 把 notifications/store.js 适配成 BillNotificationStore。
  *
- * 为什么要"适配"而不是直接 import：notifications/store.js 由另一个模块提供，
- * 它的具体签名可能微调；这里只依赖"能用即可"的最小契约，并对返回值做归一化
- * （id 可能是 number、undefined，甚至只返回 boolean）。
+ * 两处必须转换，否则接不上真 store：
+ *   1. 它的每个函数第一个参数都是 db（createNotification(db, input) 这种），
+ *      这里把 poller 手上的 db 绑死进去，对外只暴露"收什么、放什么"的干净接口。
+ *   2. listNotifications 的过滤项不含 bill_uid，返回的是整个表；按 uid 的筛选
+ *      在这里客户端做，避免把全表拉出来还当成"这封邮件的通知"。
  */
-export function adaptNotificationStore(mod: unknown): BillNotificationStore | null {
+export function adaptNotificationStore(
+  mod: unknown,
+  db: Database.Database,
+): BillNotificationStore | null {
   if (!mod || typeof mod !== 'object') return null;
   const m = mod as Record<string, unknown>;
   const create = m.createNotification;
@@ -294,6 +304,7 @@ export function adaptNotificationStore(mod: unknown): BillNotificationStore | nu
     return {
       id: typeof r.id === 'number' ? r.id : undefined,
       type: String(r.type ?? ''),
+      title: r.title === null || r.title === undefined ? undefined : String(r.title),
       message: r.message === null || r.message === undefined ? undefined : String(r.message),
       bill_uid: r.bill_uid === null || r.bill_uid === undefined ? undefined : num(r.bill_uid),
       platform: r.platform === null || r.platform === undefined ? undefined : String(r.platform),
@@ -304,40 +315,66 @@ export function adaptNotificationStore(mod: unknown): BillNotificationStore | nu
 
   const store: BillNotificationStore = {
     createNotification(input) {
-      return toRow(safeCall(() => (create as (i: BillNotificationInput) => unknown)(input), undefined));
+      const row = safeCall(
+        () => (create as (d: Database.Database, i: BillNotificationInput) => unknown)(db, input),
+        undefined,
+      );
+      return toRow(row) ?? undefined;
     },
     listNotifications(filter) {
+      // 只把 store 认识的过滤项传下去，bill_uid 留给自己过滤
+      const native: Record<string, unknown> = {};
+      if (filter?.status !== undefined) native.status = filter.status;
+      if (filter?.type !== undefined) native.type = filter.type;
       const rows = safeCall(
-        () => (list as (f?: BillNotificationFilter) => unknown)(filter),
+        () => (list as (d: Database.Database, f: unknown) => unknown)(db, native),
         [],
       );
       if (!Array.isArray(rows)) return [];
-      return rows.map(toRow).filter((r): r is BillNotification => r !== null);
+      return rows
+        .map(toRow)
+        .filter((r): r is BillNotification => r !== null)
+        .filter((r) => filter?.bill_uid === undefined || r.bill_uid === filter.bill_uid);
     },
     incrementRetry(id) {
-      const r = safeCall(() => {
-        const fn = m.incrementRetry;
-        return typeof fn === 'function'
-          ? (fn as (i: number) => unknown)(id)
-          : undefined;
-      }, undefined);
-      const n = typeof r === 'number' ? r : undefined;
-      return n !== undefined && Number.isFinite(n) ? n : undefined;
+      const fn = m.incrementRetry;
+      if (typeof fn !== 'function') return undefined;
+      const r = safeCall(() => (fn as (d: Database.Database, i: number) => unknown)(db, id), undefined);
+      return typeof r === 'number' && Number.isFinite(r) ? r : undefined;
     },
     resolveNotification(id) {
       safeCall(() => {
         const fn = m.resolveNotification;
-        if (typeof fn === 'function') (fn as (i: number) => unknown)(id);
+        if (typeof fn === 'function') (fn as (d: Database.Database, i: number) => unknown)(db, id);
       }, undefined);
     },
   };
-  if (typeof m.setNotificationStatus === 'function') {
-    store.setNotificationStatus = (id, status) => {
-      safeCall(() => {
-        (m.setNotificationStatus as (i: number, s: string) => unknown)(id, status);
-      }, undefined);
-    };
-  }
+
+  // 改状态：store 提供了专用函数就用专用的，否则退回 dismissed
+  // （dismissed 的唯一作用就是"别再出现在待办列表里"，正好对上"避免反复弹窗"）
+  const setStatus = store.setNotificationStatus = (id, status) => {
+    const pick =
+      status === 'resolved'
+        ? m.resolveNotification
+        : status === 'dismissed'
+          ? m.dismissNotification
+          : m.failNotification ?? m.setNotificationStatus;
+    if (typeof pick !== 'function') {
+      const fallbackFn = m.dismissNotification;
+      if (typeof fallbackFn === 'function') {
+        safeCall(() => (fallbackFn as (d: Database.Database, i: number) => unknown)(db, id), undefined);
+      }
+      return;
+    }
+    safeCall(() => {
+      if (status === 'failed' && pick === m.failNotification) {
+        (pick as (d: Database.Database, i: number) => unknown)(db, id);
+      } else {
+        (pick as (d: Database.Database, i: number, s: string) => unknown)(db, id, status);
+      }
+    }, undefined);
+  };
+
   return store;
 }
 
@@ -429,9 +466,24 @@ function writeZipToTempDir(uid: number, zip: Buffer): { file: string; dir: strin
 /** 密码连错多少次就放弃自动尝试（设计文档 §七：防暴力破解 + 防用户反复输错烦） */
 export const MAX_BILL_PASSWORD_RETRIES = 3;
 
+/** 重试到顶后的兜底提示（通知转 failed，邮件标记已读，不再反复弹窗） */
+export const PASSWORD_EXHAUSTED_HINT =
+  '解压密码连续输错次数过多，已停止自动导入，请手动下载账单后用 import-bill 导入';
+
 /** 平台中文名，通知标题用 */
 function platformLabel(platform: string): string {
   return platform === 'alipay' ? '支付宝' : platform === 'wechat' ? '微信' : platform;
+}
+
+/**
+ * 判断导入失败是不是"密码错"而不是"文件坏了"。
+ * unzipBill 抛的是 BillPasswordError；这里再兜一层文案匹配，
+ * 以防中间层（解压库 / 驱动）换了个别的 Error 类型。
+ */
+function isPasswordError(e: unknown): boolean {
+  if (e instanceof BillPasswordError) return true;
+  const msg = errMsg(e);
+  return /wrong\s*password|invalid\s*password|password|密码/i.test(msg);
 }
 
 
@@ -487,6 +539,21 @@ export class MailPoller {
   private opts: MailPollerOptions;
   /** 账单邮件（附件导入 / 无附件提示）的逐封结果，供 getBillOutcomes() 读取 */
   private bills: MailBillOutcome[] = [];
+  /** 生效的密码表：注入的 Map，或 password-store 的共享 Map（进程内唯一） */
+  private passwords: Map<number, string> | Record<string, string>;
+  /** 密码连错上限 */
+  private maxRetries: number;
+  /** 生效的 ZIP 下载器（注入优先，否则内置 fetch） */
+  private downloader: BillZipDownloader;
+  /** 通知存储：undefined=尚未加载，null=加载过但没有（无通知能力） */
+  private notifStore: BillNotificationStore | null | undefined = undefined;
+  /** 微信 URL 提取器：undefined=尚未加载，null=加载过但没有 */
+  private urlExtractor: WechatUrlExtractor | null | undefined = undefined;
+  /**
+   * uid → 已用掉的重试次数（内存兜底）。
+   * 通知表是权威来源，这里只是保证"通知模块缺席 / 换实例"时 3 次封顶依然生效。
+   */
+  private retryCounters = new Map<number, number>();
 
   constructor(config: MailPollerConfig, options?: MailPollerOptions) {
     if (!config || !config.host || !config.user || !config.password) {
@@ -511,6 +578,124 @@ export class MailPoller {
     });
     this.cfg = safe as MailPollerConfig;
     this.opts = options ?? {};
+    // 省略时用共享 Map：Web 端 POST 密码写进去，poller 下一轮就能直接读到
+    this.passwords = this.opts.billPasswords ?? getBillPasswordMap();
+    this.maxRetries =
+      Number.isFinite(this.opts.maxBillRetries) && (this.opts.maxBillRetries as number) > 0
+        ? Math.trunc(this.opts.maxBillRetries as number)
+        : MAX_BILL_PASSWORD_RETRIES;
+    this.downloader = this.opts.downloadBillZip ?? defaultZipDownloader;
+    if (this.opts.notifications) this.notifStore = this.opts.notifications;
+    if (this.opts.extractWechatUrl) this.urlExtractor = this.opts.extractWechatUrl;
+  }
+
+  // ── 可选依赖的懒加载 ───────────────────────────────────────
+
+  /**
+   * 通知存储：注入优先，否则软加载 ../notifications/store.js。
+   * 真 store 的每个函数都要 db，没 db 就等于没有通知能力（这时候本来也不导入账单）。
+   */
+  private async notifications(): Promise<BillNotificationStore | null> {
+    if (this.notifStore === undefined) {
+      const db = this.opts.db;
+      if (!db) {
+        this.notifStore = null;
+      } else {
+        this.notifStore = adaptNotificationStore(
+          await loadOptionalModule('../notifications/store.js'),
+          db,
+        );
+      }
+    }
+    return this.notifStore;
+  }
+
+  /** 微信 URL 提取器：注入优先，否则软加载 ./url-extractor.js；加载不到就 null */
+  private async wechatUrlExtractor(): Promise<WechatUrlExtractor | null> {
+    if (this.urlExtractor === undefined) {
+      const mod = await loadOptionalModule('./url-extractor.js');
+      const fn = mod && typeof mod === 'object'
+        ? (mod as Record<string, unknown>).extractWechatDownloadUrl
+        : undefined;
+      this.urlExtractor = typeof fn === 'function' ? (fn as WechatUrlExtractor) : null;
+    }
+    return this.urlExtractor;
+  }
+
+  // ── 密码 / 通知小工具 ─────────────────────────────────────
+
+  /**
+   * 取某封邮件的解压密码。
+   * 优先 uid 精确匹配（新语义：一封邮件一把密码），退回到平台级兜底（旧 CLI 语义）。
+   */
+  private billPasswordFor(uid: number, platform: string): string {
+    const pwd = this.passwords;
+    if (pwd instanceof Map) {
+      return pwd.get(uid) ?? '';
+    }
+    return pwd[platform] ?? '';
+  }
+
+  /** 导入成功后清掉这封邮件的密码（一次性密码用完即焚） */
+  private forgetPassword(uid: number): void {
+    if (this.passwords instanceof Map) {
+      this.passwords.delete(uid);
+    }
+  }
+
+  /** 某封邮件当前还"待处理"的最新通知（取 id 最大 / updatedAt 最新的那条） */
+  private async pendingNotification(
+    store: BillNotificationStore,
+    uid: number,
+  ): Promise<BillNotification | null> {
+    const rows = store.listNotifications({ bill_uid: uid, status: 'pending' });
+    if (rows.length === 0) return null;
+    return rows.reduce((a, b) => ((b.id ?? 0) > (a.id ?? 0) ? b : a));
+  }
+
+  /** 收掉某封邮件已有的待处理通知：换了一条提示就不该让旧提示继续弹窗 */
+  private async retirePending(store: BillNotificationStore, uid: number): Promise<void> {
+    const prev = await this.pendingNotification(store, uid);
+    if (prev?.id !== undefined) {
+      if (store.setNotificationStatus) {
+        store.setNotificationStatus(prev.id, 'dismissed');
+      } else {
+        store.resolveNotification(prev.id);
+      }
+    }
+  }
+
+  /**
+   * 这封邮件已经用掉几次重试机会。
+   *
+   * 每次密码错误都会新建一条 password_error 通知（用户只看最新那条），
+   * 所以单行的 retry_count 表达不了累计次数——取该邮件所有通知里的最大值，
+   * 再和内存计数器取大者：既能在通知模块缺席时封顶，也能在进程重启后从库里续上。
+   */
+  private async usedRetries(uid: number, store: BillNotificationStore | null): Promise<number> {
+    const inMem = this.retryCounters.get(uid) ?? 0;
+    if (!store) return inMem;
+    const rows = store.listNotifications({ bill_uid: uid });
+    const fromDb = rows.reduce((m, r) => Math.max(m, r.retry_count ?? 0), 0);
+    return Math.max(inMem, fromDb);
+  }
+
+  /**
+   * 把新建的通知行的 retry_count 补到累计次数。
+   * 这一行要能独立代表"这封邮件试了几次"——否则重启后光看库会以为从没试过。
+   * 循环次数上界就是 maxBillRetries（默认 3），不心疼。
+   */
+  private catchUpRetryCount(
+    store: BillNotificationStore,
+    id: number,
+    from: number,
+    to: number,
+  ): void {
+    let rc = from;
+    for (let i = rc; i < to; i++) {
+      const next = store.incrementRetry(id);
+      rc = next !== undefined && Number.isFinite(next) ? next : rc + 1;
+    }
   }
 
   /** 连接到 IMAP 服务器；区分认证错误与网络错误 */
@@ -564,12 +749,14 @@ export class MailPoller {
   }
 
   /**
-   * 处理"通知型"账单邮件：找 ZIP 附件 → 下载 → 自动导入。
+   * 处理"通知型"账单邮件：拿 ZIP → 检查解压密码 → 解压导入，全程用 notifications 表驱动重试。
    *
-   * 返回值：
-   *   'imported'      附件已入库 → 应标记 \Seen
-   *   'no-attachment' 账单邮件但没有附件（只有下载链接）→ 标记 \Seen 并提示
-   *   'error'         下载或导入失败 → 不标记 \Seen，下轮轮询还能重试
+   * 返回值（决定要不要标记 \Seen）：
+   *   'imported'      已入库           → 标记已读
+   *   'no-attachment' 没有附件/抽不到下载链接 → 标记已读并提示手动导入
+   *   'no-password'   缺解压密码（已发 need_password 通知）→ 不标记已读，等用户提交
+   *   'error'         下载/导入失败（含密码错误）→ 不标记已读，下轮还能重试
+   *   'exhausted'     密码连错到上限 → 通知转 failed 并标记已读，不再自动尝试
    *   null            这压根不是账单邮件 → 当普通未匹配邮件跳过
    *
    * 单封失败不中断整轮，错误记进 bills + stats.errors。
@@ -579,79 +766,208 @@ export class MailPoller {
     from: string,
     subject: string,
     bodyStructure: unknown,
-  ): Promise<'imported' | 'no-attachment' | 'no-password' | 'error' | null> {
+    source: string,
+  ): Promise<'imported' | 'no-attachment' | 'no-password' | 'error' | 'exhausted' | null> {
     const platform = detectBillPlatform(from, subject);
     if (!platform) return null;
 
-    const attachments = findBillAttachments(bodyStructure);
     const { db, accountId, spaceId } = this.opts;
     const canImport = !!db && Number.isFinite(accountId) && (accountId as number) > 0;
 
-    // 没有任何账单附件：多半是"去 XX 页面下载"的通知信
-    if (attachments.length === 0 || !canImport) {
-      const outcome: MailBillOutcome = {
+    // ── ① 先只判断"背后有没有一份 ZIP 可导入"，不急着下载 ──────
+    // 微信没有附件，ZIP 在正文链接后面：这里只抽链接（纯字符串操作），
+    // 把几十 MB 的下载留到确认有密码之后，免得每轮轮询都白下一遍。
+    const attachments = findBillAttachments(bodyStructure);
+    let zipUrl: string | null = null;
+    if (canImport && attachments.length === 0 && platform === 'wechat') {
+      try {
+        zipUrl = await this.extractWechatUrl(source);
+      } catch (e: unknown) {
+        this.pushBill({ from, subject, status: 'error', platform, message: errMsg(e) });
+        return 'error';
+      }
+    }
+    const hasAttachment = attachments.length > 0 && this.client !== null;
+    if (!canImport || (!hasAttachment && !zipUrl)) {
+      // 没有 db / 没有附件 / 微信也没抽到链接：沿用旧行为——提示一次并标记已读
+      this.pushBill({
         from,
         subject,
         status: 'no-attachment',
         platform,
         hint: NO_ATTACHMENT_HINT,
-      };
-      this.bills.push(outcome);
-      this.emitBill(outcome);
-      // 标记已读：提示一次即可，反复保持未读只会让每轮轮询都重复提示
+      });
       return 'no-attachment';
     }
 
-    const password = this.opts.billPasswords?.[platform] ?? '';
-    if (!password) {
-      const outcome: MailBillOutcome = {
+    // ── ② 密码重试状态机 ─────────────────────────────────────
+    const store = await this.notifications();
+    const usedRetries = await this.usedRetries(uid, store);
+    // 闸门：连错到上限就不再自动解压，通知转 failed + 标记已读
+    if (usedRetries >= this.maxRetries) {
+      if (store) {
+        const pending = await this.pendingNotification(store, uid);
+        if (pending?.id !== undefined && pending.status !== 'failed') {
+          store.setNotificationStatus?.(pending.id, 'failed');
+        }
+      }
+      this.retryCounters.set(uid, usedRetries);
+      this.pushBill({
         from,
         subject,
-        status: 'no-password',
+        status: 'exhausted',
         platform,
-        imported: 0,
-      };
-      this.bills.push(outcome);
-      this.emitBill(outcome);
+        exhausted: true,
+        passwordError: true,
+        remainingRetries: 0,
+        message: `解压密码连续输错 ${usedRetries} 次，已停止自动尝试`,
+        hint: PASSWORD_EXHAUSTED_HINT,
+      });
+      return 'exhausted';
+    }
+
+    const password = this.billPasswordFor(uid, platform);
+
+    // 无密码：发 need_password 通知，**不**标记已读——下轮轮询还会回来看用户有没有提交
+    if (!password) {
+      this.retryCounters.set(uid, usedRetries);
+      if (store) {
+        const prev = await this.pendingNotification(store, uid);
+        if (!prev) {
+          store.createNotification({
+            type: 'need_password',
+            title: `检测到${platformLabel(platform)}账单，请输入解压密码`,
+            message: `邮件「${subject || from}」的账单 ZIP 需要解压密码（见短信或另一封邮件）。密码仅本次有效，不会被保存。`,
+            bill_uid: uid,
+            platform,
+          });
+        }
+      }
+      this.pushBill({ from, subject, status: 'no-password', platform, imported: 0 });
       return 'no-password';
     }
-    const attachment = attachments[0];
+
+    // ── ③ 有密码：取 ZIP → 解压导入 ──────────────────────────
     let dir: string | null = null;
     try {
-      const { file, dir: tmpDir } = await downloadAttachment(this.client as ImapFlow, uid, attachment);
-      dir = tmpDir;
+      const dl = zipUrl
+        ? writeZipToTempDir(uid, await this.downloader(zipUrl))
+        : await downloadAttachment(this.client as ImapFlow, uid, attachments[0]);
+      dir = dl.dir;
       const result = await importBillZip(
         db as Database.Database,
-        file,
+        dl.file,
         platform,
         password,
         accountId as number,
         spaceId,
+        (n) => this.emitBillProgress(uid, platform, n),
       );
-      const outcome: MailBillOutcome = {
+      this.retryCounters.delete(uid);
+      this.forgetPassword(uid); // 一次性密码用完即焚
+      if (store) {
+        await this.retirePending(store, uid);
+        store.createNotification({
+          type: 'import_success',
+          title: `${platformLabel(platform)}账单导入成功`,
+          message: `已导入 ${result.imported} 笔交易（跳过 ${result.skipped} 笔）。`,
+          bill_uid: uid,
+          platform,
+        });
+      }
+      this.pushBill({
         from,
         subject,
         status: 'imported',
         platform,
         imported: result.imported,
-      };
-      this.bills.push(outcome);
-      this.emitBill(outcome);
+      });
       return 'imported';
     } catch (e: unknown) {
-      // 导入失败就不标记已读：下轮轮询还能重试，账单不会被"悄悄吞掉"
-      const outcome: MailBillOutcome = {
+      // 非密码问题（ZIP 损坏 / CSV 认不出 / 数据库约束）：不消耗重试额度，原样报错
+      const message = errMsg(e);
+      if (!isPasswordError(e)) {
+        this.pushBill({ from, subject, status: 'error', platform, message });
+        return 'error';
+      }
+
+      // 密码错误：retry_count+1，并把"还剩几次"写进通知文案
+      const attempt = usedRetries + 1;
+      this.retryCounters.set(uid, attempt);
+      const remaining = Math.max(0, this.maxRetries - attempt);
+      let row: BillNotification | undefined;
+      if (store) {
+        await this.retirePending(store, uid); // 旧提示先收掉，别让用户看到两条待办
+        row = store.createNotification({
+          type: 'password_error',
+          title: `${platformLabel(platform)}账单解压密码错误`,
+          message:
+            remaining > 0
+              ? `密码不正确，还可以再试 ${remaining} 次。密码见申请账单时的短信或邮件。`
+              : '密码错误次数过多，请手动下载账单后用 import-bill 导入。',
+          bill_uid: uid,
+          platform,
+        });
+        if (row?.id !== undefined) {
+          this.catchUpRetryCount(store, row.id, row.retry_count ?? 0, attempt);
+        }
+      }
+
+      if (attempt >= this.maxRetries) {
+        // 到顶：通知降级为 failed（灰色、不再催）并标记已读，避免反复弹窗
+        if (store && row?.id !== undefined) {
+          store.setNotificationStatus?.(row.id, 'failed');
+        }
+        this.pushBill({
+          from,
+          subject,
+          status: 'exhausted',
+          platform,
+          exhausted: true,
+          passwordError: true,
+          remainingRetries: 0,
+          message,
+          hint: PASSWORD_EXHAUSTED_HINT,
+        });
+        return 'exhausted';
+      }
+
+      this.pushBill({
         from,
         subject,
         status: 'error',
         platform,
-        message: errMsg(e),
-      };
-      this.bills.push(outcome);
-      this.emitBill(outcome);
+        message,
+        passwordError: true,
+        remainingRetries: remaining,
+      });
       return 'error';
     } finally {
       if (dir) rmSync(dir, { recursive: true, force: true });
+    }
+  }
+
+  /**
+   * 微信无附件账单：从正文 HTML 抽"立即下载"链接。
+   * 抽不到返回 null（调用方退化成 no-attachment 提示）；提取器本身抛错则向上抛。
+   */
+  private async extractWechatUrl(source: string): Promise<string | null> {
+    const extract = await this.wechatUrlExtractor();
+    if (!extract || !source) return null;
+    return safeCall(() => extract(source), null);
+  }
+
+  /** 记账本 + 广播给 CLI 的 onBill */
+  private pushBill(outcome: MailBillOutcome): void {
+    this.bills.push(outcome);
+    this.emitBill(outcome);
+  }
+
+  private emitBillProgress(uid: number, platform: string, imported: number): void {
+    try {
+      this.opts.onBillProgress?.({ uid, platform, imported });
+    } catch {
+      /* 回调抛错不该影响轮询 */
     }
   }
 
@@ -731,8 +1047,12 @@ export class MailPoller {
 
         // ② 正文没交易 → 通知型账单邮件：找 ZIP 附件自动导入
         if (!parsedOk) {
-          const bill = await this.handleBillMail(uid, from, subject, msg.bodyStructure);
-          if (bill === 'imported' || bill === 'no-attachment') {
+          const raw = msg.source as Buffer | string | undefined;
+          const source = typeof raw === 'string' ? raw : raw ? raw.toString('utf8') : '';
+          const bill = await this.handleBillMail(uid, from, subject, msg.bodyStructure, source);
+          // imported / no-attachment / exhausted 都是"这封邮件到此为止"→ 标记已读；
+          // no-password / error 保持未读，下轮轮询还会回来看密码或重试。
+          if (bill === 'imported' || bill === 'no-attachment' || bill === 'exhausted') {
             await markSeen();
           }
           // 只有附件真的入库了才算"处理成功"；其余一律计入 skipped，
@@ -948,8 +1268,10 @@ export interface RunMailPollOptions {
    * 刻意不改 MailPollSummary 的字段形状：既有调用方按 {fetched,parsed,...} 取值。
    */
   onBill?: (outcome: MailBillOutcome) => void;
-  /** 覆盖平台默认解压密码 */
-  billPasswords?: Record<string, string>;
+  /** 覆盖平台默认解压密码（Map 语义同上；CLI 走的是平台级 Record） */
+  billPasswords?: Map<number, string> | Record<string, string>;
+  /** 通知存储；CLI 不传时由 MailPoller 软加载 */
+  notifications?: BillNotificationStore;
 }
 
 /**
@@ -975,6 +1297,7 @@ export async function runMailPoll(
     spaceId: opts.spaceId ?? 1,
     onBill: opts.onBill,
     billPasswords: opts.billPasswords,
+    notifications: opts.notifications,
   };
   const poller = factory(opts.config, pollerOptions);
   const summary: MailPollSummary = {

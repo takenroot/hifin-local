@@ -1,7 +1,7 @@
 /**
  * hifin-core 数据库层集成测试
  * - 用 :memory: 跑全流程：openDatabase → migrate → ensureSeed
- * - 验证 12 张表存在；ensureSeed 幂等不翻倍；默认空间 id=1
+ * - 验证 13 张表存在；ensureSeed 幂等不翻倍；默认空间 id=1
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -22,6 +22,7 @@ const EXPECTED_TABLES = [
   'budgets',
   'rules',
   'kv',
+  'notifications',
 ] as const;
 
 describe('db layer', () => {
@@ -31,7 +32,7 @@ describe('db layer', () => {
     db = openDatabase(':memory:');
   });
 
-  it('migrate creates all 12 expected tables', () => {
+  it('migrate creates all 13 expected tables', () => {
     migrate(db);
     const rows = db
       .prepare(

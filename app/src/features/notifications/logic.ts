@@ -24,6 +24,12 @@ export const POLL_INTERVAL_MS = 30_000;
 /** 提交密码后给后端解压导入的等待窗口：30 秒 */
 export const PROCESSING_WAIT_MS = 30_000;
 
+/**
+ * 最多连续等几轮 30 秒（3 轮 = 90 秒）。
+ * 纯粹是防呆：万一后端没有把通知置为 resolved，UI 也不能永远卡在 loading。
+ */
+export const MAX_IMPORT_WAIT_ROUNDS = 3;
+
 /** toast 自动消失时间 */
 export const TOAST_TTL_MS = 5_000;
 
@@ -99,11 +105,6 @@ export function isToastType(type: NotificationType): boolean {
   return type === 'import_success' || type === 'import_failed';
 }
 
-/** 是否会因为失败而扣掉一次机会（决定要不要显示"还剩 N 次"） */
-export function isPasswordRejection(kind: PasswordSubmitOutcome): boolean {
-  return kind === 'wrong_password';
-}
-
 /**
  * 从待处理列表里挑出当前该弹窗的那条。
  * 优先级：需要密码的 > 后创建的（同类型时新邮件优先），
@@ -150,6 +151,15 @@ export interface PasswordSubmitOutcome {
 
 /** 后端错误串里出现这些词，判定为"密码错了"而不是"服务挂了" */
 const PASSWORD_HINTS = ['password', '密码', 'unzip', 'decrypt', 'encrypted'];
+
+/**
+ * 参数校验类错误的特征词。
+ *
+ * ⚠️ 这条不能省：core 的 POST /api/bills/:uid/password 对"password 必填且必须
+ * 是非空字符串"返回 400，而错误串里含 "password"。若不做排除，一次空提交的
+ * 校验失败会被误判成"密码错误"，白白扣掉用户一次重试机会。
+ */
+const VALIDATION_HINTS = ['必填', '必须是', '参数', 'invalid', 'required', 'validation', 'expected'];
 
 /** 宽松地把后端可能返回的几种错误表示统一成小写可比较的串 */
 function errorText(body: unknown, status: number): string {
@@ -200,6 +210,10 @@ export function parsePasswordSubmit(status: number, body: unknown): PasswordSubm
 }
 
 function toFailure(text: string, remaining: number | undefined): PasswordSubmitOutcome {
+  // 校验类错误优先排除：它是"请求没写对"，不是"密码没猜对"
+  if (VALIDATION_HINTS.some((h) => text.includes(h))) {
+    return { kind: 'failed', remaining, detail: text };
+  }
   if (PASSWORD_HINTS.some((h) => text.includes(h))) {
     return { kind: 'wrong_password', remaining, detail: '密码错误' };
   }

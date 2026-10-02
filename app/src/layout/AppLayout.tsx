@@ -28,6 +28,7 @@ import {
 import { db, type Space } from '@/db';
 import { ALL_SPACES_ID, belongsToSpace } from '@/space';
 import { CommandPaletteView as CommandPalette } from '@/features/command-palette/CommandPaletteView';
+import { NotificationCenter } from '@/features/notifications/NotificationCenter';
 
 interface NavItem {
   key: keyof ReturnType<typeof useMenuVisibility>;
@@ -210,6 +211,9 @@ export default function AppLayout() {
 
       {/* Command palette */}
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} navigate={navigate} />
+
+      {/* 全局通知中心：轮询待处理通知，需要密码时弹窗、导入结果走 toast */}
+      <NotificationCenter />
     </div>
   );
 }
