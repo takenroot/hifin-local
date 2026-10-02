@@ -26,3 +26,8 @@ test-results/
 
 # 临时/本地服务日志
 /tmp/
+# hifin-core 运行时数据
+core/data/
+*.db
+*.db-shm
+*.db-wal

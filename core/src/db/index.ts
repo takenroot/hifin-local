@@ -1,0 +1,48 @@
+/**
+ * hifin-core 数据库模块聚合入口
+ * - re-export connection / migrate / seed / schema 全量类型 + 常量
+ * - 上层（routes / services / cli）一律从此处导入，避免散落
+ */
+
+export {
+  openDatabase,
+  getDb,
+  resetDb,
+  getDbPath,
+  type DatabaseType,
+} from './connection.js';
+
+export {
+  migrate,
+  getUserVersion,
+  setUserVersion,
+  CURRENT_SCHEMA_VERSION,
+} from './migrate.js';
+
+export {
+  ensureSeed,
+  DEFAULT_SPACE_ID,
+} from './seed.js';
+
+export {
+  SCHEMA_SQL,
+  // 类型
+  type AccountType,
+  type TransactionType,
+  type GoalKind,
+  type CategoryType,
+  type BudgetPeriod,
+  type RuleMatchField,
+  type SpaceRow,
+  type AccountRow,
+  type TransactionRow,
+  type GoalRow,
+  type CategoryRow,
+  type TagRow,
+  type MerchantRow,
+  type ReportRow,
+  type AiModelRow,
+  type BudgetRow,
+  type RuleRow,
+  type KvRow,
+} from './schema.js';
