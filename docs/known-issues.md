@@ -94,3 +94,25 @@ ZipCrypto 的密码校验只靠 1 字节 verification byte，错误密码有约 
 对照实测：修复前 65/65 个蒙混通过的错误密码**全部**被误判成 `BillFormatError`；
 修复后 0/81 误判。另单独构造 6 个走 CRC 分支的错误密码，均正确归为
 `BillPasswordError`。
+
+---
+
+## ISSUE-004：规则引擎的两个已知限制（低危，不影响存量数据）
+
+**发现时间**：2026-10-03（226 条自动生成规则落库后的回放评估暴露）
+**状态**：已知限制，暂不修
+
+### 1. 同优先级规则无 tiebreak
+
+`makeRuleMatcher` 按 `priority DESC` 取第一条命中；226 条自动生成规则 priority 全是 10，
+同优先级胜出者实际取决于 SQLite 返回顺序（回放脚本用 `createdAt ASC` 兜底，但
+importer 的 ORDER BY 没有显式 tiebreak）。**影响**：未来若两个同优先级规则都能命中
+同一商户，分类结果理论上不稳定。目前 226 条规则的 keyword 互不包含（除已禁用的
+单字符规则），未观察到实际冲突。
+
+### 2. REST 规则写入无长度校验
+
+`POST/PUT /api/rules` 不校验 keyword 长度。单字符 keyword（如"平"）在 includes
+语义下会误伤（曾命中"拼多多平台商户"）。生成路径 `apply-merchant-rules.ts` 已有
+硬自检，存量单字符规则已 `enabled=0`；但手工从 UI/API 加规则时没有拦截。
+**缓解**：设置→规则页可见可改，用户自查。

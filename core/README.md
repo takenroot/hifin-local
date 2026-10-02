@@ -42,9 +42,43 @@ Web SPA（`app/`）已全面切到这套 REST API，浏览器端不再有自己�
 
 ```bash
 npm run dev        # tsx watch 启动 REST 服务（:8787）
-npm run test       # vitest（148 例）
+npm run test       # vitest（265 例，--pool=threads）
 npm run build      # tsc → dist/
 ```
+
+## 数据模型要点（schema v2）
+
+`transactions` 在基础字段外带四个账单溯源列（均 nullable，老数据可为空）：
+
+| 列 | 含义 | 来源 |
+| --- | --- | --- |
+| `source` | alipay / wechat / manual / csv | 导入路径 |
+| `externalId` | 平台交易单号 | 账单原件（手工录入无） |
+| `paymentMethod` | 支付方式主渠道（零钱通/花呗/银行卡…，组合支付取 `&` 前段） | 账单原件 |
+| `status` | 交易状态原文（交易成功/已全额退款…） | 账单原件 |
+
+**去重**：有 `externalId` 时按 `(source, externalId)` 部分唯一索引精确去重，重复导入直接跳过；
+无 externalId 退回四字段启发式（账户+金额+日期+商户）。
+
+**自动分类决策顺序**：rules 规则（含收支方向闸门：规则指向分类的类型与流水类型不匹配即跳过）
+→ 账单原件分类列映射（`bill/category-map.ts`）→ null（未分类）。
+
+**余额不变量**：`accounts.balance == Σ(income) - Σ(expense)`（excluded/transfer 不计）；
+任何批量改数脚本都必须复核该不变量。
+
+## 运维脚本（`scripts/`，均为 dry-run + `--apply` 两段式）
+
+| 脚本 | 用途 |
+| --- | --- |
+| `backfill-fields.ts` | 从账单原件回填 source/externalId/paymentMethod/status |
+| `backfill-categories.ts` | 用账单分类列回填存量流水分类 |
+| `apply-merchant-rules.ts` | 把审核过的商户→分类映射写入 rules 表并回填 |
+| `verify-apply.ts` / `rule-risk.ts` | 回填后校验 / 规则回放风险评估 |
+| `disable-short-rules.ts` | 禁用单字符 keyword 规则（includes 误伤防护） |
+| `baseline.ts` / `snapshot-db.ts` | 改数前后指纹/快照对照 |
+
+**安全规约**：账单解压密码一次性，**禁止**写入任何文件（默认值、注释、硬编码均不行），
+只许命令行参数/环境变量传入；`bill/password-store.ts` 只做进程内存暂存。
 
 ## CLI 入口
 

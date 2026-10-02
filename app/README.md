@@ -10,7 +10,7 @@
 npm run dev        # 开发服务（vite 默认 http://127.0.0.1:5173）
 npm run build      # tsc 类型检查 + Vite 产物构建
 npm run preview    # 预览构建产物
-npm run test       # Vitest 单元测试（50 例）
+npm run test       # Vitest 单元测试（105 例）
 ```
 
 > 端口说明：`vite.config.ts` 中 `server.port` 为 **5173**。本机多人/多 agent 并行预览时常被占用，实际使用中一般以 `npx vite --port <端口> --strictPort` 覆盖（例如 :5199）。接口不受影响——`/api` 由 vite proxy 转发到 core。
@@ -65,6 +65,7 @@ refetch();
 ```
 
 - 读用 `useApi<T>(url, deps?)`：`url` 变化或调用 `refetch()` 时重新拉取；`url` 传 `null` 则不请求。
+  **模块级 SWR 缓存**：同 URL 二次访问首帧即渲染缓存数据、后台静默刷新；`loading` 语义为「当前 url 无数据可展示」，列表页空态必须以 `!loading` 门控（否则冷启动会闪空态，有 `accept/scripts/no-empty-flash.mjs` 回归守着）。
 - 写用 `apiFetch<T>(url, method, body?)`：`POST` / `PUT` / `DELETE`，非 2xx 抛 `HTTP <status>: <body>`。
 - 空间过滤直接拼 URL 查询参数（`?spaceId=1`），服务端负责过滤。
 - 代理：`vite.config.ts` 把 `/api` 转发到 `http://localhost:8787`（core REST 服务）。
@@ -111,12 +112,14 @@ const theme = useAtomValue(themeAtom);     // 'light' | 'dark' | 'system'
 
 ## 单元测试
 
-`tests/` 下共 50 例（4 个文件）：
+`tests/` 下共 105 例（6 个文件）：
 
 - `balance.test.ts` —— 流水余额联动
 - `csv.test.ts` —— CSV 解析（支付宝/微信/通用）
 - `csv-real-statement.test.ts` —— 真实账单样本解析回归
 - `dashboard-calc.test.ts` —— 看板计算（净资产/收支/分布/日历）
+- `grouping.test.ts` —— 流水日/周/月/年分组（ISO 周、跨月跨年边界）
+- `stats.test.ts` —— 统计 Tab 聚合（分类占比、月份工具）
 
 全部为纯计算用例，`tests/setup.ts` 已移除浏览器数据库垫片。运行：`npm run test`
 
