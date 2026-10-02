@@ -6,7 +6,7 @@
 
 ```
 accept/
-├── scripts/                       # 可复跑回归脚本（5 个，唯一维护面）
+├── scripts/                       # 可复跑回归脚本（7 个，唯一维护面）
 │   ├── design-consistency.mjs     # 6 列表页设计一致性
 │   ├── darkmode-audit.mjs         # 暗黑模式对比度审计
 │   ├── dexie-purge-smoke.mjs      # Dexie 移除后 REST 冒烟
@@ -131,6 +131,31 @@ HIFIN_BASE=http://127.0.0.1:5189 node accept/scripts/weather-city-persist.mjs
 
 ```bash
 node accept/scripts/border-contrast.mjs
+```
+
+### 6. `no-empty-flash.mjs` — 列表页空态闪烁回归
+
+用 Playwright route 延迟（非 CDP 限速——需要「空态出现时刻晚于数据请求放行」
+的精确边界）断言：/transaction、/account/list、/budget 加载期间
+EmptyStateCard 与「暂无」文案**零帧出现**；二次访问首帧即渲染缓存数据（SWR）。
+
+- 端口：脚本内默认 `5186`
+- 输出：`accept/screenshots/no-empty-flash/`（9 PNG）
+
+```bash
+node accept/scripts/no-empty-flash.mjs
+```
+
+### 7. `tx-grouping-stats.mjs` — 流水分组与统计 Tab
+
+日/周/月/年四档分组 + 分组小计、维度与统计月份的 localStorage 持久化、
+统计 Tab 饼图/排行/月份翻页/明暗双主题。**72 条断言**。
+
+- 端口：脚本内默认 `5189`
+- 输出：`accept/screenshots/tx-grouping-stats/`（22 PNG）
+
+```bash
+node accept/scripts/tx-grouping-stats.mjs
 ```
 
 ## archive/ 说明
