@@ -9,6 +9,9 @@
  *   tx add --type expense --amount 38 --name X [--accountId N] [--date ISO]
  *   summary [--month YYYY-MM]
  *   import-csv <file> --platform alipay --accountId N
+ *   mail config --host imap.qq.com --port 993 --user x@qq.com --password **** [--tls true]
+ *   mail config --show
+ *   mail poll [--days 7] --accountId N
  *
  * 所有子命令默认输出 JSON；加 --human 后用 console.table。
  *
@@ -24,6 +27,12 @@ import {
 import { migrate } from './db/migrate.js';
 import { ensureSeed } from './db/seed.js';
 import { getDb, setActiveDb } from './routes/_db.js';
+import {
+  loadMailConfig,
+  readMaskedMailConfig,
+  runMailPoll,
+  saveMailConfig,
+} from './mail/poller.js';
 import type {
   AccountRow,
   TransactionRow,
@@ -73,6 +82,12 @@ function dayjsParseToTs(input: string): number {
     return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])).getTime();
   }
   throw new Error(`无法解析日期: ${input}`);
+}
+
+function parseBool(v: string, flag: string): boolean {
+  if (/^(true|1|yes|on)$/i.test(v)) return true;
+  if (/^(false|0|no|off)$/i.test(v)) return false;
+  throw new Error(`${flag} 必须是 true/false，收到: ${v}`);
 }
 
 const program = new Command();
@@ -489,6 +504,75 @@ program
       },
       !!program.opts().human,
     );
+  });
+
+// ── mail ─────────────────────────────────────────────────
+/**
+ * 邮箱账单导入。
+ * 凭证存 kv 表：非敏感字段在 mail.config（JSON），密码单独存 mail.password，
+ * 因此 `mail config --show` 与任何 config 视图都不会泄露明文密码。
+ */
+const mail = program.command('mail').description('邮箱账单导入（IMAP）');
+
+mail
+  .command('config')
+  .description('写入 IMAP 凭证；--show 查看当前配置（密码打码）')
+  .option('--host <host>', 'IMAP 服务器地址（首次必填）')
+  .option('--port <n>', 'IMAP 端口', (v) => Number(v))
+  .option('--user <email>', '登录账号（首次必填）')
+  .option('--password <pw>', '登录密码 / 授权码（首次必填；省略则保留已存密码）')
+  .option('--tls <flag>', '是否启用 TLS (true/false)', (v) => parseBool(v, '--tls'))
+  .option('--mailbox <name>', '邮箱目录', 'INBOX')
+  .option('--show', '显示当前配置（密码打码 ******）', false)
+  .action((opts: {
+    host?: string;
+    port?: number;
+    user?: string;
+    password?: string;
+    tls?: boolean;
+    mailbox?: string;
+    show?: boolean;
+  }) => {
+    ensureDb(program.opts().db);
+    const db = getDb();
+    if (opts.show) {
+      const view = readMaskedMailConfig(db);
+      emit(view ? { configured: true, ...view } : { configured: false }, !!program.opts().human);
+      return;
+    }
+    const view = saveMailConfig(db, {
+      host: opts.host,
+      port: opts.port,
+      user: opts.user,
+      password: opts.password,
+      tls: opts.tls,
+      mailbox: opts.mailbox,
+    });
+    emit({ configured: true, ...view }, !!program.opts().human);
+  });
+
+mail
+  .command('poll')
+  .description('拉取最近 N 天的未读邮件，解析并导入交易')
+  .option('--days <n>', '拉取最近多少天', (v) => Number(v), 7)
+  .requiredOption('--accountId <n>', '导入到哪个账户', (v) => Number(v))
+  .option('--space <n>', '空间 ID', (v) => Number(v), 1)
+  .action(async (opts: { days: number; accountId: number; space: number }) => {
+    ensureDb(program.opts().db);
+    const db = getDb();
+    const config = loadMailConfig(db);
+    if (!config) {
+      throw new Error(
+        '尚未配置邮箱，请先执行: hifin mail config --host imap.qq.com --user xxx@qq.com --password ****',
+      );
+    }
+    const summary = await runMailPoll(db, {
+      config,
+      days: opts.days,
+      accountId: opts.accountId,
+      spaceId: opts.space,
+    });
+    emit(summary, !!program.opts().human);
   });
 
 program.parseAsync(process.argv).catch((err) => {

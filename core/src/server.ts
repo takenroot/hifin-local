@@ -21,6 +21,15 @@ import { accountsRouter } from './routes/accounts.js';
 import { transactionsRouter } from './routes/transactions.js';
 import { summaryRouter } from './routes/summary.js';
 import { categoriesRouter } from './routes/categories.js';
+import { goalsRouter } from './routes/goals.js';
+import { budgetsRouter } from './routes/budgets.js';
+import { tagsRouter } from './routes/tags.js';
+import { merchantsRouter } from './routes/merchants.js';
+import { rulesRouter } from './routes/rules.js';
+import { reportsRouter } from './routes/reports.js';
+import { spacesRouter } from './routes/spaces.js';
+import { kvRouter } from './routes/kv.js';
+import { aiModelsRouter } from './routes/ai-models.js';
 
 export interface CreateAppOptions {
   /** 已连接的 db 实例；若不传，则视为外部已通过 setDb/openDatabase 准备好 */
@@ -43,6 +52,15 @@ export function createApp(opts: CreateAppOptions = {}): Express {
   app.use('/api/transactions', transactionsRouter);
   app.use('/api/summary', summaryRouter);
   app.use('/api/categories', categoriesRouter);
+  app.use('/api/goals', goalsRouter);
+  app.use('/api/budgets', budgetsRouter);
+  app.use('/api/tags', tagsRouter);
+  app.use('/api/merchants', merchantsRouter);
+  app.use('/api/rules', rulesRouter);
+  app.use('/api/reports', reportsRouter);
+  app.use('/api/spaces', spacesRouter);
+  app.use('/api/kv', kvRouter);
+  app.use('/api/ai-models', aiModelsRouter);
 
   // 404
   app.use((req: Request, res: Response) => {
