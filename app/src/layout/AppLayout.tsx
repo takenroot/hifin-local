@@ -1,7 +1,6 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAtom, useAtomValue } from 'jotai';
-import { useLiveQuery } from 'dexie-react-hooks';
 import {
   IconLayoutDashboard,
   IconWallet,
@@ -25,10 +24,12 @@ import {
   spaceIdAtom,
   commandPaletteOpenAtom,
 } from '@/store/atoms';
-import { db, type Space } from '@/db';
+import type { Space } from '@/db';
+import { useApi, apiFetch } from '@/hooks/useApi';
 import { ALL_SPACES_ID, belongsToSpace } from '@/space';
 import { CommandPaletteView as CommandPalette } from '@/features/command-palette/CommandPaletteView';
 import { NotificationCenter } from '@/features/notifications/NotificationCenter';
+import { toSpaces, type RestSpaceRow } from '@/features/settings/restApi';
 
 interface NavItem {
   key: keyof ReturnType<typeof useMenuVisibility>;
@@ -109,9 +110,15 @@ export default function AppLayout() {
     return true;
   });
 
-  // ─── 多空间：实时拉取 db.spaces，按 createdAt 排序 ───
-  const spaces: Space[] =
-    useLiveQuery(() => db.spaces.orderBy('name').toArray(), []) ?? [];
+  // ─── 多空间：从 REST 拉取（迁移前是 db.spaces），按 name 排序 ───
+  const {
+    data: restSpaces,
+    refetch: refetchSpaces,
+  } = useApi<RestSpaceRow[]>('/api/spaces');
+  const spaces: Space[] = useMemo(
+    () => toSpaces(restSpaces ?? []).sort((a, b) => a.name.localeCompare(b.name, 'zh-CN')),
+    [restSpaces],
+  );
 
   // 计算底部展示名
   const currentSpaceName = (() => {
@@ -131,6 +138,7 @@ export default function AppLayout() {
           spaces={spaces}
           spaceId={spaceId}
           onPick={(id) => setSpaceId(id)}
+          onRefreshSpaces={refetchSpaces}
           onOpenPalette={() => setPaletteOpen(true)}
           onNavigateSettings={() => navigate('/settings')}
           currentSpaceName={currentSpaceName}
@@ -194,6 +202,7 @@ export default function AppLayout() {
             spaces={spaces}
             spaceId={spaceId}
             onPick={(id) => setSpaceId(id)}
+            onRefreshSpaces={refetchSpaces}
             onOpenPalette={() => {
               setMobileNavOpen(false);
               setPaletteOpen(true);
@@ -224,6 +233,7 @@ interface SidebarBodyProps {
   spaces: Space[];
   spaceId: number;
   onPick: (id: number) => void;
+  onRefreshSpaces: () => void;
   onOpenPalette: () => void;
   onNavigateSettings: () => void;
   currentSpaceName: string;
@@ -235,6 +245,7 @@ function SidebarBody({
   spaces,
   spaceId,
   onPick,
+  onRefreshSpaces,
   onOpenPalette,
   onNavigateSettings,
   currentSpaceName,
@@ -248,6 +259,7 @@ function SidebarBody({
         spaces={spaces}
         spaceId={spaceId}
         onPick={onPick}
+        onRefreshSpaces={onRefreshSpaces}
       />
 
       {/* Search */}
@@ -314,12 +326,16 @@ interface SpaceSwitcherProps {
   spaces: Space[];
   spaceId: number;
   onPick: (id: number) => void;
+  /** 新建成功后重新拉取 GET /api/spaces */
+  onRefreshSpaces: () => void;
 }
 
-function SpaceSwitcher({ spaces, spaceId, onPick }: SpaceSwitcherProps) {
+function SpaceSwitcher({ spaces, spaceId, onPick, onRefreshSpaces }: SpaceSwitcherProps) {
   const [open, setOpen] = useState(false);
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   // 头部按钮的展示名
   const headerLabel = (() => {
@@ -329,7 +345,7 @@ function SpaceSwitcher({ spaces, spaceId, onPick }: SpaceSwitcherProps) {
 
   async function handleCreate() {
     const name = newName.trim();
-    if (!name) return;
+    if (!name || creating) return;
     // 重名检查：避免在空间中建两条同名
     const dup = spaces.find((s) => s.name === name);
     if (dup) {
@@ -340,14 +356,21 @@ function SpaceSwitcher({ spaces, spaceId, onPick }: SpaceSwitcherProps) {
       setOpen(false);
       return;
     }
-    const id = await db.spaces.add({
-      name,
-      createdAt: Date.now(),
-    });
-    if (typeof id === 'number') onPick(id);
-    setNewName('');
-    setAdding(false);
-    setOpen(false);
+    setCreating(true);
+    setCreateError(null);
+    try {
+      const created = await apiFetch<RestSpaceRow>('/api/spaces', 'POST', { name });
+      onRefreshSpaces();
+      if (created?.id != null) onPick(created.id);
+      setNewName('');
+      setAdding(false);
+      setOpen(false);
+    } catch (e) {
+      // 失败（如 core 侧 409 重名）时保留输入并提示，不收起面板
+      setCreateError(String(e));
+    } finally {
+      setCreating(false);
+    }
   }
 
   return (
@@ -422,7 +445,10 @@ function SpaceSwitcher({ spaces, spaceId, onPick }: SpaceSwitcherProps) {
           {!adding ? (
             <button
               type="button"
-              onClick={() => setAdding(true)}
+              onClick={() => {
+                setAdding(true);
+                setCreateError(null);
+              }}
               className="w-full text-left px-3 h-8 text-sm rounded-lg text-text-muted hover:bg-bg dark:hover:bg-bg-dark flex items-center gap-1"
             >
               <IconCirclePlus size={12} />
@@ -433,7 +459,10 @@ function SpaceSwitcher({ spaces, spaceId, onPick }: SpaceSwitcherProps) {
               <input
                 autoFocus
                 value={newName}
-                onChange={(e) => setNewName(e.target.value)}
+                onChange={(e) => {
+                  setNewName(e.target.value);
+                  if (createError) setCreateError(null);
+                }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
@@ -441,18 +470,23 @@ function SpaceSwitcher({ spaces, spaceId, onPick }: SpaceSwitcherProps) {
                   } else if (e.key === 'Escape') {
                     setAdding(false);
                     setNewName('');
+                    setCreateError(null);
                   }
                 }}
                 placeholder="空间名称"
                 maxLength={20}
                 className="w-full h-8 px-2 rounded-lg bg-bg dark:bg-bg-dark border border-border dark:border-border-dark text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
               />
+              {createError && (
+                <div className="text-xs text-expense break-words">{createError}</div>
+              )}
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => {
                     setAdding(false);
                     setNewName('');
+                    setCreateError(null);
                   }}
                   className="flex-1 h-7 rounded-lg text-xs text-text-muted hover:bg-bg dark:hover:bg-bg-dark"
                 >
@@ -461,15 +495,15 @@ function SpaceSwitcher({ spaces, spaceId, onPick }: SpaceSwitcherProps) {
                 <button
                   type="button"
                   onClick={() => void handleCreate()}
-                  disabled={!newName.trim()}
+                  disabled={!newName.trim() || creating}
                   className={clsx(
                     'flex-1 h-7 rounded-lg text-xs font-medium transition',
-                    newName.trim()
+                    newName.trim() && !creating
                       ? 'bg-text text-bg-card dark:bg-bg-card-dark dark:text-text-dark'
                       : 'bg-bg dark:bg-bg-dark text-text-muted cursor-not-allowed',
                   )}
                 >
-                  创建
+                  {creating ? '创建中…' : '创建'}
                 </button>
               </div>
             </div>

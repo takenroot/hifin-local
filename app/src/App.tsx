@@ -1,9 +1,7 @@
-import { useEffect } from 'react';
 import { Navigate, Route, Routes, useRoutes } from 'react-router-dom';
 import type { RouteObject } from 'react-router-dom';
 import { useAtomValue } from 'jotai';
 import { AppLayout } from '@/layout';
-import { ensureSeed } from '@/db';
 import { defaultPageAtom } from '@/store/atoms';
 
 /**
@@ -60,11 +58,6 @@ function RootIndexRedirect() {
 }
 
 export default function App() {
-  useEffect(() => {
-    // 应用启动时确保默认数据已 seed
-    void ensureSeed();
-  }, []);
-
   return (
     <Routes>
       <Route path="/" element={<AppLayout />}>
