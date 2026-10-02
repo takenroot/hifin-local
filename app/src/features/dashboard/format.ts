@@ -1,7 +1,8 @@
 /**
  * 格式化辅助函数（仅供 dashboard 模块内部使用）
  */
-import type { Dayjs } from 'dayjs';
+import dayjs, { type Dayjs } from 'dayjs';
+import type { Transaction } from '@/db';
 
 /** 金额格式化：保留 2 位小数 + 千分位；负数前加 "-" */
 export function formatMoney(value: number, withSymbol = true): string {
@@ -59,4 +60,28 @@ export function greetingByHour(hour: number): string {
 const WEEKDAY_CN = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
 export function weekdayCn(day: Dayjs): string {
   return WEEKDAY_CN[day.day()];
+}
+
+/**
+ * 月份翻页器文案：2026年10月。
+ * 月不补零，与 transactions/TransactionStatsView 的翻页器口径保持一致。
+ */
+export function monthLabelCn(month: Dayjs): string {
+  return month.format('YYYY年M月');
+}
+
+/**
+ * 收支日历的下界月份：全库最早一笔"日历可见"交易所在的月（月初）。
+ *
+ * 口径与 buildCalendar 一致——排除 transfer / excluded，否则下界可能落在
+ * 一个日历网格画不出任何数据点的月份上。空库返回 null，由调用方回退到当前月。
+ * 上界不在这里给：翻页器上界恒为"真实当前月"（未来月没有流水）。
+ */
+export function earliestTransactionMonth(transactions: Transaction[]): Dayjs | null {
+  let min: number | null = null;
+  for (const t of transactions) {
+    if (t.type === 'transfer' || t.type === 'excluded') continue;
+    if (min === null || t.date < min) min = t.date;
+  }
+  return min === null ? null : dayjs(min).startOf('month');
 }

@@ -6,7 +6,8 @@
  * - 资产概览三卡：净资产 / 本月收入 / 本月支出，带环比上月涨跌幅（绿涨红跌）
  * - 资产趋势：recharts 面积图，近 30 天净资产估算
  * - 资产分布：Tab（按账户/按交易方式）环形图
- * - 收支日历：当月网格，每日收入/支出小计，点击弹当日流水列表
+ * - 收支日历：可翻月的网格（‹ 2026年10月 › + 「今天」），每日收入/支出小计，
+ *   点击弹当日流水列表。月份是独立 state，不影响上方概览/趋势/分布的真实当月口径。
  * - 右侧栏：还款提醒 / 账户管理 / 目标管理 / 预算管理（占位）/ 最近交易
  *
  * 暗黑模式约定：
@@ -35,6 +36,8 @@ import {
   IconArrowRight,
   IconAlertTriangle,
   IconSettings,
+  IconChevronLeft,
+  IconChevronRight,
 } from '@tabler/icons-react';
 import clsx from 'clsx';
 import {
@@ -94,6 +97,8 @@ import {
   balanceToneClass,
   greetingByHour,
   weekdayCn,
+  monthLabelCn,
+  earliestTransactionMonth,
 } from './format';
 
 // 饼图配色（与设计系统色板一致）
@@ -314,9 +319,45 @@ export default function Dashboard() {
   );
   const hasDistribution = distData.length > 0;
 
-  // 日历
-  const calendarDays = useMemo(() => buildCalendar(transactions, currentMonth), [transactions, currentMonth]);
+  /* 日历：月份独立 state
+   * ---------------------------------------------------------------
+   * 只有日历网格 + 点击日期弹层跟随 calendarMonth；顶部概览三卡、资产趋势、
+   * 资产分布仍锚在真实当前月 currentMonth 上，互不影响。
+   * 不持久化：看板是"落地即当下"的入口页，刷新永远回到当前月。
+   */
   const [selectedDay, setSelectedDay] = useState<dayjs.Dayjs | null>(null);
+  const [calendarMonth, setCalendarMonth] = useState<dayjs.Dayjs>(() => today.startOf('month'));
+
+  // 下界 = 最早一笔日历可见交易所在月；空库时退回当前月（翻页器整体禁用到只留当前月）
+  const calendarMinMonth = useMemo(
+    () => earliestTransactionMonth(transactions) ?? currentMonth,
+    [transactions, currentMonth],
+  );
+  const calendarAtMin = calendarMonth.isSame(calendarMinMonth, 'month');
+  const calendarAtMax = calendarMonth.isSame(currentMonth, 'month');
+
+  /** 翻月：越界（含边界）直接返回；每次成功翻页都清空当日弹层 */
+  const stepCalendarMonth = useCallback(
+    (delta: -1 | 1) => {
+      const next = calendarMonth.add(delta, 'month').startOf('month');
+      if (next.isAfter(currentMonth, 'month')) return; // 上界：未来月
+      if (next.isBefore(calendarMinMonth, 'month')) return; // 下界：早于最早交易月
+      setCalendarMonth(next);
+      setSelectedDay(null);
+    },
+    [calendarMonth, currentMonth, calendarMinMonth],
+  );
+
+  /** 「今天」按钮：回到真实当前月 */
+  const backToCurrentMonth = useCallback(() => {
+    setCalendarMonth(currentMonth);
+    setSelectedDay(null);
+  }, [currentMonth]);
+
+  const calendarDays = useMemo(
+    () => buildCalendar(transactions, calendarMonth),
+    [transactions, calendarMonth],
+  );
   const dayTransactions = useMemo(
     () => (selectedDay ? transactionsOnDay(transactions, selectedDay) : []),
     [selectedDay, transactions],
@@ -449,6 +490,7 @@ export default function Dashboard() {
                   amount={monthIncome}
                   delta={incomeMoM}
                   hide={hideAmounts}
+                  testId="stat-month-income"
                 />
                 <StatCard
                   label="本月支出"
@@ -458,6 +500,7 @@ export default function Dashboard() {
                   delta={expenseMoM}
                   expenseMode
                   hide={hideAmounts}
+                  testId="stat-month-expense"
                 />
               </div>
             </section>
@@ -594,14 +637,66 @@ export default function Dashboard() {
               <Card
                 title="收支日历"
                 extra={
-                  <span className="text-xs text-text-muted dark:text-text-muted-dark">{currentMonth.format('YYYY 年 MM 月')}</span>
+                  <div className="flex items-center gap-1" data-testid="dash-calendar-nav">
+                    <button
+                      type="button"
+                      onClick={() => stepCalendarMonth(-1)}
+                      title="上一月"
+                      aria-label="上一月"
+                      data-testid="dash-calendar-prev"
+                      disabled={calendarAtMin}
+                      className={clsx(
+                        'w-7 h-7 sm:w-8 sm:h-8 flex-none flex items-center justify-center rounded-lg transition',
+                        'text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark hover:bg-bg dark:hover:bg-bg-card-dark',
+                        calendarAtMin && 'opacity-40 cursor-not-allowed hover:bg-transparent',
+                      )}
+                    >
+                      <IconChevronLeft size={16} />
+                    </button>
+                    <span
+                      className="min-w-[4.75rem] sm:min-w-[7.5rem] text-center text-xs sm:text-sm font-medium text-text dark:text-text-dark tabular-nums"
+                      data-testid="dash-calendar-label"
+                    >
+                      {monthLabelCn(calendarMonth)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => stepCalendarMonth(1)}
+                      title="下一月"
+                      aria-label="下一月"
+                      data-testid="dash-calendar-next"
+                      disabled={calendarAtMax}
+                      className={clsx(
+                        'w-7 h-7 sm:w-8 sm:h-8 flex-none flex items-center justify-center rounded-lg transition',
+                        'text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark hover:bg-bg dark:hover:bg-bg-card-dark',
+                        calendarAtMax && 'opacity-40 cursor-not-allowed hover:bg-transparent',
+                      )}
+                    >
+                      <IconChevronRight size={16} />
+                    </button>
+                    {/* 仅在离开当前月时出现，避免常驻一个做不了事的按钮 */}
+                    {!calendarAtMax && (
+                      <button
+                        type="button"
+                        onClick={backToCurrentMonth}
+                        title="回到当前月"
+                        aria-label="回到当前月"
+                        data-testid="dash-calendar-today"
+                        className="ml-0.5 flex-none text-[11px] sm:text-xs text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark transition-colors cursor-pointer"
+                      >
+                        今天
+                      </button>
+                    )}
+                  </div>
                 }
               >
-                <MonthCalendar
-                  month={currentMonth}
-                  days={calendarDays}
-                  onSelect={(d) => setSelectedDay(d)}
-                />
+                <div data-testid="dash-calendar">
+                  <MonthCalendar
+                    month={calendarMonth}
+                    days={calendarDays}
+                    onSelect={(d) => setSelectedDay(d)}
+                  />
+                </div>
               </Card>
             </section>
           </div>
@@ -954,9 +1049,11 @@ interface StatCardProps {
   expenseMode?: boolean;
   /** 看板顶栏"隐藏金额"开关：true 时用圆点占位金额 */
   hide?: boolean;
+  /** 验收脚本锚点（日历翻月脚本要断言"本月"口径不被日历月份带跑） */
+  testId?: string;
 }
 
-function StatCard({ label, icon, tone, amount, delta, expenseMode, hide }: StatCardProps) {
+function StatCard({ label, icon, tone, amount, delta, expenseMode, hide, testId }: StatCardProps) {
   // dynamic：净资产专用——负数=坏事=绿，正数=好事=红；delta 辅助判断趋势
   const effectiveTone =
     tone === 'dynamic'
@@ -967,7 +1064,7 @@ function StatCard({ label, icon, tone, amount, delta, expenseMode, hide }: StatC
   const valueClass = effectiveTone === 'income' ? 'text-income' : 'text-expense';
   const sign = delta > 0 ? '+' : '';
   return (
-    <Card className="!p-5">
+    <Card className="!p-5" data-testid={testId}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-text-muted dark:text-text-muted-dark text-sm">
           <span>{icon}</span>
