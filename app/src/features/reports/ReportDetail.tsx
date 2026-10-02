@@ -390,8 +390,8 @@ function ConfigIncomeExpenseBar({
                 wrapperStyle={{ fontSize: 12 }}
                 formatter={(v) => (v === 'income' ? '收入' : '支出')}
               />
-              <Bar dataKey="income" fill="#10b981" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="expense" fill="#ef4444" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="income" fill="#ef4444" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="expense" fill="#10b981" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -728,8 +728,8 @@ function MonthlyTemplate() {
                 wrapperStyle={{ fontSize: 12 }}
                 formatter={(v) => (v === 'income' ? '收入' : '支出')}
               />
-              <Bar dataKey="income" fill="#10b981" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="expense" fill="#ef4444" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="income" fill="#ef4444" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="expense" fill="#10b981" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -852,7 +852,7 @@ function YearlyTemplate() {
               <Line
                 type="monotone"
                 dataKey="income"
-                stroke="#10b981"
+                stroke="#ef4444"
                 strokeWidth={2}
                 dot={{ r: 3 }}
                 activeDot={{ r: 5 }}
@@ -860,7 +860,7 @@ function YearlyTemplate() {
               <Line
                 type="monotone"
                 dataKey="expense"
-                stroke="#ef4444"
+                stroke="#10b981"
                 strokeWidth={2}
                 dot={{ r: 3 }}
                 activeDot={{ r: 5 }}

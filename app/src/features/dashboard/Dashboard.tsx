@@ -366,8 +366,8 @@ export default function Dashboard() {
                       <AreaChart data={trendData} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
                         <defs>
                           <linearGradient id="dashNetGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#10b981" stopOpacity={0.4} />
-                            <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
+                            <stop offset="0%" stopColor="#6366f1" stopOpacity={0.4} />
+                            <stop offset="100%" stopColor="#6366f1" stopOpacity={0} />
                           </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-border dark:text-border-dark" />
@@ -401,7 +401,7 @@ export default function Dashboard() {
                         <Area
                           type="monotone"
                           dataKey="value"
-                          stroke="#10b981"
+                          stroke="#6366f1"
                           strokeWidth={2}
                           fill="url(#dashNetGradient)"
                         />
