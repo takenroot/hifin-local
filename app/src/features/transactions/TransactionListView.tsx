@@ -299,6 +299,12 @@ function TxRow({
               </span>
             </>
           )}
+          {tx.remark && (
+            <>
+              <span>·</span>
+              <span className="truncate" title={tx.remark}>{tx.remark}</span>
+            </>
+          )}
         </div>
         {tx.tagIds && tx.tagIds.length > 0 && (
           <div className="flex flex-wrap items-center gap-1 mt-1">

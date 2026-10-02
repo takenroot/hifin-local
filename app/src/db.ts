@@ -66,6 +66,14 @@ export interface Transaction {
   includeInAsset: boolean;
   /** 所属空间 id；undefined 视为默认空间 1 */
   spaceId?: number;
+  /** 来源平台：alipay / wechat / manual / csv */
+  source?: string;
+  /** 平台交易单号（与 source 组合唯一；手工录入无） */
+  externalId?: string;
+  /** 支付方式主渠道（零钱通/花呗/银行卡等），来自账单原件 */
+  paymentMethod?: string;
+  /** 交易状态原文（交易成功/已全额退款 等），来自账单原件 */
+  status?: string;
   createdAt: number;
 }
 
