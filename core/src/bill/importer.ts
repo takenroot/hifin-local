@@ -16,6 +16,7 @@
 
 import type Database from 'better-sqlite3';
 import { existsSync, readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { basename, dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { unzipBill, findBillCsv, cleanupBillDir, BillCsvNotFoundError } from './unzip.js';
@@ -146,31 +147,42 @@ export async function importBillZip(
 
   const files = unzipBill(zipPath, pwd);
   try {
-    const csvPath = findBillCsv(files);
-    if (!csvPath) {
-      throw new BillCsvNotFoundError(
-        `ZIP 里没有找到账单表格（.csv/.txt）：${basename(zipPath)}，解出 ${files.length} 个文件`,
-      );
+    // 优先找 CSV/TXT；找不到则尝试 xlsx（微信账单是 Excel 格式）
+    let csvPath = findBillCsv(files);
+    let text: string;
+    let billFileName: string;
+
+    if (csvPath) {
+      billFileName = basename(csvPath);
+      const buf = readFileSync(csvPath);
+      // 支付宝/微信账单 CSV 默认 GBK 编码；先按 GBK 解码，失败再回退 UTF-8
+      try {
+        text = new TextDecoder('gbk', { fatal: true }).decode(buf);
+      } catch {
+        text = new TextDecoder('utf-8').decode(buf);
+      }
+      // 支付宝 CSV 前 ~22 行是导出说明/回单抬头，找到第一个含"交易时间"的表头行
+      const lines = text.split(/\r?\n/);
+      const headerIdx = lines.findIndex((l) => l.includes('交易时间') || l.includes('日期'));
+      if (headerIdx > 0) {
+        text = lines.slice(headerIdx).join('\n');
+      }
+    } else {
+      // 微信账单：xlsx → 转 CSV 文本
+      const xlsxPath = files.find((f) => /\.xlsx$/i.test(f));
+      if (!xlsxPath) {
+        throw new BillCsvNotFoundError(
+          `ZIP 里没有找到账单表格（.csv/.txt/.xlsx）：${basename(zipPath)}，解出 ${files.length} 个文件`,
+        );
+      }
+      billFileName = basename(xlsxPath);
+      text = xlsxToCsvText(xlsxPath);
     }
 
-    const buf = readFileSync(csvPath);
-    // 支付宝/微信账单 CSV 默认 GBK 编码；先按 GBK 解码，失败再回退 UTF-8
-    let text: string;
-    try {
-      text = new TextDecoder('gbk', { fatal: true }).decode(buf);
-    } catch {
-      text = new TextDecoder('utf-8').decode(buf);
-    }
-    // 支付宝 CSV 前 ~22 行是导出说明/回单抬头，找到第一个含"交易时间"的表头行
-    const lines = text.split(/\r?\n/);
-    const headerIdx = lines.findIndex((l) => l.includes('交易时间') || l.includes('日期'));
-    if (headerIdx > 0) {
-      text = lines.slice(headerIdx).join('\n');
-    }
     const parseCsvText = await loadCsvParser();
     const parsed = parseCsvText(text, platform);
     if (parsed.error && parsed.items.length === 0) {
-      throw new BillCsvNotFoundError(`账单表格无法解析（${basename(csvPath)}）：${parsed.error}`);
+      throw new BillCsvNotFoundError(`账单表格无法解析（${billFileName}）：${parsed.error}`);
     }
 
     const { txs, dropped } = toCoreTxs(parsed.items);
@@ -196,6 +208,69 @@ export async function importBillZip(
   } finally {
     cleanupBillDir(tempRootOf(files));
   }
+}
+
+/**
+ * 把微信账单的 .xlsx 转成 CSV 文本，复用现有 parseCsvText 解析。
+ * 微信 xlsx 特点：
+ *   - 前 ~17 行是导出说明，表头在"交易时间"所在行
+ *   - 交易时间是 Excel 日期序列号（如 46292.533），需要转回日期字符串
+ *   - 金额列名是"金额(元)"
+ */
+function xlsxToCsvText(xlsxPath: string): string {
+  const require = createRequire(import.meta.url);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const XLSX = require('xlsx') as any;
+  const wb = XLSX.readFile(xlsxPath);
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+  // 找表头行（含"交易时间"）
+  const headerIdx = rows.findIndex((r) => Array.isArray(r) && r.some((c) => String(c).includes('交易时间')));
+  if (headerIdx < 0) {
+    throw new BillCsvNotFoundError(`xlsx 里找不到「交易时间」表头：${basename(xlsxPath)}`);
+  }
+
+  const dataRows = rows.slice(headerIdx);
+  const csvLines = dataRows.map((row) => {
+    return row
+      .map((cell) => {
+        if (cell === null || cell === undefined) return '';
+        // Excel 日期序列号 → 格式化字符串
+        if (typeof cell === 'number' && cell > 40000 && cell < 60000) {
+          const date = excelDateToJsDate(cell);
+          return formatDate(date);
+        }
+        const s = String(cell);
+        // 含逗号/引号/换行的字段需要包裹
+        if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+        return s;
+      })
+      .join(',');
+  });
+
+  return csvLines.join('\n');
+}
+
+/** Excel 日期序列号 → JS Date（Excel 纪元 1900-01-01，有 1900 闰年 bug 偏移） */
+function excelDateToJsDate(serial: number): Date {
+  const utcDays = Math.floor(serial - 25569); // 25569 = 1970-01-01 的 Excel 序列号
+  const utcValue = utcDays * 86400 * 1000;
+  const fraction = serial - Math.floor(serial);
+  const timeValue = Math.round(fraction * 86400) * 1000;
+  return new Date(utcValue + timeValue);
+}
+
+/** 格式化为 parseCsvText 能识别的日期字符串 */
+function formatDate(d: Date): string {
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  const h = String(d.getUTCHours()).padStart(2, '0');
+  const min = String(d.getUTCMinutes()).padStart(2, '0');
+  const s = String(d.getUTCSeconds()).padStart(2, '0');
+  return `${y}-${m}-${day} ${h}:${min}:${s}`;
 }
 
 /**
