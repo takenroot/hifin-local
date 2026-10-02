@@ -28,6 +28,24 @@ export interface ParsedTx {
    * importTransactions 才会拿 billCategory 去查映射表，否则一律忽略。
    */
   platform?: string;
+  /**
+   * 溯源来源：'alipay' / 'wechat' / 'manual' / 'csv'。
+   *
+   * 与 platform 分开：platform 回答"这份账单是谁的"，只用来决定查哪张分类映射表；
+   * source 回答"这一行从哪来"，会原样落库，并参与 (source, externalId) 精确去重。
+   */
+  source?: string;
+  /**
+   * 平台交易单号（微信「交易单号」/ 支付宝「交易订单号」）。
+   *
+   * 有它时去重走精确路径 (source, externalId)；没有才退回四字段启发式。
+   * 启发式会把"同一天、同金额、同商户"的**两笔真实交易**误判成重复，有单号就不会。
+   */
+  externalId?: string;
+  /** 支付方式主渠道原文（组合支付已取 & 前段）："零钱通" / "花呗" / "工商银行储蓄卡(1230)" */
+  paymentMethod?: string;
+  /** 交易状态原文："交易成功" / "退款成功" / "已全额退款" … */
+  status?: string;
 }
 
 export interface MailParser {

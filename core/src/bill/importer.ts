@@ -51,6 +51,14 @@ interface AppParseResult {
     remark?: string;
     /** 平台自带分类：支付宝「交易分类」/ 微信「交易类型」 */
     billCategory?: string;
+    /** 溯源来源：alipay / wechat / csv */
+    source?: string;
+    /** 平台交易单号（微信「交易单号」/ 支付宝「交易订单号」） */
+    externalId?: string;
+    /** 支付方式主渠道（组合支付已在解析层取 & 前段） */
+    paymentMethod?: string;
+    /** 交易状态原文 */
+    status?: string;
     rawLine?: string;
   }>;
   error?: string;
@@ -90,6 +98,17 @@ async function loadCsvParser(): Promise<(text: string, platformHint?: string) =>
 }
 
 /**
+ * 平台 id → transactions.source 的取值。
+ *
+ * 与 app 侧 csv.ts 的 normalizeSource 同一口径：只有支付宝/微信有自己的账单
+ * 语义，其余（cmb/icbc/generic…）一律记 'csv'。放在 core 是为了让回填脚本
+ * （scripts/backfill-fields.ts）也能拿到同一份规则，不至于两处各写一遍。
+ */
+export function normalizeSource(platform: string | null | undefined): string {
+  return platform === 'alipay' || platform === 'wechat' ? platform : 'csv';
+}
+
+/**
  * 把 app 解析结果收敛成 core 的 ParsedTx[]。
  * app 的 type 还包含 transfer / excluded，而 core 的 ParsedTx 只认收支两类；
  * 不计收支的行按"跳过"计，不进库。
@@ -122,6 +141,12 @@ function toCoreTxs(
       remark: it.remark,
       billCategory: it.billCategory,
       platform,
+      // 溯源四件套：优先用解析层给的 source（它已经认得 alipay/wechat/其它），
+      // 拿不到就按 platform 兜底，两者都认不出（银行/通用账单）时归 'csv'。
+      source: it.source ?? normalizeSource(platform),
+      externalId: it.externalId,
+      paymentMethod: it.paymentMethod,
+      status: it.status,
     });
   }
   return { txs, dropped };

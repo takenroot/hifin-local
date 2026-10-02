@@ -16,6 +16,9 @@ export {
   migrate,
   getUserVersion,
   setUserVersion,
+  getColumns,
+  ensureColumns,
+  TX_EXTERNAL_ID_INDEX_SQL,
   CURRENT_SCHEMA_VERSION,
 } from './migrate.js';
 
@@ -33,6 +36,8 @@ export {
   type CategoryType,
   type BudgetPeriod,
   type RuleMatchField,
+  type TxSource,
+  DEFAULT_TX_SOURCE,
   type SpaceRow,
   type AccountRow,
   type TransactionRow,

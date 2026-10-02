@@ -84,8 +84,14 @@ export const ALIPAY_BILL_CATEGORIES: Readonly<Record<string, string>> = {
  *   - 商户消费 / 扫二维码付款 / 转账 → null，必须靠商户名走规则引擎
  * 值为 null 表示"这一项刻意不映射"，与"键不存在"是两回事，一并留给规则引擎。
  *
- * 零钱通转入/转出不写进表：它们是账户内部划转，按理该进"不计收支"，
- * 实际账单里收/支列也是 "/"，解析阶段就被丢掉了，列在这里只为记录意图。
+ * 零钱通转入/转出不写进表：它们是账户内部划转，没有"消费场景"可言，
+ * 任何分类都是错的，一律返回 null（见 WECHAT_TRANSFER_PREFIXES）。
+ *
+ * 补充一条实测事实，免得以后误判：这些行在账单里的**收/支列是 "/"**，
+ * 所以通用 CSV 解析器 parseType() 直接给出 'excluded'，压根走不到
+ * importTransactions —— 它们从来没被当成 income/expense 记过账，
+ * 也就没有"错误地影响了余额"这回事。库里查不到它们是正确状态，不是丢数据。
+ * （2026-10 实测：微信账单 527 行收支行里，这 27 笔全部落在 excluded。）
  */
 export const WECHAT_BILL_CATEGORIES: Readonly<Record<string, string | null>> = {
   微信红包: '人情往来',
@@ -98,6 +104,17 @@ export const WECHAT_BILL_CATEGORIES: Readonly<Record<string, string | null>> = {
 
 /** 微信"零钱通转入/转出"前缀：账户内部划转，不映射 */
 const WECHAT_TRANSFER_PREFIXES = ['转入零钱通', '零钱通转出'] as const;
+
+/**
+ * 该微信「交易类型」是不是零钱通内部划转。
+ *
+ * 抽成独立函数是为了让"导入链路"和"存量回填脚本"共用同一份定义：
+ * 两边各写一遍正则的话，早晚会在改前缀时只改一处，然后回填脚本开始误伤别的行。
+ */
+export function isWechatInternalTransfer(billCategory: string | null | undefined): boolean {
+  const v = normalize(billCategory);
+  return WECHAT_TRANSFER_PREFIXES.some((p) => v.startsWith(p));
+}
 
 /** 微信"…-退款"后缀（半角/全角连字符都收）：进账，映射为其他收入 */
 const WECHAT_REFUND_RE = /[-－]退款$/;
@@ -118,7 +135,7 @@ export function resolveWechatBillCategory(billCategory: string): string | null {
   if (!v) return null;
 
   // 1) 账户内部划转最先排除：它不是收支，转账退款之类的名字也不该沾它
-  if (WECHAT_TRANSFER_PREFIXES.some((p) => v.startsWith(p))) return null;
+  if (isWechatInternalTransfer(v)) return null;
 
   // 2) 退款后缀优先于精确表：叫"微信红包-退款"的是退回来的红包，属于进账，
   //    不能因为前缀长得像红包就归到"人情往来"（支出类）上去

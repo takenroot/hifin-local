@@ -39,7 +39,12 @@ CREATE TABLE IF NOT EXISTS transactions (
   merchantId INTEGER,
   includeInAsset INTEGER NOT NULL DEFAULT 1,
   spaceId INTEGER DEFAULT 1,
-  createdAt INTEGER NOT NULL
+  createdAt INTEGER NOT NULL,
+  -- ── 账单溯源四件套（v2 迁移新增；全部 nullable，手工记账/老数据一律 NULL）──
+  source TEXT,               -- 'alipay' / 'wechat' / 'manual' / 'csv'
+  externalId TEXT,           -- 平台交易单号（微信「交易单号」/ 支付宝「交易订单号」）
+  paymentMethod TEXT,        -- 支付方式主渠道（组合支付取 & 前段）
+  status TEXT                -- 交易状态原文（"交易成功" / "已全额退款" …）
 );
 
 CREATE TABLE IF NOT EXISTS goals (
@@ -135,6 +140,10 @@ CREATE TABLE IF NOT EXISTS notifications (
 );
 
 -- 常用索引
+--
+-- 注意：transactions(source, externalId) 的**部分唯一索引**刻意不写在这里。
+-- 本段由 migrate() 在"补列"之前执行，老库上此时 source/externalId 还不存在，
+-- 建索引会直接报 no such column。索引 DDL 见 migrate.ts 的 TX_EXTERNAL_ID_INDEX_SQL。
 CREATE INDEX IF NOT EXISTS idx_notif_status ON notifications(status);
 CREATE INDEX IF NOT EXISTS idx_tx_date ON transactions(date);
 CREATE INDEX IF NOT EXISTS idx_tx_account ON transactions(accountId);
@@ -153,10 +162,18 @@ export type GoalKind = 'saving' | 'repayment';
 export type CategoryType = 'expense' | 'income';
 export type BudgetPeriod = 'monthly' | 'yearly';
 export type RuleMatchField = 'name' | 'merchant' | 'remark';
+/**
+ * 交易来源。列本身是裸 TEXT（不加 CHECK），因为银行邮件账单等第三方来源
+ * 也可能冒出来；这里只把"我们自己会写入的四个值"固化成类型。
+ */
+export type TxSource = 'alipay' | 'wechat' | 'manual' | 'csv';
+
+/** 手工记账 / REST 直写的默认来源 */
+export const DEFAULT_TX_SOURCE: TxSource = 'manual';
 
 export interface SpaceRow { id?: number; name: string; createdAt: number; }
 export interface AccountRow { id?: number; name: string; type: AccountType; balance: number; remark?: string; tagIds?: string; includeInNetAsset: number; spaceId?: number; createdAt: number; updatedAt: number; }
-export interface TransactionRow { id?: number; type: TransactionType; name: string; amount: number; date: number; categoryId?: number; accountId: number; toAccountId?: number; remark?: string; tagIds?: string; merchantId?: number; includeInAsset: number; spaceId?: number; createdAt: number; }
+export interface TransactionRow { id?: number; type: TransactionType; name: string; amount: number; date: number; categoryId?: number; accountId: number; toAccountId?: number; remark?: string; tagIds?: string; merchantId?: number; includeInAsset: number; spaceId?: number; createdAt: number; source?: string | null; externalId?: string | null; paymentMethod?: string | null; status?: string | null; }
 export interface GoalRow { id?: number; kind: GoalKind; subtype?: string; name: string; targetAmount: number; currentAmount: number; deadline?: number; accountId?: number; icon?: string; color?: string; spaceId?: number; createdAt: number; }
 export interface CategoryRow { id?: number; name: string; group: string; type: CategoryType; icon?: string; color?: string; }
 export interface TagRow { id?: number; name: string; color?: string; }

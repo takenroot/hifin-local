@@ -6,7 +6,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { openDatabase } from '../src/db/connection.js';
-import { migrate, getUserVersion } from '../src/db/migrate.js';
+import { migrate, getUserVersion, CURRENT_SCHEMA_VERSION } from '../src/db/migrate.js';
 import { ensureSeed, DEFAULT_SPACE_ID } from '../src/db/seed.js';
 
 const EXPECTED_TABLES = [
@@ -47,7 +47,9 @@ describe('db layer', () => {
   it('migrate is idempotent (re-run keeps user_version & tables)', () => {
     migrate(db);
     migrate(db);
-    expect(getUserVersion(db)).toBe(1);
+    // 对齐 CURRENT_SCHEMA_VERSION 而不是写死数字：以后再迁一次版本，
+    // 这条断言不该跟着改，它要证明的是"重复跑不会把版本改乱"。
+    expect(getUserVersion(db)).toBe(CURRENT_SCHEMA_VERSION);
     const count = (db
       .prepare("SELECT COUNT(*) AS c FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
       .get() as { c: number }).c;

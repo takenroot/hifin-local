@@ -17,6 +17,7 @@ import type {
   TransactionRow,
   TransactionType,
 } from '../db/schema.js';
+import { DEFAULT_TX_SOURCE } from '../db/schema.js';
 
 export const transactionsRouter = Router();
 
@@ -64,6 +65,7 @@ interface TxInput {
   merchantId?: number | null;
   includeInAsset?: number;
   spaceId?: number;
+  source?: string | null;
 }
 
 /** 按当前 type 把 amount 应用到 account 上（+amount 或 -amount 或 transfer）。 */
@@ -146,6 +148,9 @@ transactionsRouter.get('/', (req: Request, res: Response) => {
     params.push(s);
   }
 
+  // SELECT * 是有意的：新增的 source/externalId/paymentMethod/status 四个溯源列
+  // 会自动出现在响应里，客户端不必等接口另行加字段。手工记账这批行的四列是
+  // source='manual' + 其余 NULL，前端据此就知道"这笔不是从账单来的"。
   const sql = `SELECT * FROM transactions ${
     where.length ? 'WHERE ' + where.join(' AND ') : ''
   } ORDER BY date DESC, id DESC`;
@@ -205,6 +210,16 @@ transactionsRouter.post('/', (req: Request, res: Response) => {
     body.includeInAsset === undefined ? 1 : body.includeInAsset ? 1 : 0;
   const spaceId = body.spaceId !== undefined ? Number(body.spaceId) : 1;
 
+  /**
+   * 溯源来源：这个接口是手工记账的入口，所以缺省给 'manual'。
+   * 前端自己走 CSV/账单导入时才会显式传 'csv' / 'alipay' / 'wechat'。
+   * 空串/纯空白按"没传"处理，免得写进库里一个谁都看不懂的 source。
+   */
+  const source =
+    body.source === undefined || body.source === null || String(body.source).trim() === ''
+      ? DEFAULT_TX_SOURCE
+      : String(body.source).trim();
+
   const tx: TxInput = {
     type,
     name,
@@ -218,6 +233,7 @@ transactionsRouter.post('/', (req: Request, res: Response) => {
     merchantId,
     includeInAsset,
     spaceId,
+    source,
   };
 
   try {
@@ -228,8 +244,8 @@ transactionsRouter.post('/', (req: Request, res: Response) => {
       const result = db
         .prepare(
           `INSERT INTO transactions
-            (type, name, amount, date, categoryId, accountId, toAccountId, remark, tagIds, merchantId, includeInAsset, spaceId, createdAt)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            (type, name, amount, date, categoryId, accountId, toAccountId, remark, tagIds, merchantId, includeInAsset, spaceId, createdAt, source)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         )
         .run(
           tx.type,
@@ -245,6 +261,7 @@ transactionsRouter.post('/', (req: Request, res: Response) => {
           tx.includeInAsset,
           tx.spaceId,
           nowMs(),
+          tx.source,
         );
 
       // 余额联动
