@@ -15,6 +15,7 @@
 
 import { atom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
+import dayjs from 'dayjs';
 
 export type Theme = 'light' | 'dark' | 'system';
 
@@ -65,3 +66,24 @@ export const spaceIdAtom = atomWithStorage<number>('hifin:spaceId', 1);
  * 此处保留旧 atom 以避免其它模块大面积报错；不再用于业务逻辑。
  */
 export const spaceAtom = atomWithStorage<string>('hifin:space', '默认空间');
+
+/* ───────────────── 交易流水：分组维度 / 统计月份 ───────────────── */
+
+/**
+ * 流水列表的分组维度（日 / 周 / 月 / 年），持久化。
+ * 刷新后保持用户上次的分组档位，与主题 / 空间等偏好同级。
+ */
+export const txGroupDimAtom = atomWithStorage<'day' | 'week' | 'month' | 'year'>(
+  'hifin:txGroupDim',
+  'day',
+);
+
+/**
+ * 统计 Tab 当前查看的月份，格式固定为 'YYYY-MM'，持久化。
+ * 默认取模块加载时的当前月；渲染层会对未来月做钳制（翻页器同样禁用未来月），
+ * 因此即使 localStorage 残留了远期月份也不会越界。
+ */
+export const txStatsMonthAtom = atomWithStorage<string>(
+  'hifin:txStatsMonth',
+  dayjs().format('YYYY-MM'),
+);

@@ -3,9 +3,10 @@
  * ---------------------------------------------------------------
  * - URL `?create=1` 自动打开新建模态
  * - URL `?import=1` 自动切到批量导入视图
- * - PageHeader 右上角常驻"新建流水"（流水列表视图下）
+ * - PageHeader 右上角常驻"新建流水"（流水列表 / 统计视图下）
  * - 空状态：标题 / 描述 / "新建流水" + "批量导入" 按钮
- * - 列表页：顶部筛选 + 列表
+ * - 列表页：顶部筛选 + 列表（内含 日/周/月/年 分组切换）
+ * - 统计页：月份翻页 + 支出/收入 + 分类饼图 / 排行
  * - 导入视图：账单导入 / 历史记录
  */
 import { useEffect, useMemo, useState, useCallback } from 'react';
@@ -20,13 +21,14 @@ import { type Transaction, useSpaceId } from '@/db';
 import { filterBySpace } from '@/space';
 import { useApi } from '@/hooks/useApi';
 import TransactionListView from './TransactionListView';
+import TransactionStatsView from './TransactionStatsView';
 import TransactionFilterBar from './TransactionFilterBar';
 import TransactionFormModal from './TransactionFormModal';
 import TransactionImportView from './TransactionImportView';
 import type { RestTransaction } from './api';
 import type { TxFilter } from './balance';
 
-type View = 'list' | 'import';
+type View = 'list' | 'import' | 'stats';
 
 export default function TransactionList() {
   const [params, setParams] = useSearchParams();
@@ -52,13 +54,14 @@ export default function TransactionList() {
 
   // spaceId === 0 表示"全部空间"，此时不拼 spaceId 让服务端返回全量
   const spaceQ = spaceId === 0 ? '' : `?spaceId=${spaceId}`;
-  const { data: txRows } = useApi<RestTransaction[]>(`/api/transactions${spaceQ}`, [version]);
+  const { data: txRows, loading } = useApi<RestTransaction[]>(`/api/transactions${spaceQ}`, [version]);
   const scopedCount = useMemo(
     () => filterBySpace(txRows ?? [], spaceId).length,
     [txRows, spaceId],
   );
 
-  const showEmpty = scopedCount === 0 && view === 'list';
+  // loading 时不算空：否则每次进页面都会先闪一帧"创建流水"空态
+  const showEmpty = !loading && scopedCount === 0 && view === 'list';
 
   function openCreate() {
     setEditing(null);
@@ -87,8 +90,8 @@ export default function TransactionList() {
         title="交易流水"
         icon={<IconArrowsLeftRight size={18} />}
         actions={
-          // 新建入口统一常驻右上角（与账户/预算/目标/报表一致）
-          view === 'list' && (
+          // 新建入口统一常驻右上角（与账户/预算/目标/报表一致）；导入视图是批量工具页，不给新建入口
+          view !== 'import' && (
             <Button icon={<IconPlus size={16} />} onClick={openCreate}>
               新建流水
             </Button>
@@ -97,7 +100,7 @@ export default function TransactionList() {
       />
 
       <div className="p-4 lg:p-8 space-y-5 max-w-[1400px] mx-auto">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between" data-testid="tx-view-tabs">
           <Tabs
             variant="line"
             activeKey={view}
@@ -121,6 +124,7 @@ export default function TransactionList() {
             }}
             items={[
               { key: 'list', label: '流水列表' },
+              { key: 'stats', label: '统计' },
               { key: 'import', label: '账单导入' },
             ]}
           />
@@ -165,6 +169,8 @@ export default function TransactionList() {
               />
             </>
           ))}
+
+        {view === 'stats' && <TransactionStatsView version={version} />}
 
         {view === 'import' && <TransactionImportView onImported={bumpVersion} />}
       </div>

@@ -1,9 +1,12 @@
 /**
- * 交易列表视图（按日分组 + 筛选 + 行内编辑 / 删除）
+ * 交易列表视图（按 日/周/月/年 分组 + 筛选 + 行内编辑 / 删除）
+ * - 顶部为分组维度分段控件（持久化到 localStorage，刷新后保持）
+ * - 分组与周期小计由纯函数 grouping.ts 提供，本文件只负责渲染
  * - 暗色约定：所有 muted / hover 底色都要配 dark: 变体；
  *   动态颜色（分类色、标签色）无色时回落到 muted token，不写死浅色灰。
  */
 import { useMemo } from 'react';
+import { useAtom } from 'jotai';
 import dayjs from 'dayjs';
 import {
   IconArrowsLeftRight,
@@ -26,9 +29,16 @@ import {
 } from '@/db';
 import { filterBySpace } from '@/space';
 import { useApi } from '@/hooks/useApi';
-import { EmptyState } from '@/components/ui';
+import { EmptyState, SegmentedControl } from '@/components/ui';
+import { txGroupDimAtom } from '@/store/atoms';
 import { applyFilter, summarize, type TxFilter } from './balance';
-import { formatMoney, groupKey } from './format';
+import { formatMoney } from './format';
+import {
+  GROUP_DIMS,
+  GROUP_DIM_LABELS,
+  dimShowsSubtotal,
+  groupTransactions,
+} from './grouping';
 import { apiDelete, toTransaction, type RestTransaction } from './api';
 
 interface Props {
@@ -45,7 +55,7 @@ export function TransactionListView({ filter, onEdit, version = 0, onChanged }: 
   // spaceId === 0 表示"全部空间"，此时不拼 spaceId 让服务端返回全量
   const spaceQ = spaceId === 0 ? '' : `?spaceId=${spaceId}`;
 
-  const { data: txRows, refetch: refetchTx } = useApi<RestTransaction[]>(
+  const { data: txRows, loading, refetch: refetchTx } = useApi<RestTransaction[]>(
     `/api/transactions${spaceQ}`,
     [version],
   );
@@ -69,36 +79,10 @@ export function TransactionListView({ filter, onEdit, version = 0, onChanged }: 
 
   const filtered = useMemo(() => applyFilter(scopedTx, filter), [scopedTx, filter]);
 
-  const groups = useMemo(() => {
-    const today = dayjs();
-    const byKey = new Map<string, Transaction[]>();
-    // 按"今天 / 昨天 / 具体日期"分组并保持倒序
-    const keys: string[] = [];
-    for (const t of filtered) {
-      const k = groupKey(t.date, today);
-      if (!byKey.has(k)) {
-        byKey.set(k, []);
-        keys.push(k);
-      }
-      byKey.get(k)!.push(t);
-    }
-    // 让"今天"始终在最上面
-    const order = ['今天', '昨天'];
-    keys.sort((a, b) => {
-      const ia = order.indexOf(a);
-      const ib = order.indexOf(b);
-      if (ia !== -1 || ib !== -1) {
-        if (ia === -1) return 1;
-        if (ib === -1) return -1;
-        return ia - ib;
-      }
-      // 其余按各组首笔日期倒序
-      const ta = byKey.get(a)![0]?.date ?? 0;
-      const tb = byKey.get(b)![0]?.date ?? 0;
-      return tb - ta;
-    });
-    return keys.map((k) => ({ key: k, items: byKey.get(k)! }));
-  }, [filtered]);
+  // 分组维度（持久化）：刷新后仍停留在用户上次选择的档位
+  const [dim, setDim] = useAtom(txGroupDimAtom);
+
+  const groups = useMemo(() => groupTransactions(filtered, dim), [filtered, dim]);
 
   const summary = useMemo(() => summarize(filtered), [filtered]);
 
@@ -115,6 +99,24 @@ export function TransactionListView({ filter, onEdit, version = 0, onChanged }: 
     }
   }
 
+  // 数据还在路上：先给脉冲占位，不渲染"暂无流水"，避免每次进页面闪一帧空态
+  if (loading) {
+    return (
+      <div className="space-y-6" data-testid="tx-loading">
+        <div className="grid grid-cols-3 gap-4">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-20 rounded-xl bg-bg-card dark:bg-bg-card-dark animate-pulse" />
+          ))}
+        </div>
+        <div className="space-y-3">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-16 rounded-xl bg-bg-card dark:bg-bg-card-dark animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   if (filtered.length === 0) {
     return (
       <EmptyState
@@ -129,7 +131,25 @@ export function TransactionListView({ filter, onEdit, version = 0, onChanged }: 
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="tx-list">
+      {/* 分组维度切换（日 / 周 / 月 / 年，持久化） */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div data-testid="tx-group-dim" data-dim={dim}>
+          <SegmentedControl
+            aria-label="分组维度"
+            value={dim}
+            onChange={setDim}
+            options={GROUP_DIMS.map((d) => ({
+              key: d,
+              label: <span data-testid={`tx-dim-${d}`}>{GROUP_DIM_LABELS[d]}</span>,
+            }))}
+          />
+        </div>
+        <div className="text-xs text-text-muted dark:text-text-muted-dark">
+          共 {summary.count} 笔
+        </div>
+      </div>
+
       {/* 合计卡 */}
       <div className="grid grid-cols-3 gap-4">
         <SumCell tone="income" label="收入" value={summary.income} />
@@ -141,9 +161,25 @@ export function TransactionListView({ filter, onEdit, version = 0, onChanged }: 
       <div className="space-y-6">
         {groups.map((g) => (
           <section key={g.key}>
-            <h3 className="section-title mb-2 px-1">{g.key}</h3>
+            <div
+              className="mb-2 px-1 flex items-baseline gap-2 flex-wrap"
+              data-testid="tx-group-head"
+              data-group-key={g.key}
+            >
+              <h3 className="section-title">{g.label}</h3>
+              {dimShowsSubtotal(dim) && (
+                <span
+                  className="text-xs tabular-nums text-text-muted dark:text-text-muted-dark"
+                  data-testid="tx-group-subtotal"
+                >
+                  <span className="text-expense">支 {formatMoney(g.subExpense)}</span>
+                  <span className="mx-1">·</span>
+                  <span className="text-income">收 {formatMoney(g.subIncome)}</span>
+                </span>
+              )}
+            </div>
             <div className="card !p-0 divide-y divide-border dark:divide-border-dark">
-              {g.items.map((t) => (
+              {g.txs.map((t) => (
                 <TxRow
                   key={t.id}
                   tx={t}
@@ -214,7 +250,10 @@ function TxRow({
   const m = tx.merchantId ? merchants.find((x) => x.id === tx.merchantId) : undefined;
 
   return (
-    <div className="group flex items-center gap-3 px-4 py-3 hover:bg-bg dark:hover:bg-bg-card-dark transition">
+    <div
+      data-testid="tx-row"
+      className="group flex items-center gap-3 px-4 py-3 hover:bg-bg dark:hover:bg-bg-card-dark transition"
+    >
       {/* 分类图标 */}
       <div
         className="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-none"
