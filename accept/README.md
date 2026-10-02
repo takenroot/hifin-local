@@ -6,7 +6,7 @@
 
 ```
 accept/
-├── scripts/                       # 可复跑回归脚本（7 个，唯一维护面）
+├── scripts/                       # 可复跑回归脚本（8 个，唯一维护面）
 │   ├── design-consistency.mjs     # 6 列表页设计一致性
 │   ├── darkmode-audit.mjs         # 暗黑模式对比度审计
 │   ├── dexie-purge-smoke.mjs      # Dexie 移除后 REST 冒烟
@@ -156,6 +156,18 @@ node accept/scripts/no-empty-flash.mjs
 
 ```bash
 node accept/scripts/tx-grouping-stats.mjs
+```
+
+### 8. `calendar-month-nav.mjs` — 看板收支日历月份翻页
+
+默认当前月、翻页边界（最早交易月/未来月禁用）、翻历史月时概览卡片不变、
+「今天」回退、当日弹层、移动端 390px。**39 条断言**，明暗双主题。
+
+- 端口：脚本内默认 `5185`
+- 输出：`accept/screenshots/calendar-nav/`（7 PNG）
+
+```bash
+node accept/scripts/calendar-month-nav.mjs
 ```
 
 ## archive/ 说明

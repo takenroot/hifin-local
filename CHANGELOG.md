@@ -6,6 +6,18 @@
 
 ## [unreleased]
 
+### 新增（2026-10-03：字段扩展 + 智能分类 + 日历翻页）
+- **交易字段扩展**：transactions 新增 `source`（alipay/wechat/manual/csv）、`externalId`（平台交易单号，部分唯一索引）、`paymentMethod`（支付方式主渠道）、`status`（交易状态原文）；schema v1→v2 迁移幂等
+- **确定性去重**：有 externalId 时按 (source, externalId) 精确去重（UNIQUE 索引兜底），无则退回四字段启发式；重复导入同笔零风险
+- **LLM 商户分类**：232 个去重交易对象由 LLM 批量分类（人名转账→人情往来系用户决策），226 条沉淀为 rules 表规则（设置→规则可见可改），存量回填后未分类 483→9；中铁网络由调度方人工修正为旅行
+- **规则引擎方向闸门**：规则指向分类的收支类型与流水类型不匹配时跳过（修前跨方向错配 27 笔/回放）；单字符 keyword（平/💫）误伤已禁用
+- **看板收支日历翻页**：‹ 2026年10月 › + 今天按钮，下界为最早交易月（2025-12），日历月份独立于概览卡片
+- **流水列表显示备注**：有备注的交易在行内副标题展示
+- **数据**：支付宝 317 笔从旧邮件补回（IMAP 含已读搜索 + 一次性密码 CLI 导入），817 笔全量回填 source/externalId/paymentMethod/status；余额对账分毫不差
+
+### 修复（2026-10-03）
+- **安全**：backfill-categories 移除硬编码默认密码（必填化），password-store 注释脱敏（安全规约：一次性密码禁止落盘）
+
 ### 新增（core 账单自动化，2026-10-02 密集迭代）
 - **hifin-core 骨架**：Node + Express + better-sqlite3（WAL）+ imapflow + adm-zip + commander
 - **REST API 15 资源**：accounts/transactions/categories/summary/goals/budgets/tags/merchants/rules/reports/spaces/kv/ai-models/notifications/bills
