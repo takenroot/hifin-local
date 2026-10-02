@@ -288,7 +288,7 @@ export class MailPoller {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const c = client as any;
     if (typeof c.fetch === 'function') {
-      for await (const msg of c.fetch(String(uid), query, options)) {
+      for await (const msg of c.fetch([uid], query, options)) {
         if (msg) return msg as Record<string, unknown>;
         break; // 空结果同样是"没取到"，别空转整个迭代器
       }
@@ -419,7 +419,7 @@ export class MailPoller {
       const uids = await this.client.search({
         seen: false,
         since,
-      });
+      }, { uid: true });
       if (!uids || (Array.isArray(uids) && uids.length === 0)) {
         return out;
       }

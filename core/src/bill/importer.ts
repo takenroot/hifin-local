@@ -148,7 +148,20 @@ export async function importBillZip(
       );
     }
 
-    const text = readFileSync(csvPath, 'utf8');
+    const buf = readFileSync(csvPath);
+    // 支付宝/微信账单 CSV 默认 GBK 编码；先按 GBK 解码，失败再回退 UTF-8
+    let text: string;
+    try {
+      text = new TextDecoder('gbk', { fatal: true }).decode(buf);
+    } catch {
+      text = new TextDecoder('utf-8').decode(buf);
+    }
+    // 支付宝 CSV 前 ~22 行是导出说明/回单抬头，找到第一个含"交易时间"的表头行
+    const lines = text.split(/\r?\n/);
+    const headerIdx = lines.findIndex((l) => l.includes('交易时间') || l.includes('日期'));
+    if (headerIdx > 0) {
+      text = lines.slice(headerIdx).join('\n');
+    }
     const parseCsvText = await loadCsvParser();
     const parsed = parseCsvText(text, platform);
     if (parsed.error && parsed.items.length === 0) {

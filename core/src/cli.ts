@@ -604,7 +604,9 @@ mail
   .option('--days <n>', '拉取最近多少天', (v) => Number(v), 7)
   .requiredOption('--accountId <n>', '导入到哪个账户', (v) => Number(v))
   .option('--space <n>', '空间 ID', (v) => Number(v), 1)
-  .action(async (opts: { days: number; accountId: number; space: number }) => {
+  .option('--bill-password-alipay <pw>', '支付宝账单解压密码（一次性，仅本次有效）')
+  .option('--bill-password-wechat <pw>', '微信账单解压密码（一次性，仅本次有效）')
+  .action(async (opts: { days: number; accountId: number; space: number; billPasswordAlipay?: string; billPasswordWechat?: string }) => {
     ensureDb(program.opts().db);
     const db = getDb();
     const config = loadMailConfig(db);
@@ -618,6 +620,10 @@ mail
       days: opts.days,
       accountId: opts.accountId,
       spaceId: opts.space,
+      billPasswords: {
+        ...(opts.billPasswordAlipay ? { alipay: opts.billPasswordAlipay } : {}),
+        ...(opts.billPasswordWechat ? { wechat: opts.billPasswordWechat } : {}),
+      },
       // 账单提示走 stderr：stdout 保持纯 JSON，方便脚本 pipe 给 jq
       onBill: (o) => {
         if (o.status === 'no-attachment' && o.hint) {
