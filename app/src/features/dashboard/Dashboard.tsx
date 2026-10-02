@@ -14,7 +14,7 @@
  *    集成阶段由 App.tsx 的 glob 收集决定保留哪一个。
  *    本文件**未修改** App.tsx 与 features/home。
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import dayjs from 'dayjs';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -70,11 +70,14 @@ import {
   transactionsOnDay,
 } from './calculations';
 import {
-  fetchWeather,
+  getWeatherSync,
+  refreshWeather,
+  clearWeatherCache,
   getSavedCity,
   saveCity,
   wmoToText,
   CITY_PRESETS,
+  type CityPreset,
   type WeatherInfo,
 } from './weather';
 import {
@@ -136,25 +139,105 @@ export default function Dashboard() {
     writeHideAmounts(hideAmounts);
   }, [hideAmounts]);
 
-  // 天气（Open-Meteo，失败静默隐藏）
+  // 天气（Open-Meteo）：stale-while-revalidate
+  // 先用 getWeatherSync 画出缓存（超期也画，标记 isStale），再由 refreshWeather 静默回源替换，
+  // 整个过程天气区域都不空白。失败时保留已渲染的内容。
   const [weather, setWeather] = useState<WeatherInfo | null>(null);
+  const [weatherRefreshing, setWeatherRefreshing] = useState(false);
   const [cityModalOpen, setCityModalOpen] = useState(false);
   const [currentCity, setCurrentCity] = useState<string>('');
+  const [cityQuery, setCityQuery] = useState('');
+  const [cityCursor, setCityCursor] = useState(0);
+  const cityListRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     let cancelled = false;
-    void fetchWeather().then((w) => {
-      if (!cancelled && w) {
-        setWeather(w);
-        setCurrentCity(w.cityName);
-      }
+    void getWeatherSync().then((cached) => {
+      if (cancelled || !cached) return;
+      setWeather(cached);
+      setCurrentCity(cached.cityName);
     });
     void getSavedCity().then((c) => {
       if (!cancelled) setCurrentCity((prev) => prev || c.name);
+    });
+    setWeatherRefreshing(true);
+    void refreshWeather().then((fresh) => {
+      if (cancelled) return;
+      if (fresh) {
+        setWeather(fresh);
+        setCurrentCity(fresh.cityName);
+      }
+      setWeatherRefreshing(false);
     });
     return () => {
       cancelled = true;
     };
   }, []);
+
+  // 城市搜索（按名字过滤，66 个城市下必须可搜）
+  const filteredCities = useMemo(() => {
+    const q = cityQuery.trim();
+    if (!q) return CITY_PRESETS;
+    return CITY_PRESETS.filter((c) => c.name.includes(q));
+  }, [cityQuery]);
+
+  // 打开弹窗时重置搜索词与高亮游标
+  useEffect(() => {
+    if (!cityModalOpen) return;
+    setCityQuery('');
+    setCityCursor(0);
+  }, [cityModalOpen]);
+
+  // 键盘上下移动时把高亮项滚进可视区
+  useEffect(() => {
+    if (!cityModalOpen) return;
+    const el = cityListRef.current?.querySelector<HTMLElement>('[data-active="true"]');
+    el?.scrollIntoView({ block: 'nearest' });
+  }, [cityCursor, cityModalOpen, filteredCities]);
+
+  /**
+   * 切换城市：落盘 → 立即清缓存（新城市的坐标不同，旧缓存无意义）→ 强制回源。
+   * 期间天气区显示城市名占位，不回退到上一个城市的读数。
+   */
+  const selectCity = useCallback(
+    (city: CityPreset) => {
+      setCurrentCity(city.name);
+      setWeather(null);
+      setCityModalOpen(false);
+      setWeatherRefreshing(true);
+      void (async () => {
+        try {
+          await saveCity(city);
+          await clearWeatherCache();
+        } catch {
+          /* 落盘失败也继续回源 */
+        }
+        const fresh = await refreshWeather({ force: true });
+        if (fresh) {
+          setWeather(fresh);
+          setCurrentCity(fresh.cityName);
+        }
+        setWeatherRefreshing(false);
+      })();
+    },
+    [],
+  );
+
+  /** 城市列表键盘操作：↑/↓ 移动高亮，Enter 选中 */
+  const onCityListKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (filteredCities.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setCityCursor((i) => (i + 1) % filteredCities.length);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setCityCursor((i) => (i - 1 + filteredCities.length) % filteredCities.length);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const picked = filteredCities[cityCursor];
+      if (picked) selectCity(picked);
+    }
+  };
 
   // 实时数据（REST）。空间过滤直接拼 URL：spaceId=0 表示"全部空间"，不带参数由后端返回全量。
   const spaceId = useSpaceId();
@@ -306,14 +389,29 @@ export default function Dashboard() {
                 <span>
                   {greetingByHour(today.hour())}，今天是 {today.format('YYYY年MM月DD日')}，{weekdayCn(today)}
                 </span>
-                {weather && (
-                  <span className="inline-flex items-center gap-1 text-text-muted">
-                    <span aria-hidden>{wmoToText(weather.weathercode).icon}</span>
+                {/* 天气区：缓存（含超期）立即显示，回源成功后无感替换 —— 全程不空白 */}
+                <span
+                  className="inline-flex items-center gap-1 text-text-muted"
+                  title={weather?.isStale ? '正在更新最新天气…' : undefined}
+                  data-testid="weather-summary"
+                >
+                  <span aria-hidden>{weather ? wmoToText(weather.weathercode).icon : '🌡️'}</span>
+                  {weather ? (
+                    <>
+                      <span>
+                        {weather.cityName} {wmoToText(weather.weathercode).label}{' '}
+                        {Math.round(weather.temperature)}°C
+                      </span>
+                      {weather.isStale && weatherRefreshing && (
+                        <span className="text-[11px] opacity-70">更新中…</span>
+                      )}
+                    </>
+                  ) : (
                     <span>
-                      {weather.cityName} {wmoToText(weather.weathercode).label} {Math.round(weather.temperature)}°C
+                      {currentCity || '本地'} --°C
                     </span>
-                  </span>
-                )}
+                  )}
+                </span>
                 <button
                   type="button"
                   onClick={() => setCityModalOpen(true)}
@@ -778,34 +876,68 @@ export default function Dashboard() {
         title="天气城市"
         width={400}
       >
-        <div className="space-y-2">
+        <div className="space-y-3">
           <p className="text-xs text-text-muted">
-            浏览器定位可用时优先使用当前位置；否则展示所选城市的天气。
+            浏览器定位可用时优先使用当前位置；否则展示所选城市的天气。当前：
+            <span className="text-text dark:text-text-dark font-medium">{currentCity || '未选择'}</span>
           </p>
-          <div className="grid grid-cols-3 gap-2">
-            {CITY_PRESETS.map((c) => (
-              <button
-                key={c.name}
-                type="button"
-                onClick={() => {
-                  void saveCity(c).then(() => fetchWeather());
-                  setCurrentCity(c.name);
-                  setWeather(null);
-                  setCityModalOpen(false);
-                  // 重新拉取（缓存键随城市变化）
-                  void fetchWeather().then((w) => w && setWeather(w));
-                }}
-                className={clsx(
-                  'rounded-xl border px-3 py-2 text-sm transition-colors',
-                  currentCity === c.name
-                    ? 'border-text dark:border-text-dark bg-text text-bg-card dark:bg-bg-card-dark dark:text-text-dark'
-                    : 'border-border dark:border-border-dark text-text-muted hover:text-text dark:hover:text-text-dark',
-                )}
-              >
-                {c.name}
-              </button>
-            ))}
+
+          <input
+            type="text"
+            value={cityQuery}
+            onChange={(e) => {
+              setCityQuery(e.target.value);
+              setCityCursor(0);
+            }}
+            placeholder="搜索城市，如“深”“杭州”"
+            aria-label="搜索城市"
+            data-testid="city-search"
+            className="w-full rounded-xl border border-border dark:border-border-dark bg-bg dark:bg-bg-card-dark px-3 py-2 text-sm outline-none focus:border-text dark:focus:border-text-dark transition-colors placeholder:text-text-muted"
+          />
+
+          <div
+            ref={cityListRef}
+            role="listbox"
+            tabIndex={0}
+            onKeyDown={onCityListKeyDown}
+            data-testid="city-list"
+            className="max-h-60 overflow-y-auto rounded-xl border border-border dark:border-border-dark p-1 outline-none focus:border-text dark:focus:border-text-dark"
+          >
+            {filteredCities.length === 0 ? (
+              <div className="py-6 text-center text-sm text-text-muted">没有匹配的城市</div>
+            ) : (
+              filteredCities.map((c, i) => {
+                const isCurrent = currentCity === c.name;
+                const isCursor = i === cityCursor;
+                return (
+                  <button
+                    key={c.name}
+                    type="button"
+                    role="option"
+                    aria-selected={isCurrent}
+                    data-active={isCursor ? 'true' : undefined}
+                    onMouseEnter={() => setCityCursor(i)}
+                    onClick={() => selectCity(c)}
+                    className={clsx(
+                      'w-full flex items-center justify-between rounded-lg px-3 py-2 text-sm text-left transition-colors cursor-pointer',
+                      isCurrent
+                        ? 'bg-text text-bg-card dark:bg-bg-card-dark dark:text-text-dark font-medium'
+                        : 'text-text-muted hover:bg-bg dark:hover:bg-bg-card-dark',
+                      isCursor && !isCurrent && 'ring-1 ring-inset ring-border dark:ring-border-dark',
+                    )}
+                  >
+                    <span>{c.name}</span>
+                    {isCurrent && <span className="text-[11px] opacity-80">当前</span>}
+                  </button>
+                );
+              })
+            )}
           </div>
+
+          <p className="text-[11px] text-text-muted">
+            共 {CITY_PRESETS.length} 个城市
+            {cityQuery.trim() ? `，匹配 ${filteredCities.length} 个` : ''}（↑/↓ 选择，Enter 确认）
+          </p>
         </div>
       </Modal>
     </div>
