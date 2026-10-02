@@ -16,6 +16,7 @@ import {
 import {
   Button,
   EmptyState,
+  EmptyStateCard,
   PageHeader,
 } from '@/components/ui';
 import { useSpaceId } from '@/db';
@@ -82,15 +83,13 @@ export default function AccountList() {
         title="账户管理"
         icon={<IconWallet size={18} />}
         actions={
-          !isEmpty && (
-            <Button
-              variant="primary"
-              icon={<IconPlus size={16} />}
-              onClick={() => setCreateOpen(true)}
-            >
-              新建账户
-            </Button>
-          )
+          <Button
+            variant="primary"
+            icon={<IconPlus size={16} />}
+            onClick={() => setCreateOpen(true)}
+          >
+            新建账户
+          </Button>
         }
       />
 
@@ -114,27 +113,25 @@ export default function AccountList() {
             ))}
           </div>
         ) : isEmpty ? (
-          <Card>
-            <EmptyState
-              title="创建账户"
-              description={
-                <>
-                  账户用于管理资产和交易
-                  <br />
-                  比如：银行账户、支付宝、微信、投资、社保，甚至不动产等
-                </>
-              }
-              action={
-                <Button
-                  variant="primary"
-                  icon={<IconPlus size={16} />}
-                  onClick={() => setCreateOpen(true)}
-                >
-                  新建账户
-                </Button>
-              }
-            />
-          </Card>
+          <EmptyStateCard
+            title="创建账户"
+            description={
+              <>
+                账户用于管理资产和交易
+                <br />
+                比如：银行账户、支付宝、微信、投资、社保，甚至不动产等
+              </>
+            }
+            action={
+              <Button
+                variant="secondary"
+                icon={<IconPlus size={16} />}
+                onClick={() => setCreateOpen(true)}
+              >
+                新建账户
+              </Button>
+            }
+          />
         ) : (
           <div className="space-y-8">
             <AccountSection
@@ -218,7 +215,7 @@ function AccountCard({ account, tags }: { account: Account; tags: Tag[] }) {
     <button
       type="button"
       onClick={() => navigate(`/account/detail/${account.id}`)}
-      className="card !p-5 text-left hover:shadow-md transition group"
+      className="card !p-5 text-left transition group"
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-3 min-w-0">

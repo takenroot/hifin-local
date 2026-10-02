@@ -28,6 +28,8 @@ export type { BadgeProps, BadgeTone } from './Badge';
 export { EmptyState } from './EmptyState';
 export type { EmptyStateProps } from './EmptyState';
 
+export { EmptyStateCard } from './EmptyStateCard';
+
 export { ProgressBar } from './ProgressBar';
 export type { ProgressBarProps } from './ProgressBar';
 

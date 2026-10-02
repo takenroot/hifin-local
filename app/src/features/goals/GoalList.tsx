@@ -11,16 +11,13 @@ import clsx from 'clsx';
 import {
   IconTarget,
   IconPlus,
-  IconEye,
-  IconShare,
   IconTrash,
   IconPencil,
   IconAlertTriangle,
 } from '@tabler/icons-react';
 import {
   Button,
-  Card,
-  EmptyState,
+  EmptyStateCard,
   PageHeader,
   ProgressBar,
 } from '@/components/ui';
@@ -113,41 +110,32 @@ export default function GoalList() {
         title="目标管理"
         icon={<IconTarget size={18} />}
         actions={
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 text-text-muted dark:text-text-muted-dark">
-              <IconEye size={18} className="cursor-pointer hover:text-text dark:hover:text-text-dark" />
-              <IconShare size={18} className="cursor-pointer hover:text-text dark:hover:text-text-dark" />
-            </div>
-            {!isEmpty && (
-              <Button
-                icon={<IconPlus size={16} />}
-                onClick={() => setCreateOpen(true)}
-              >
-                新建目标
-              </Button>
-            )}
-          </div>
+          <Button
+            icon={<IconPlus size={16} />}
+            onClick={() => setCreateOpen(true)}
+          >
+            新建目标
+          </Button>
         }
       />
 
       <div className="p-4 lg:p-8 max-w-[1400px]">
         {isEmpty ? (
-          <Card>
-            <EmptyState
-              title="创建目标"
-              description="目标助你实现财务梦想，例如购房首付、应急基金、旅行储蓄、教育基金等"
-              action={
-                <Button
-                  icon={<IconPlus size={16} />}
-                  onClick={() => setCreateOpen(true)}
-                >
-                  新建目标
-                </Button>
-              }
-            />
-          </Card>
+          <EmptyStateCard
+            title="创建目标"
+            description="目标助你实现财务梦想，例如购房首付、应急基金、旅行储蓄、教育基金等"
+            action={
+              <Button
+                variant="secondary"
+                icon={<IconPlus size={16} />}
+                onClick={() => setCreateOpen(true)}
+              >
+                新建目标
+              </Button>
+            }
+          />
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {goals.map((g) => (
               <GoalCard
                 key={g.id}
@@ -240,7 +228,7 @@ function GoalCard({
   const overdue = goal.deadline != null && goal.deadline < Date.now() && !reached;
 
   return (
-    <div className="card !p-5 flex flex-col gap-4 hover:shadow-md transition">
+    <div className="card !p-5 flex flex-col gap-4 transition">
       {/* 标题行 */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">

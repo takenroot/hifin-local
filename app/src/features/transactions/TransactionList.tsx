@@ -3,6 +3,7 @@
  * ---------------------------------------------------------------
  * - URL `?create=1` 自动打开新建模态
  * - URL `?import=1` 自动切到批量导入视图
+ * - PageHeader 右上角常驻"新建流水"（流水列表视图下）
  * - 空状态：标题 / 描述 / "新建流水" + "批量导入" 按钮
  * - 列表页：顶部筛选 + 列表
  * - 导入视图：账单导入 / 历史记录
@@ -13,10 +14,8 @@ import {
   IconArrowsLeftRight,
   IconPlus,
   IconUpload,
-  IconEye,
-  IconShare,
 } from '@tabler/icons-react';
-import { PageHeader, Button, EmptyState, Tabs } from '@/components/ui';
+import { PageHeader, Button, EmptyStateCard, Tabs } from '@/components/ui';
 import { type Transaction, useSpaceId } from '@/db';
 import { filterBySpace } from '@/space';
 import { useApi } from '@/hooks/useApi';
@@ -82,25 +81,22 @@ export default function TransactionList() {
     }
   }
 
-  const headerActions = useMemo(
-    () => (
-      <div className="flex items-center gap-2 text-text-muted dark:text-text-muted-dark">
-        <IconEye size={18} className="cursor-pointer hover:text-text dark:hover:text-text-dark" />
-        <IconShare size={18} className="cursor-pointer hover:text-text dark:hover:text-text-dark" />
-      </div>
-    ),
-    [],
-  );
-
   return (
     <div className="min-h-full bg-bg dark:bg-bg-dark">
       <PageHeader
         title="交易流水"
         icon={<IconArrowsLeftRight size={18} />}
-        actions={headerActions}
+        actions={
+          // 新建入口统一常驻右上角（与账户/预算/目标/报表一致）
+          view === 'list' && (
+            <Button icon={<IconPlus size={16} />} onClick={openCreate}>
+              新建流水
+            </Button>
+          )
+        }
       />
 
-      <div className="p-4 lg:p-8 space-y-5 max-w-[1200px] mx-auto">
+      <div className="p-4 lg:p-8 space-y-5 max-w-[1400px] mx-auto">
         <div className="flex items-center justify-between">
           <Tabs
             variant="line"
@@ -128,16 +124,11 @@ export default function TransactionList() {
               { key: 'import', label: '账单导入' },
             ]}
           />
-          {view === 'list' && (
-            <Button icon={<IconPlus size={14} />} onClick={openCreate}>
-              新建流水
-            </Button>
-          )}
         </div>
 
         {view === 'list' &&
           (showEmpty ? (
-            <EmptyState
+            <EmptyStateCard
               title="创建流水"
               description={
                 <>
@@ -146,7 +137,11 @@ export default function TransactionList() {
               }
               action={
                 <div className="flex items-center gap-2">
-                  <Button icon={<IconPlus size={14} />} onClick={openCreate}>
+                  <Button
+                    variant="secondary"
+                    icon={<IconPlus size={14} />}
+                    onClick={openCreate}
+                  >
                     新建流水
                   </Button>
                   <Button

@@ -10,15 +10,12 @@ import clsx from 'clsx';
 import {
   IconChartBar,
   IconPlus,
-  IconEye,
-  IconShare,
   IconChevronRight,
   IconTrash,
 } from '@tabler/icons-react';
 import {
   Button,
-  Card,
-  EmptyState,
+  EmptyStateCard,
   PageHeader,
 } from '@/components/ui';
 import type { Report } from '@/db';
@@ -58,50 +55,41 @@ export default function ReportList() {
         title="数据报表"
         icon={<IconChartBar size={18} />}
         actions={
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 text-text-muted dark:text-text-muted-dark">
-              <IconEye size={18} className="cursor-pointer hover:text-text dark:hover:text-text-dark" />
-              <IconShare size={18} className="cursor-pointer hover:text-text dark:hover:text-text-dark" />
-            </div>
-            {!isEmpty && (
-              <Button
-                icon={<IconPlus size={16} />}
-                onClick={() => setCreateOpen(true)}
-              >
-                新建报表
-              </Button>
-            )}
-          </div>
+          <Button
+            icon={<IconPlus size={16} />}
+            onClick={() => setCreateOpen(true)}
+          >
+            新建报表
+          </Button>
         }
       />
 
-      <div className="p-4 lg:p-8 max-w-[1200px]">
+      <div className="p-4 lg:p-8 max-w-[1400px]">
         {loading ? (
           <div className="text-sm text-text-muted dark:text-text-muted-dark">加载中…</div>
         ) : error ? (
           <div className="text-sm text-expense">加载失败：{error}</div>
         ) : isEmpty ? (
-          <Card>
-            <EmptyState
-              title="创建报表"
-              description={
-                <>
-                  <div>报表展示你的财务全貌</div>
-                  <div>包括：月度收支、年度总结、资产分布、预算执行等</div>
-                </>
-              }
-              action={
-                <Button
-                  icon={<IconPlus size={16} />}
-                  onClick={() => setCreateOpen(true)}
-                >
-                  新建报表
-                </Button>
-              }
-            />
-          </Card>
+          <EmptyStateCard
+            title="创建报表"
+            description={
+              <>
+                <div>报表展示你的财务全貌</div>
+                <div>包括：月度收支、年度总结、资产分布、预算执行等</div>
+              </>
+            }
+            action={
+              <Button
+                variant="secondary"
+                icon={<IconPlus size={16} />}
+                onClick={() => setCreateOpen(true)}
+              >
+                新建报表
+              </Button>
+            }
+          />
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {reports.map((r) => (
               <ReportCard
                 key={r.id}
@@ -149,7 +137,7 @@ function ReportCard({
 }) {
   const meta = templateMeta(getTemplateKey(report));
   return (
-    <div className="card !p-5 flex flex-col gap-3 hover:shadow-md transition group">
+    <div className="card !p-5 flex flex-col gap-3 transition group">
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-3 min-w-0">
           <div

@@ -13,16 +13,13 @@ import { useSearchParams } from 'react-router-dom';
 import clsx from 'clsx';
 import {
   IconCirclePlus,
-  IconEye,
-  IconShare,
   IconTrash,
   IconPencil,
   IconAlertTriangle,
 } from '@tabler/icons-react';
 import {
   Button,
-  Card,
-  EmptyState,
+  EmptyStateCard,
   PageHeader,
   ProgressBar,
 } from '@/components/ui';
@@ -154,41 +151,32 @@ export default function BudgetList() {
         description="为分类或整体支出设定月度 / 年度上限"
         icon={<IconCirclePlus size={18} />}
         actions={
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 text-text-muted dark:text-text-muted-dark">
-              <IconEye size={18} className="cursor-pointer hover:text-text dark:hover:text-text-dark" />
-              <IconShare size={18} className="cursor-pointer hover:text-text dark:hover:text-text-dark" />
-            </div>
-            {!isEmpty && (
-              <Button
-                icon={<IconCirclePlus size={16} />}
-                onClick={() => setCreateOpen(true)}
-              >
-                新建预算
-              </Button>
-            )}
-          </div>
+          <Button
+            icon={<IconCirclePlus size={16} />}
+            onClick={() => setCreateOpen(true)}
+          >
+            新建预算
+          </Button>
         }
       />
 
       <div className="p-4 lg:p-8 max-w-[1400px]">
         {isEmpty ? (
-          <Card>
-            <EmptyState
-              title="创建预算"
-              description="为高频分类或整体支出设定月度 / 年度上限，实时跟踪花费进度，超支会自动红色警示"
-              action={
-                <Button
-                  icon={<IconCirclePlus size={16} />}
-                  onClick={() => setCreateOpen(true)}
-                >
-                  新建预算
-                </Button>
-              }
-            />
-          </Card>
+          <EmptyStateCard
+            title="创建预算"
+            description="为高频分类或整体支出设定月度 / 年度上限，实时跟踪花费进度，超支会自动红色警示"
+            action={
+              <Button
+                variant="secondary"
+                icon={<IconCirclePlus size={16} />}
+                onClick={() => setCreateOpen(true)}
+              >
+                新建预算
+              </Button>
+            }
+          />
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {(budgets).map((b) => {
               const range = periodRange(b.period);
               const key = `${b.period}:${b.categoryId ?? 0}:${range.from}`;
@@ -266,7 +254,7 @@ function BudgetCard({ budget, category, spent, onEdit, onDelete }: BudgetCardPro
   const tone = overspent ? 'income' : 'expense';
 
   return (
-    <div className="card !p-5 flex flex-col gap-4 hover:shadow-md transition">
+    <div className="card !p-5 flex flex-col gap-4 transition">
       {/* 标题行 */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
