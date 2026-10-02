@@ -954,7 +954,39 @@ export class MailPoller {
   private async extractWechatUrl(source: string): Promise<string | null> {
     const extract = await this.wechatUrlExtractor();
     if (!extract || !source) return null;
-    return safeCall(() => extract(source), null);
+    let html = source;
+    try {
+      const htmlPart = this.extractHtmlPartFromMime(source);
+      if (htmlPart) html = htmlPart;
+    } catch {
+      /* 解码失败就用原始 source */
+    }
+    return safeCall(() => extract(html), null);
+  }
+
+  /** 从 MIME 多部分字符串中提取 text/html part 并 base64 解码 */
+  private extractHtmlPartFromMime(mime: string): string | null {
+    // 找 boundary
+    const boundaryMatch = mime.match(/boundary="?([^"\s;]+)"?/i);
+    if (!boundaryMatch) return null;
+    const boundary = boundaryMatch[1];
+    // 按 boundary 分割
+    const parts = mime.split(`--${boundary}`);
+    for (const part of parts) {
+      // 找 text/html 的 part
+      if (!/content-type:\s*text\/html/i.test(part)) continue;
+      // 找 base64 编码的正文（跳过 header 空行之后）
+      const bodyStart = part.search(/\r?\n\r?\n/);
+      if (bodyStart < 0) continue;
+      const body = part.slice(bodyStart).trim();
+      // base64 解码
+      try {
+        return Buffer.from(body, 'base64').toString('utf8');
+      } catch {
+        return null;
+      }
+    }
+    return null;
   }
 
   /** 记账本 + 广播给 CLI 的 onBill */
