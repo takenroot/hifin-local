@@ -37,12 +37,17 @@
   .section-title {
     @apply text-sm font-medium text-text dark:text-text-dark;
   }
+}
 
-  /* recharts 2.13 的 accessibilityLayer 给图表容器加了 tabIndex，
-     鼠标点击即聚焦，Chrome 默认 focus outline 在图表外套一圈黑框。
-     图表本身无可键盘操作的控件（值靠 hover tooltip 读），这里统一去掉。 */
-  .recharts-wrapper:focus,
-  .recharts-wrapper:focus-visible {
-    outline: none;
-  }
+/* recharts 2.13 的 accessibilityLayer 让 SVG 元素可聚焦：鼠标点击扇区时
+   <path class="recharts-sector"> 拿到焦点，Chrome 默认 focus outline
+   在图表外套一圈黑框。图表无可键盘操作的控件（值靠 hover tooltip 读），
+   容器连同所有后代统一去除。
+   注意：必须写在 @layer 外——Tailwind JIT 会 tree-shake 掉 @layer 里
+   未出现在任何源文件中的自定义类名（.recharts-wrapper 只在运行时生成）。 */
+.recharts-wrapper:focus,
+.recharts-wrapper:focus-visible,
+.recharts-wrapper :focus,
+.recharts-wrapper :focus-visible {
+  outline: none;
 }
