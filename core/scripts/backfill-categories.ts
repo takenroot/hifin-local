@@ -43,7 +43,7 @@ function parseArgs(argv: string[]): Args {
     apply: false,
     db: resolve(CORE_ROOT, 'data', 'hifin.db'),
     alipay: '/tmp/check-alipay.zip',
-    alipayPassword: '929143',
+    alipayPassword: '',   // 必填：解压密码一次性，禁止默认值（安全规约）
     wechat: '/tmp/check-wechat.xlsx',
     limit: null,
   };
@@ -83,7 +83,7 @@ function parseArgs(argv: string[]): Args {
             '  --apply               真正写库（缺省是 dry-run，只打印报告）',
             '  --db <path>           数据库路径（默认 core/data/hifin.db）',
             '  --alipay <path>       支付宝账单 ZIP（默认 /tmp/check-alipay.zip）',
-            '  --alipay-password <p> 支付宝账单解压密码（默认 929143）',
+            '  --alipay-password <p> 支付宝账单解压密码（必填，一次性密码无默认值）',
             '  --wechat <path>       微信账单 xlsx（默认 /tmp/check-wechat.xlsx）',
             '  --limit <n>           只处理前 n 笔待回填交易（试跑用）',
           ].join('\n'),
@@ -180,7 +180,11 @@ function main(): void {
   console.log('hifin 存量交易分类回填');
   console.log('═'.repeat(72));
   console.log(`数据库      : ${args.db}`);
-  console.log(`支付宝账单  : ${args.alipay} (密码 ${args.alipayPassword})`);
+  if (!args.alipayPassword) {
+    console.error('错误：--alipay-password 必填（解压密码一次性，不提供默认值）');
+    process.exit(1);
+  }
+  console.log(`支付宝账单  : ${args.alipay} (密码已提供)`);
   console.log(`微信账单    : ${args.wechat}`);
   console.log(`模式        : ${args.apply ? 'APPLY（会写库）' : 'DRY-RUN（只读，不写库）'}`);
   console.log('');

@@ -5,8 +5,8 @@
  * 写进 SQLite 只会越攒越多过期明文。进程重启即丢，正好符合"密码一次性"的约束。
  *
  * 用法（Web 端 POST 密码时写，poller 解压时读）：
- *     setBillPassword(1811, '929143');   // 用户提交
- *     getBillPassword(1811);            // → '929143'
+ *     setBillPassword(1811, '******');   // 用户提交
+ *     getBillPassword(1811);            // → '******'
  *     clearBillPassword(1811);          // 导入成功后清掉
  *
  * 整个模块只有一个共享 Map；多实例 MailPoller 默认也用它（见 poller.ts），
