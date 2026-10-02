@@ -302,12 +302,20 @@ interface Target {
   cityName: string;
 }
 
-/** 定位优先级：浏览器定位 → 用户选定城市（默认北京） */
+/** 定位优先级：用户选定城市（若有）→ 浏览器定位 → 默认城市 */
 async function resolveTarget(): Promise<Target> {
+  // 用户手动选过城市 → 永远优先用选的，不被定位覆盖
+  const saved = await kvGet<{ name?: string }>(CITY_KEY);
+  if (saved && typeof saved === 'object' && saved.name) {
+    const hit = CITY_PRESETS.find((c) => c.name === saved.name);
+    if (hit) return { lat: hit.lat, lon: hit.lon, cityName: hit.name };
+  }
+  // 没选过 → 尝试浏览器定位
   const geo = await geolocate();
   if (geo) {
     return { lat: geo.lat, lon: geo.lon, cityName: nearestCityName(geo.lat, geo.lon) };
   }
+  // 定位也失败 → 默认城市
   const city = await getSavedCity();
   return { lat: city.lat, lon: city.lon, cityName: city.name };
 }
