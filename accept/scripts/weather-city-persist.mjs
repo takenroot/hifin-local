@@ -1,11 +1,23 @@
+/**
+ * weather-city-persist.mjs — 天气城市选择持久化回归
+ * ---------------------------------------------------------------
+ * 验证「用户选的城市不被浏览器定位覆盖」：选呼和浩特 → 刷新 → 仍是呼和浩特。
+ * 只读断言，不写业务数据。
+ *
+ * 用法：node accept/scripts/weather-city-persist.mjs   （需先起 core :8787 + vite :5185）
+ *       HIFIN_BASE=http://127.0.0.1:5188 node accept/scripts/weather-city-persist.mjs
+ */
 import { chromium } from 'playwright';
+
+const BASE = process.env.HIFIN_BASE || 'http://127.0.0.1:5185';
+
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
 const errors = [];
 page.on('pageerror', e => errors.push(String(e).slice(0,150)));
 
 // 1. 打开页面，选呼和浩特
-await page.goto('http://127.0.0.1:5199/home', { waitUntil: 'networkidle' });
+await page.goto(`${BASE}/home`, { waitUntil: 'networkidle' });
 await page.waitForTimeout(1500);
 await page.click('button[title="切换城市"]');
 await page.waitForTimeout(500);

@@ -91,7 +91,7 @@ hifin/
 │   ├── agent-prompt-template.md  # subagent 派发模板
 │   ├── acceptance-report.md      # R1-R4 验收报告（历史归档）
 │   └── exploration-originals/    # 原版界面截图归档
-├── accept/                       # 验收产物（Playwright 脚本+截图）
+├── accept/                       # 验收产物：scripts/ 回归脚本 + screenshots/ 产物 + archive/ 历史归档
 ├── hifin-features.md             # 原版功能清单（复刻源文档）
 └── README.md / CHANGELOG.md
 ```
@@ -110,7 +110,7 @@ hifin/
 | 前端 | React 18 + Vite + TS + Tailwind v3（darkMode:class）+ jotai + recharts |
 | 后端 | Node 24 + TS + Express + better-sqlite3（WAL）+ imapflow + adm-zip + xlsx |
 | 测试 | Vitest × 198 例（前端 50 + 后端 148）|
-| 验收 | Playwright（accept/scripts/）|
+| 验收 | Playwright（`accept/scripts/` 4 个可复跑回归脚本，历史产物在 `accept/archive/`）|
 | 部署 | GitHub Actions 无，纯本地 |
 
 ## 文档导航

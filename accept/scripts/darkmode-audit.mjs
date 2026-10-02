@@ -1,7 +1,9 @@
 /**
  * 暗黑模式全面视觉审计（只读，不改任何业务代码）
  * ---------------------------------------------------------------
- * 用法：node accept/scripts/darkmode-audit.mjs   （需先起 core :8787 + vite :5199）
+ * 用法：node accept/scripts/darkmode-audit.mjs   （需先起 core :8787 + vite :5185）
+ *       HIFIN_BASE=http://127.0.0.1:5188 node accept/scripts/darkmode-audit.mjs
+ *       必须在仓库根运行（截图输出路径相对仓库根）。
  *
  * 目标：用 Playwright 强制暗黑模式，系统性扫描 9 个页面 + 8 个 Modal 的
  *       文字 / placeholder / 边框 / 图标 对比度，输出结构化问题清单。
@@ -21,8 +23,8 @@
 import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
 
-const BASE = process.env.HIFIN_BASE || 'http://127.0.0.1:5199';
-const OUT_DIR = '/home/saltedfish/project/hifin/accept/darkmode-audit';
+const BASE = process.env.HIFIN_BASE || 'http://127.0.0.1:5185';
+const OUT_DIR = 'accept/screenshots/darkmode-audit'; // 相对仓库根，运行前 cd 到仓库根
 const VIEWPORT = { width: 1440, height: 900 };
 
 /* ── 阈值 ─────────────────────────────────────────────────────── */
@@ -523,7 +525,7 @@ function classifyTextRecord(r, page, scopeKind) {
 
 async function shoot(page, file) {
   await page.screenshot({ path: `${OUT_DIR}/${file}`, fullPage: false });
-  return `accept/darkmode-audit/${file}`;
+  return `${OUT_DIR}/${file}`;
 }
 
 /** 等待页面渲染稳定：networkidle + 字体/动画落定 */
