@@ -1,11 +1,13 @@
 /**
- * 交易列表视图（按 日/周/月/年 分组 + 筛选 + 行内编辑 / 删除）
+ * 交易列表视图（按 日/周/月/年 分组 + 筛选 + 关键字搜索 + 行内编辑 / 删除）
  * - 顶部为分组维度分段控件（持久化到 localStorage，刷新后保持）
+ * - 关键字搜索：匹配 名称 / 商户名 / 备注 / 分类名，不区分大小写；
+ *   输入防抖 200ms，不持久化（刷新即回到未搜索态），与筛选/分组/统计取交集
  * - 分组与周期小计由纯函数 grouping.ts 提供，本文件只负责渲染
  * - 暗色约定：所有 muted / hover 底色都要配 dark: 变体；
  *   动态颜色（分类色、标签色）无色时回落到 muted token，不写死浅色灰。
  */
-import { useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAtom } from 'jotai';
 import dayjs from 'dayjs';
 import {
@@ -17,6 +19,8 @@ import {
   IconEyeOff,
   IconTag,
   IconBuildingStore,
+  IconSearch,
+  IconX,
 } from '@tabler/icons-react';
 import clsx from 'clsx';
 import {
@@ -29,7 +33,7 @@ import {
 } from '@/db';
 import { filterBySpace } from '@/space';
 import { useApi } from '@/hooks/useApi';
-import { EmptyState, SegmentedControl } from '@/components/ui';
+import { EmptyState, Input, SegmentedControl } from '@/components/ui';
 import { txGroupDimAtom } from '@/store/atoms';
 import { applyFilter, summarize, type TxFilter } from './balance';
 import { formatMoney } from './format';
@@ -40,6 +44,49 @@ import {
   groupTransactions,
 } from './grouping';
 import { apiDelete, toTransaction, type RestTransaction } from './api';
+
+/** 关键字搜索的防抖窗口（ms）：停止输入 200ms 后才真正过滤 */
+export const KEYWORD_DEBOUNCE_MS = 200;
+
+/** 关键字要匹配到的关联实体名 */
+export type TxNameResolver = (kind: 'category' | 'merchant', id: number) => string | undefined;
+
+/**
+ * 单笔交易是否命中关键字。
+ *
+ * 匹配范围：交易 name、商户名、remark、分类名；不区分大小写；
+ * 关键字 trim 后为空 = 不过滤（恒 true）。
+ */
+export function txMatchesKeyword(
+  tx: Transaction,
+  keyword: string,
+  ctx: { categoryName?: string; merchantName?: string } = {},
+): boolean {
+  const kw = keyword.trim().toLowerCase();
+  if (!kw) return true;
+  return [tx.name, ctx.categoryName, ctx.merchantName, tx.remark].some(
+    (s) => typeof s === 'string' && s.toLowerCase().includes(kw),
+  );
+}
+
+/**
+ * 按关键字过滤列表（在 applyFilter 之后叠加，两者取交集）。
+ * 关键字为空时原样返回同一个引用，避免无谓的重渲染。
+ */
+export function filterTxByKeyword(
+  list: Transaction[],
+  keyword: string,
+  resolveName: TxNameResolver,
+): Transaction[] {
+  if (!keyword.trim()) return list;
+  return list.filter((t) =>
+    txMatchesKeyword(t, keyword, {
+      categoryName: t.categoryId === undefined ? undefined : resolveName('category', t.categoryId),
+      merchantName: t.merchantId === undefined ? undefined : resolveName('merchant', t.merchantId),
+    }),
+  );
+}
+
 
 interface Props {
   filter: TxFilter;
@@ -79,12 +126,46 @@ export function TransactionListView({ filter, onEdit, version = 0, onChanged }: 
 
   const filtered = useMemo(() => applyFilter(scopedTx, filter), [scopedTx, filter]);
 
+  /* 关键字搜索：输入值立即回显，真正过滤走 200ms 防抖
+   * - 不写 localStorage：交易页是"进来就查"的页面，刷新应当回到未搜索态
+   * - 关闭组件时定时器随 effect 清理函数一起撤销，不会残留 setState
+   */
+  const [keywordInput, setKeywordInput] = useState('');
+  const [keyword, setKeyword] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => setKeyword(keywordInput), KEYWORD_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [keywordInput]);
+
+  // 分类 / 商户名索引：搜索要按名字命中，但 Transaction 上只有 id
+  const categoryNameById = useMemo(() => {
+    const map = new Map<number, string>();
+    for (const c of categories ?? []) if (c.id !== undefined) map.set(c.id, c.name);
+    return map;
+  }, [categories]);
+  const merchantNameById = useMemo(() => {
+    const map = new Map<number, string>();
+    for (const m of merchants ?? []) if (m.id !== undefined) map.set(m.id, m.name);
+    return map;
+  }, [merchants]);
+
+  const resolveName = useCallback<TxNameResolver>(
+    (kind, id) => (kind === 'category' ? categoryNameById.get(id) : merchantNameById.get(id)),
+    [categoryNameById, merchantNameById],
+  );
+
+  // 关键字叠加在筛选之上：分组、小计、「共 N 笔」全部基于这份结果
+  const searched = useMemo(
+    () => filterTxByKeyword(filtered, keyword, resolveName),
+    [filtered, keyword, resolveName],
+  );
+
   // 分组维度（持久化）：刷新后仍停留在用户上次选择的档位
   const [dim, setDim] = useAtom(txGroupDimAtom);
 
-  const groups = useMemo(() => groupTransactions(filtered, dim), [filtered, dim]);
+  const groups = useMemo(() => groupTransactions(searched, dim), [searched, dim]);
 
-  const summary = useMemo(() => summarize(filtered), [filtered]);
+  const summary = useMemo(() => summarize(searched), [searched]);
 
   async function removeTx(tx: Transaction) {
     if (tx.id === undefined) return;
@@ -117,23 +198,44 @@ export function TransactionListView({ filter, onEdit, version = 0, onChanged }: 
     );
   }
 
-  if (filtered.length === 0) {
-    return (
-      <EmptyState
-        title="暂无流水"
-        description={
-          scopedTx.length === 0
-            ? '创建一笔流水开始记账吧～'
-            : '当前筛选条件下没有匹配的流水'
-        }
-      />
-    );
-  }
+  const keywordActive = keyword.trim().length > 0;
 
-  return (
-    <div className="space-y-6" data-testid="tx-list">
-      {/* 分组维度切换（日 / 周 / 月 / 年，持久化） */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
+  /* 顶部工具条：关键字搜索 + 分组维度 + 计数。
+   * 抽成变量而不是组件，是为了让"命中 0 笔"的空态也能保留搜索框——
+   * 否则搜空了就没法在原地清空关键字，只能刷新页面。 */
+  const toolbar = (
+    <div className="flex items-center justify-between gap-3 flex-wrap">
+      <div className="flex items-center gap-3 flex-wrap min-w-0">
+        {/* 390px 下整行独占，sm 起固定 15rem 与分段控件并排 */}
+        <div className="w-full sm:w-60 flex-none">
+          <Input
+            value={keywordInput}
+            onChange={(e) => setKeywordInput(e.target.value)}
+            placeholder="搜索名称 / 商户 / 备注 / 分类"
+            aria-label="搜索交易"
+            data-testid="tx-search"
+            className="!h-9"
+            prefix={
+              <span className="text-text-muted dark:text-text-muted-dark">
+                <IconSearch size={14} />
+              </span>
+            }
+            suffix={
+              keywordInput ? (
+                <button
+                  type="button"
+                  onClick={() => setKeywordInput('')}
+                  aria-label="清空搜索"
+                  title="清空搜索"
+                  data-testid="tx-search-clear"
+                  className="-mr-1 p-1 rounded-lg text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark hover:bg-bg dark:hover:bg-bg-card-dark transition-colors cursor-pointer"
+                >
+                  <IconX size={14} />
+                </button>
+              ) : null
+            }
+          />
+        </div>
         <div data-testid="tx-group-dim" data-dim={dim}>
           <SegmentedControl
             aria-label="分组维度"
@@ -145,56 +247,78 @@ export function TransactionListView({ filter, onEdit, version = 0, onChanged }: 
             }))}
           />
         </div>
-        <div className="text-xs text-text-muted dark:text-text-muted-dark">
-          共 {summary.count} 笔
-        </div>
       </div>
-
-      {/* 合计卡 */}
-      <div className="grid grid-cols-3 gap-4">
-        <SumCell tone="income" label="收入" value={summary.income} />
-        <SumCell tone="expense" label="支出" value={summary.expense} />
-        <SumCell tone="neutral" label="数量" value={summary.count} isCount />
+      <div className="text-xs text-text-muted dark:text-text-muted-dark" data-testid="tx-count">
+        共 {summary.count} 笔
+        {keywordActive && `（关键字「${keyword.trim()}」）`}
       </div>
+    </div>
+  );
 
-      {/* 分组列表 */}
-      <div className="space-y-6">
-        {groups.map((g) => (
-          <section key={g.key}>
-            <div
-              className="mb-2 px-1 flex items-baseline gap-2 flex-wrap"
-              data-testid="tx-group-head"
-              data-group-key={g.key}
-            >
-              <h3 className="section-title">{g.label}</h3>
-              {dimShowsSubtotal(dim) && (
-                <span
-                  className="text-xs tabular-nums text-text-muted dark:text-text-muted-dark"
-                  data-testid="tx-group-subtotal"
+  return (
+    <div className="space-y-6" data-testid="tx-list">
+      {toolbar}
+
+      {searched.length === 0 ? (
+        <EmptyState
+          title="暂无流水"
+          description={
+            scopedTx.length === 0
+              ? '创建一笔流水开始记账吧～'
+              : keywordActive
+                ? `没有匹配「${keyword.trim()}」的流水，换个关键字试试`
+                : '当前筛选条件下没有匹配的流水'
+          }
+        />
+      ) : (
+        <>
+          {/* 合计卡 */}
+          <div className="grid grid-cols-3 gap-4">
+            <SumCell tone="income" label="收入" value={summary.income} />
+            <SumCell tone="expense" label="支出" value={summary.expense} />
+            <SumCell tone="neutral" label="数量" value={summary.count} isCount />
+          </div>
+
+          {/* 分组列表 */}
+          <div className="space-y-6">
+            {groups.map((g) => (
+              <section key={g.key}>
+                <div
+                  className="mb-2 px-1 flex items-baseline gap-2 flex-wrap"
+                  data-testid="tx-group-head"
+                  data-group-key={g.key}
                 >
-                  <span className="text-expense">支 {formatMoney(g.subExpense)}</span>
-                  <span className="mx-1">·</span>
-                  <span className="text-income">收 {formatMoney(g.subIncome)}</span>
-                </span>
-              )}
-            </div>
-            <div className="card !p-0 divide-y divide-border dark:divide-border-dark">
-              {g.txs.map((t) => (
-                <TxRow
-                  key={t.id}
-                  tx={t}
-                  categories={categories ?? []}
-                  accounts={accounts}
-                  tags={tags ?? []}
-                  merchants={merchants ?? []}
-                  onEdit={() => onEdit(t)}
-                  onDelete={() => removeTx(t)}
-                />
-              ))}
-            </div>
-          </section>
-        ))}
-      </div>
+                  <h3 className="section-title">{g.label}</h3>
+                  {dimShowsSubtotal(dim) && (
+                    <span
+                      className="text-xs tabular-nums text-text-muted dark:text-text-muted-dark"
+                      data-testid="tx-group-subtotal"
+                    >
+                      <span className="text-expense">支 {formatMoney(g.subExpense)}</span>
+                      <span className="mx-1">·</span>
+                      <span className="text-income">收 {formatMoney(g.subIncome)}</span>
+                    </span>
+                  )}
+                </div>
+                <div className="card !p-0 divide-y divide-border dark:divide-border-dark">
+                  {g.txs.map((t) => (
+                    <TxRow
+                      key={t.id}
+                      tx={t}
+                      categories={categories ?? []}
+                      accounts={accounts}
+                      tags={tags ?? []}
+                      merchants={merchants ?? []}
+                      onEdit={() => onEdit(t)}
+                      onDelete={() => removeTx(t)}
+                    />
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }

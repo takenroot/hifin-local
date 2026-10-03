@@ -19,6 +19,9 @@ export type { SwitchProps } from './Switch';
 export { Modal } from './Modal';
 export type { ModalProps } from './Modal';
 
+export { MonthPicker, monthCellsOf, monthGridRows, monthStartOf } from './MonthPicker';
+export type { MonthPickerProps, MonthCell } from './MonthPicker';
+
 export { Tabs } from './Tabs';
 export type { TabsProps, TabItem } from './Tabs';
 

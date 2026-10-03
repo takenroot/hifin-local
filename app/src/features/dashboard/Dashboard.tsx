@@ -7,7 +7,8 @@
  * - 资产趋势：recharts 面积图，近 30 天净资产估算
  * - 资产分布：Tab（按账户/按交易方式）环形图
  * - 收支日历：可翻月的网格（‹ 2026年10月 › + 「今天」），每日收入/支出小计，
- *   点击弹当日流水列表。月份是独立 state，不影响上方概览/趋势/分布的真实当月口径。
+ *   点击弹当日流水列表。点月份文字另开「月份选择弹层」（年份翻页 + 3×4 网格）。
+ *   月份是独立 state，不影响上方概览/趋势/分布的真实当月口径。
  * - 右侧栏：还款提醒 / 账户管理 / 目标管理 / 预算管理（占位）/ 最近交易
  *
  * 暗黑模式约定：
@@ -38,6 +39,7 @@ import {
   IconSettings,
   IconChevronLeft,
   IconChevronRight,
+  IconChevronDown,
 } from '@tabler/icons-react';
 import clsx from 'clsx';
 import {
@@ -58,6 +60,7 @@ import {
   Button,
   EmptyState,
   Modal,
+  MonthPicker,
   Tabs,
   ProgressBar,
   PageHeader,
@@ -354,6 +357,20 @@ export default function Dashboard() {
     setCalendarMonth(currentMonth);
     setSelectedDay(null);
   }, [currentMonth]);
+
+  /* 月份选择弹层：点月份文字打开，Esc / 点遮罩关闭由 Modal 负责。
+   * 禁用判据与 ‹ › 翻页器同源（下界=最早交易月、上界=真实当前月），
+   * 所以翻页器到不了的月份在弹层里同样是禁用的。
+   * 唯一例外是空库：此时下界回退成当前月，翻页器被锁死在当前月，
+   * 弹层里更早的月份仍可选（只是日历没有任何数据点）。 */
+  const [monthPickerOpen, setMonthPickerOpen] = useState(false);
+
+  /** 弹层里选中某月：落 calendarMonth + 清当日弹层 + 关闭选择器（与翻页器口径一致） */
+  const pickCalendarMonth = useCallback((m: dayjs.Dayjs) => {
+    setCalendarMonth(m.startOf('month'));
+    setSelectedDay(null);
+    setMonthPickerOpen(false);
+  }, []);
 
   const calendarDays = useMemo(
     () => buildCalendar(transactions, calendarMonth),
@@ -656,12 +673,20 @@ export default function Dashboard() {
                     >
                       <IconChevronLeft size={16} />
                     </button>
-                    <span
-                      className="min-w-[4.75rem] sm:min-w-[7.5rem] text-center text-xs sm:text-sm font-medium text-text dark:text-text-dark tabular-nums"
+                    {/* 月份文字本身是选择器入口（‹ › 翻页器保持原样，另留一个按钮位） */}
+                    <button
+                      type="button"
+                      onClick={() => setMonthPickerOpen(true)}
+                      title="选择月份"
+                      aria-label={`选择月份，当前 ${monthLabelCn(calendarMonth)}`}
+                      aria-haspopup="dialog"
+                      aria-expanded={monthPickerOpen}
                       data-testid="dash-calendar-label"
+                      className="min-w-[4.75rem] sm:min-w-[7.5rem] -mx-1.5 px-1.5 inline-flex items-center justify-center gap-0.5 rounded-lg text-center text-xs sm:text-sm font-medium text-text dark:text-text-dark tabular-nums hover:bg-bg dark:hover:bg-bg-card-dark transition-colors cursor-pointer"
                     >
                       {monthLabelCn(calendarMonth)}
-                    </span>
+                      <IconChevronDown size={12} aria-hidden className="flex-none opacity-60" />
+                    </button>
                     <button
                       type="button"
                       onClick={() => stepCalendarMonth(1)}
@@ -917,6 +942,23 @@ export default function Dashboard() {
           </aside>
         </div>
       </div>
+
+      {/* 月份选择弹层：点月份文字打开，Esc / 点遮罩关闭（通用 Modal 自带这两条） */}
+      <Modal
+        open={monthPickerOpen}
+        onClose={() => setMonthPickerOpen(false)}
+        title="选择月份"
+        hideClose
+        width={340}
+      >
+        <MonthPicker
+          selected={calendarMonth}
+          minMonth={calendarMinMonth}
+          maxMonth={currentMonth}
+          currentMonth={currentMonth}
+          onSelect={pickCalendarMonth}
+        />
+      </Modal>
 
       {/* 当日流水 Modal */}
       <Modal

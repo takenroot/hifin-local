@@ -12,6 +12,10 @@
  *   8. 选择不持久化：刷新后回到当前月
  *   9. 移动端 390px：翻页器不挤爆卡片（不溢出、不换行破版）
  *  10. 明暗双主题各跑一轮；全程无 console error / pageerror
+ *  11. 月份选择弹层：点月份文字打开、年份 ‹ › 翻到下界、3×4 网格、
+ *      未来月/早于下界的月置灰禁用、当前月高亮、选月即时生效并自关、
+ *      Esc / 点遮罩关闭且不改动月份
+ * （第 1~10 项为历史回归，第 11 项随月份选择控件一并加入；改动不得让前 39 条断言回归）
  *
  * 数据策略：core 全程只读。所有期望值（下界月份、笔数、数据日数、概览金额）
  * 都从 http://127.0.0.1:8787/api/transactions 现算，脚本里不写死任何业务数字。
@@ -295,6 +299,131 @@ try {
       beforeReload !== afterReload && afterReload === monthLabelOf(EXPECT.currentMonth),
       `翻到「${beforeReload}」→ 刷新后「${afterReload}」`,
     );
+
+    /* ═══ 6. 月份选择弹层（点月份文字打开） ═══ */
+    await openDash(page);
+    const curYear = Number(EXPECT.currentMonth.slice(0, 4));
+    const curMonthNo = Number(EXPECT.currentMonth.slice(5, 7));
+    const minYear = Number(EXPECT.earliestMonthKey.slice(0, 4));
+    const minMonthNo = Number(EXPECT.earliestMonthKey.slice(5, 7));
+    const picker = page.locator('[data-testid="month-picker"]');
+    const cell = (m) => page.locator(`[data-testid="month-picker-cell"][data-month="${m}"]`);
+    const yearOf = () => page.locator('[data-testid="month-picker-year"]').innerText().then((t) => t.trim());
+
+    await page.click('[data-testid="dash-calendar-label"]');
+    await page.waitForSelector('[data-testid="month-picker"]', { timeout: 8000 });
+    await page.waitForTimeout(300);
+    record(
+      `${theme} 点月份文字打开选择弹层`,
+      (await picker.count()) === 1,
+      `默认停在「${await yearOf()}」`,
+    );
+    await page.screenshot({ path: `${SHOTS}/month-picker-open-${theme}.png` });
+
+    // 网格必须是 3 行 × 4 列 = 12 格
+    const shape = await page.evaluate(() => {
+      const rows = [...document.querySelectorAll('[data-testid="month-picker-grid"] > div')];
+      return { rows: rows.length, perRow: rows.map((r) => r.querySelectorAll('button').length) };
+    });
+    record(
+      `${theme} 弹层为 3×4 月份网格`,
+      shape.rows === 3 && shape.perRow.length === 3 && shape.perRow.every((n) => n === 4),
+      `${shape.rows} 行 × 每行 ${shape.perRow.join('/')} 格`,
+    );
+    record(`${theme} 弹层默认年份=当前年`, (await yearOf()) === `${curYear}年`, `当前 ${curYear}年${curMonthNo}月`);
+
+    // 禁用态：未来月置灰；当前月带 data-current 且可点
+    const dis = await page.evaluate(
+      ([cm]) => {
+        const g = (m) => document.querySelector(`[data-testid="month-picker-cell"][data-month="${m}"]`);
+        return {
+          future: [cm + 1, 12].filter((m) => m <= 12).every((m) => g(m)?.disabled === true),
+          pastOk: cm > 1 ? g(cm - 1)?.disabled === false : true,
+          curEnabled: g(cm)?.disabled === false,
+          curMarked: g(cm)?.getAttribute('data-current') === 'true',
+          curSelected: g(cm)?.getAttribute('data-selected') === 'true',
+        };
+      },
+      [curMonthNo],
+    );
+    record(
+      `${theme} 未来月置灰禁用`,
+      dis.future && dis.pastOk && dis.curEnabled,
+      `当前月 ${curMonthNo} 可选，${curMonthNo + 1}~12 月 disabled`,
+    );
+    record(
+      `${theme} 当前月高亮且为选中态`,
+      dis.curMarked && dis.curSelected,
+      `data-current=${dis.curMarked} data-selected=${dis.curSelected}`,
+    );
+
+    // 年份翻页到下界年：早于最早交易月的月份必须禁用
+    const prevYear = page.locator('[data-testid="month-picker-prev-year"]');
+    for (let i = 0; i < 30 && !(await prevYear.isDisabled()); i++) {
+      await prevYear.click();
+      await page.waitForTimeout(120);
+    }
+    const shownYear = Number((await yearOf()).slice(0, 4));
+    const minDis = await page.evaluate(
+      ([shown, boundYear, boundMonth]) => {
+        const g = (m) => document.querySelector(`[data-testid="month-picker-cell"][data-month="${m}"]`);
+        // 早于下界（按 年-月 字典序）的月份集合
+        const below = [...Array(12).keys()]
+          .map((i) => i + 1)
+          .filter((m) => shown < boundYear || (shown === boundYear && m < boundMonth));
+        return {
+          belowCount: below.length,
+          belowDisabled: below.every((m) => g(m)?.disabled === true),
+          boundEnabled: shown > boundYear ? below.length === 0 : g(boundMonth)?.disabled === false,
+        };
+      },
+      [shownYear, minYear, minMonthNo],
+    );
+    record(
+      `${theme} 下界年早于最早交易月的月禁用`,
+      shownYear === minYear && minDis.belowDisabled && minDis.boundEnabled,
+      `翻到 ${shownYear}年（最早交易 ${EXPECT.earliestMonthKey}）：${minDis.belowCount} 个更早的月全部 disabled，${minMonthNo} 月可选`,
+    );
+    await page.screenshot({ path: `${SHOTS}/month-picker-minyear-${theme}.png` });
+
+    // 选月：落 calendarMonth + 关闭弹层
+    const targetMonth = shownYear === minYear ? minMonthNo : curMonthNo;
+    await cell(targetMonth).click();
+    await page.waitForTimeout(400);
+    const labelAfterPick = await monthLabel(page);
+    record(
+      `${theme} 选月即时生效并关闭弹层`,
+      labelAfterPick === monthLabelOf(EXPECT.earliestMonthKey) && (await picker.count()) === 0,
+      `选 ${shownYear}年${targetMonth}月 → 标签「${labelAfterPick}」，弹层已关`,
+    );
+    await page.screenshot({ path: `${SHOTS}/month-picker-picked-${theme}.png` });
+
+    // Esc 关闭
+    await page.click('[data-testid="dash-calendar-label"]');
+    await page.waitForSelector('[data-testid="month-picker"]', { timeout: 8000 });
+    await page.waitForTimeout(250);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(350);
+    const labelAfterEsc = await monthLabel(page);
+    record(
+      `${theme} Esc 关闭月份弹层`,
+      (await picker.count()) === 0 && labelAfterEsc === labelAfterPick,
+      `月份保持「${labelAfterEsc}」未被改动`,
+    );
+
+    // 点遮罩关闭
+    await page.click('[data-testid="dash-calendar-label"]');
+    await page.waitForSelector('[data-testid="month-picker"]', { timeout: 8000 });
+    await page.waitForTimeout(250);
+    await page.mouse.click(10, 10); // 遮罩左上角：避开中间的弹层卡片
+    await page.waitForTimeout(350);
+    record(
+      `${theme} 点遮罩关闭月份弹层`,
+      (await picker.count()) === 0 && (await monthLabel(page)) === labelAfterPick,
+      `月份保持「${labelAfterPick}」未被改动`,
+    );
+    await page.screenshot({ path: `${SHOTS}/month-picker-after-${theme}.png` });
+
     await ctx.close();
   }
 
@@ -346,6 +475,38 @@ try {
     const cardBox = await page.locator('[data-testid="dash-calendar"]').boundingBox();
     record('390px 日历卡片可见', !!cardBox && cardBox.width > 300, cardBox ? `宽 ${cardBox.width.toFixed(0)}px` : '');
     await page.screenshot({ path: `${SHOTS}/mobile-390-light.png`, fullPage: true });
+
+    /* 390px 下的月份选择弹层：不溢出、可选可禁 */
+    await page.click('[data-testid="dash-calendar-label"]');
+    await page.waitForSelector('[data-testid="month-picker"]', { timeout: 8000 });
+    await page.waitForTimeout(400);
+    const pickerFit = await page.evaluate(() => {
+      const root = document.querySelector('[data-testid="month-picker"]');
+      const card = root?.closest('.fixed.inset-0.z-50 > div.relative');
+      const doc = document.documentElement;
+      const cells = [...document.querySelectorAll('[data-testid="month-picker-cell"]')];
+      return {
+        overflowRight: card ? root.getBoundingClientRect().right - card.getBoundingClientRect().right : NaN,
+        docOverflow: doc.scrollWidth - doc.clientWidth,
+        cells: cells.length,
+        cellW: cells[0]?.getBoundingClientRect().width ?? 0,
+        selected: cells.filter((c) => c.getAttribute('data-selected') === 'true').length,
+        disabled: cells.filter((c) => c.disabled).length,
+      };
+    });
+    record(
+      '390px 月份弹层不溢出',
+      Number.isFinite(pickerFit.overflowRight) &&
+        pickerFit.overflowRight <= 1 &&
+        pickerFit.docOverflow <= 0,
+      `溢出右 ${pickerFit.overflowRight.toFixed(1)}px / 页面横向 ${pickerFit.docOverflow}px`,
+    );
+    record(
+      '390px 弹层格子不挤爆',
+      pickerFit.cells === 12 && pickerFit.cellW > 60 && pickerFit.selected === 1,
+      `${pickerFit.cells} 格，每格宽 ${pickerFit.cellW.toFixed(0)}px，选中 ${pickerFit.selected} 个，禁用 ${pickerFit.disabled} 个`,
+    );
+    await page.screenshot({ path: `${SHOTS}/mobile-390-picker.png` });
     await ctx.close();
   }
 
