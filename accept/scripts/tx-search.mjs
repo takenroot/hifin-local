@@ -141,7 +141,7 @@ const countText = (page) =>
     const m = t.match(/共\s*([\d,]+)\s*笔/);
     return m ? Number(m[1].replace(/,/g, '')) : NaN;
   });
-/** 合计卡「收入 / 支出 / 数量」三格 */
+/** 合计卡「收入 / 支出」两格（数量由工具条「共 N 笔」承载，不重复展示） */
 const sumCards = (page) =>
   page.evaluate(() => {
     const out = {};
@@ -203,8 +203,8 @@ try {
       `${theme} 合计卡跟随关键字`,
       sums['收入'] === `¥ ${sumOf(KW_EXPECT, 'income').toFixed(2)}` &&
         sums['支出'] === `¥ ${sumOf(KW_EXPECT, 'expense').toFixed(2)}` &&
-        sums['数量'] === `${KW_EXPECT.length} 笔`,
-      `收 ${sums['收入']} / 支 ${sums['支出']} / ${sums['数量']}`,
+        !('数量' in sums),
+      `收 ${sums['收入']} / 支 ${sums['支出']}（数量卡已移除，计数在「共 N 笔」）`,
     );
     await page.screenshot({ path: `${SHOTS}/hit-${theme}.png` });
 

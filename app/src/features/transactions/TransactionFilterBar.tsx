@@ -82,7 +82,7 @@ export function TransactionFilterBar({ filter, onChange, version = 0 }: Props) {
   }
 
   return (
-    <div className="card !p-3 flex flex-wrap items-center gap-2">
+    <div className="card !p-3 w-fit max-w-full flex flex-wrap items-center gap-2">
       <div className="flex items-center gap-2 text-text-muted dark:text-text-muted-dark text-sm flex-none">
         <IconFilter size={14} />
         <span>筛选</span>

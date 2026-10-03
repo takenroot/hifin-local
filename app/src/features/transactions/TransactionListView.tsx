@@ -184,8 +184,8 @@ export function TransactionListView({ filter, onEdit, version = 0, onChanged }: 
   if (loading) {
     return (
       <div className="space-y-6" data-testid="tx-loading">
-        <div className="grid grid-cols-3 gap-4">
-          {[0, 1, 2].map((i) => (
+        <div className="grid grid-cols-2 gap-4">
+          {[0, 1].map((i) => (
             <div key={i} className="h-20 rounded-xl bg-bg-card dark:bg-bg-card-dark animate-pulse" />
           ))}
         </div>
@@ -272,11 +272,10 @@ export function TransactionListView({ filter, onEdit, version = 0, onChanged }: 
         />
       ) : (
         <>
-          {/* 合计卡 */}
-          <div className="grid grid-cols-3 gap-4">
+          {/* 合计卡（数量在工具条「共 N 笔」展示，这里不重复） */}
+          <div className="grid grid-cols-2 gap-4">
             <SumCell tone="income" label="收入" value={summary.income} />
             <SumCell tone="expense" label="支出" value={summary.expense} />
-            <SumCell tone="neutral" label="数量" value={summary.count} isCount />
           </div>
 
           {/* 分组列表 */}
