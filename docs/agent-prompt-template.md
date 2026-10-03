@@ -84,3 +84,6 @@
 - ❌ 把账单解压密码写进任何文件（脚本默认值、注释、硬编码）——一次性密码只许命令行参数/环境变量传入（安全规约，真实踩过：默认值进了回填脚本被调度方打回）
 - ❌ 测试基线造假：当前基线 core 265 例 / app 105 例全过，开工先跑一遍，结束时必须仍全过
 - ❌ 批量改数据后不复核不变量：`accounts.balance == Σ(income) - Σ(expense)`（excluded/transfer 不计）必须前后一致
+- ❌ 验收脚本 mock 只盖一半：`page.route` 里 `route.fallback()` 会把没显式处理的写请求（POST/PUT/DELETE）打进真实 :8787 污染用户数据库——凡触发写操作的用例，所有写路径都必须显式 fulfill（真实踩过：账户创建 fallback 产生 10 个垃圾账户）
+- ❌ 把第三方运行时类名（如 `.recharts-wrapper`）的 CSS 规则写进 Tailwind `@layer`：JIT tree-shake 会剥离未出现在源文件中的类，规则静默丢失——这类规则必须写在 @layer 外
+- ⚠️ 测试基线会过期：以调度方当次 prompt 为准（本文档的 265/105 已是旧值），开工先跑 `npx vitest run` 实测
