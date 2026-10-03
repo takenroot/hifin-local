@@ -420,6 +420,16 @@ try {
         await route.fulfill({ status: 500, contentType: 'application/json', body: '{}' });
         return;
       }
+      // 账户创建也必须 mock——fallback 会把 POST 打进真实 :8787，污染用户数据库
+      // （历史上因此产生过 6 个「验收-收益率失败」垃圾账户，已清理并立此存照）
+      if (req.method() === 'POST' && path === '/api/accounts') {
+        await route.fulfill({
+          status: 201,
+          contentType: 'application/json',
+          body: JSON.stringify({ ...FIXTURE_ACCOUNTS[0], id: 9002, ...safeJson(req.postData()) }),
+        });
+        return;
+      }
       await route.fallback();
     });
     await openCreateForm(page);
