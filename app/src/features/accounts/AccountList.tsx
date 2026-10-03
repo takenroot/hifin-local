@@ -24,6 +24,7 @@ import type { Account, Tag } from '@/db';
 import { useApi } from '@/hooks/useApi';
 import { toAccounts, type RestAccount } from './rest';
 import { formatMoney, balanceToneClass, accountBalanceDisplay, isDebtType } from './format';
+import { accountYieldDisplay } from './yield';
 import {
   ACCOUNT_TONE_BG,
   ACCOUNT_TYPE_META,
@@ -219,6 +220,16 @@ function AccountCard({ account, tags }: { account: Account; tags: Tag[] }) {
     return tags.filter((t) => t.id != null && ids.includes(t.id));
   }, [account.tagIds, tags]);
 
+  /*
+   * 年收益率一行：`年收益率 2.1% · 预计年收益 ¥ 210.00`
+   * 口径（见 features/accounts/yield.ts）：负债账户不展示、没填过不展示、
+   * 余额 <= 0 时只显示百分比不给"预计"。
+   *
+   * 用 muted 色而非红色：余额那行已经用红绿表达了财务颜色，
+   * 这一行是补充信息，再上一遍彩色只会把余额的视觉重心抢走。
+   */
+  const yieldDisplay = accountYieldDisplay(account);
+
   return (
     <button
       type="button"
@@ -262,6 +273,15 @@ function AccountCard({ account, tags }: { account: Account; tags: Tag[] }) {
           </span>
         )}
       </div>
+
+      {yieldDisplay && (
+        <div
+          className="mt-2 text-xs text-text-muted dark:text-text-muted-dark"
+          data-testid="account-yield"
+        >
+          {yieldDisplay.fullText}
+        </div>
+      )}
 
       {accountTags.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-1">

@@ -18,7 +18,9 @@ export {
   setUserVersion,
   getColumns,
   ensureColumns,
+  ensureNotificationsShape,
   TX_EXTERNAL_ID_INDEX_SQL,
+  NOTIFICATIONS_V3_SQL,
   CURRENT_SCHEMA_VERSION,
 } from './migrate.js';
 
@@ -50,4 +52,8 @@ export {
   type BudgetRow,
   type RuleRow,
   type KvRow,
+  type AccountYieldRow,
+  type NotificationType,
+  type NotificationStatus,
+  type NotificationRow,
 } from './schema.js';

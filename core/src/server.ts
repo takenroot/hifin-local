@@ -16,7 +16,8 @@ import express, {
 import { openDatabase } from './db/connection.js';
 import { migrate } from './db/migrate.js';
 import { ensureSeed } from './db/seed.js';
-import { setActiveDb } from './routes/_db.js';
+import { setActiveDb, getDb } from './routes/_db.js';
+import { ensureYieldReminders } from './yields/reminder.js';
 import { accountsRouter } from './routes/accounts.js';
 import { transactionsRouter } from './routes/transactions.js';
 import { summaryRouter } from './routes/summary.js';
@@ -96,11 +97,52 @@ export function createApp(opts: CreateAppOptions = {}): Express {
   return app;
 }
 
+/** 收益率催填的自检周期：24 小时一次 */
+export const YIELD_REMINDER_INTERVAL_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * 启动收益率催填调度：立刻跑一次 + 每 24h 一次。
+ *
+ * 为什么是"立刻 + 周期"而不是只在 1 月 1 号定时：服务器是随开随关的，
+ * 只靠固定时刻触发会整个 1 月都漏掉（大部分时候根本没开机）。
+ * 靠 ensureYieldReminders 自己的窗口判断 + 幂等去重，随时补跑都是安全的。
+ *
+ * 单次抛错只打日志不冒泡：催填失败不该把已经监听成功的 HTTP 服务带崩。
+ * 返回的 timer 已 unref()，不会吊住进程退出（测试里也不会留下悬挂句柄）。
+ */
+export function startYieldReminderScheduler(
+  db: ReturnType<typeof getDb>,
+  intervalMs: number = YIELD_REMINDER_INTERVAL_MS,
+): NodeJS.Timeout {
+  const tick = (): void => {
+    try {
+      const run = ensureYieldReminders(db, new Date());
+      if (run.created > 0 || run.resolved > 0 || run.expired > 0) {
+        // eslint-disable-next-line no-console
+        console.log(
+          `[yields] 催填对账：新建 ${run.created} / 解决 ${run.resolved} / 过期 ${run.expired}` +
+            `（缺记录 ${run.missing.length} 个账户）`,
+        );
+      }
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[yields] 催填对账失败:', err);
+    }
+  };
+  tick();
+  const timer = setInterval(tick, intervalMs);
+  timer.unref?.();
+  return timer;
+}
+
 function main(): void {
   const port = Number(process.env.PORT) || 8787;
   const dbPath =
     process.env.HIFIN_DB_PATH ?? '/home/saltedfish/project/hifin/core/data/hifin.db';
   const app = createApp({ dbPath });
+  // createApp 已经把迁移后的 db 注入了路由层，这里直接复用同一个实例，
+  // 不再额外 openDatabase —— 两个连接写同一个文件只会平白多一层锁竞争。
+  startYieldReminderScheduler(getDb());
   app.listen(port, () => {
     // eslint-disable-next-line no-console
     console.log(`[hifin-core] listening on http://127.0.0.1:${port} (db=${dbPath})`);

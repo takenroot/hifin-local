@@ -126,17 +126,34 @@ CREATE TABLE IF NOT EXISTS kv (
   value TEXT                 -- JSON
 );
 
+-- payload 是 v3 迁移新增的通用业务载荷列（JSON 文本）。
+-- 目前只有 type='yield-reminder' 用它装 {accountId, year}；
+-- 其余通知类型留 NULL，读侧一律容错。
 CREATE TABLE IF NOT EXISTS notifications (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  type TEXT NOT NULL CHECK(type IN ('need_password','password_error','import_success','import_failed')),
+  type TEXT NOT NULL CHECK(type IN ('need_password','password_error','import_success','import_failed','yield-reminder')),
   title TEXT NOT NULL,
   message TEXT,
   bill_uid INTEGER,
   platform TEXT,
-  status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','resolved','dismissed','failed')),
+  status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','resolved','dismissed','failed','expired')),
   retry_count INTEGER NOT NULL DEFAULT 0,
   createdAt INTEGER NOT NULL,
-  updatedAt INTEGER NOT NULL
+  updatedAt INTEGER NOT NULL,
+  payload TEXT                -- JSON；yield-reminder 为 {"accountId":N,"year":Y}
+);
+
+-- 账户年收益率历史（v3 新表）：每个账户每年一条。
+-- UNIQUE(accountId, year) 让"一年只能有一条"由数据库兜底，
+-- REST 的 PUT 端点据此做 upsert，调度器据此判断"是否已填"。
+CREATE TABLE IF NOT EXISTS accountYields (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  accountId INTEGER NOT NULL,
+  year INTEGER NOT NULL,
+  yieldPercent REAL NOT NULL,
+  note TEXT,
+  createdAt INTEGER NOT NULL,
+  UNIQUE(accountId, year)
 );
 
 -- 常用索引
@@ -145,6 +162,7 @@ CREATE TABLE IF NOT EXISTS notifications (
 -- 本段由 migrate() 在"补列"之前执行，老库上此时 source/externalId 还不存在，
 -- 建索引会直接报 no such column。索引 DDL 见 migrate.ts 的 TX_EXTERNAL_ID_INDEX_SQL。
 CREATE INDEX IF NOT EXISTS idx_notif_status ON notifications(status);
+CREATE INDEX IF NOT EXISTS idx_notif_type_status ON notifications(type, status);
 CREATE INDEX IF NOT EXISTS idx_tx_date ON transactions(date);
 CREATE INDEX IF NOT EXISTS idx_tx_account ON transactions(accountId);
 CREATE INDEX IF NOT EXISTS idx_tx_category ON transactions(categoryId);
@@ -152,6 +170,7 @@ CREATE INDEX IF NOT EXISTS idx_tx_space ON transactions(spaceId);
 CREATE INDEX IF NOT EXISTS idx_acc_space ON accounts(spaceId);
 CREATE INDEX IF NOT EXISTS idx_goal_space ON goals(spaceId);
 CREATE INDEX IF NOT EXISTS idx_budget_space ON budgets(spaceId);
+CREATE INDEX IF NOT EXISTS idx_yield_year ON accountYields(year);
 `;
 
 // ── 与 app/src/db.ts 对齐的 TypeScript 类型 ──
@@ -182,7 +201,23 @@ export interface ReportRow { id?: number; name: string; description?: string; te
 export interface AiModelRow { id?: number; name: string; model: string; endpoint: string; apiKey?: string; }
 export interface BudgetRow { id?: number; name: string; categoryId?: number; amount: number; period: BudgetPeriod; spaceId?: number; createdAt: number; }
 export interface RuleRow { id?: number; keyword: string; matchField: RuleMatchField; categoryId: number; priority: number; enabled: number; createdAt: number; }
-export type NotificationType = 'need_password' | 'password_error' | 'import_success' | 'import_failed';
-export type NotificationStatus = 'pending' | 'resolved' | 'dismissed' | 'failed';
-export interface NotificationRow { id?: number; type: NotificationType; title: string; message?: string; bill_uid?: number; platform?: string; status: NotificationStatus; retry_count: number; createdAt: number; updatedAt: number; }
+export type NotificationType =
+  | 'need_password'
+  | 'password_error'
+  | 'import_success'
+  | 'import_failed'
+  /**
+   * 账户年收益率催填（v3 新增）。
+   * 与账单通知不同，它不带 bill_uid，accountId/year 装在 payload 里。
+   */
+  | 'yield-reminder';
+/**
+ * pending 待处理 / resolved 已解决 / dismissed 用户忽略 / failed 失败。
+ * expired 是 v3 新增的终态：催填窗口（2 月 1 日）已过且用户始终没填，
+ * 等价于"这件事到此为止"，与 resolved 区分开是为了让 UI 能说清是补填了还是放弃了。
+ */
+export type NotificationStatus = 'pending' | 'resolved' | 'dismissed' | 'failed' | 'expired';
+export interface NotificationRow { id?: number; type: NotificationType; title: string; message?: string; bill_uid?: number; platform?: string; status: NotificationStatus; retry_count: number; createdAt: number; updatedAt: number; payload?: string | null; }
+/** 账户年收益率行（v3）：yieldPercent 是百分数值，1.8 表示 1.8% 而不是 0.018 */
+export interface AccountYieldRow { id?: number; accountId: number; year: number; yieldPercent: number; note?: string | null; createdAt: number; }
 export interface KvRow { key: string; value?: string; }

@@ -1,21 +1,34 @@
 /**
- * /api/accounts 路由 — 账户 CRUD
- * - GET    列表，可按 spaceId 过滤
+ * /api/accounts 路由 — 账户 CRUD + 年收益率
+ * - GET    列表，可按 spaceId 过滤；每行附带 latestYield（最近一年的收益率）
  * - POST   创建
  * - PUT    更新（name / type / balance / remark / tagIds / includeInNetAsset / spaceId）
  * - DELETE 删除
+ * - GET    /:id/yields        该账户的年收益率历史（按年份倒序）
+ * - PUT    /:id/yields/:year  按年 upsert（补填即自动解决催填通知）
  *
  * 复用 src/db 模块的 getDb() 获取 better-sqlite3 实例。
  */
 import { Router, type Request, type Response } from 'express';
 import { getDb } from './_db.js';
 import type { AccountRow, AccountType } from '../db/schema.js';
+import { resolveYieldReminders } from '../yields/reminder.js';
 
 export const accountsRouter = Router();
 
 const VALID_TYPES: AccountType[] = [
   'fund', 'asset', 'social', 'invest', 'other', 'credit', 'debt',
 ];
+
+/** latestYield 在 JSON 里的形状（契约固定为 { year, yieldPercent } | null） */
+interface LatestYield {
+  year: number;
+  yieldPercent: number;
+}
+
+/** 年份的合理区间：防止 "20250" / "-1" 这类脏值把库里写花 */
+const MIN_YEAR = 1970;
+const MAX_YEAR = 2999;
 
 function nowMs(): number {
   return Date.now();
@@ -36,26 +49,144 @@ function parseTagIds(input: unknown): string | undefined {
   return undefined;
 }
 
+/**
+ * 账户行 + latestYield 的查询。
+ *
+ * 用 LEFT JOIN 而不是先查账户再补一次：latestYield 取的是"年份最大"的那条，
+ * 相关子查询 (ORDER BY year DESC LIMIT 1) 走 UNIQUE(accountId, year) 自带的索引，
+ * 账户条数是几十级别，多一次查询纯属浪费。
+ *
+ * 两个辅助列 latestYieldYear / latestYieldPercent 只存在于结果集里，
+ * 映射成 latestYield 对象后会删掉，不会漏进 JSON。
+ */
+function selectAccounts(where: string, params: unknown[]): Array<Record<string, unknown>> {
+  return getDb()
+    .prepare(
+      `SELECT a.*,
+              y.year AS latestYieldYear,
+              y.yieldPercent AS latestYieldPercent
+         FROM accounts a
+         LEFT JOIN accountYields y
+                ON y.id = (SELECT id FROM accountYields
+                            WHERE accountId = a.id
+                            ORDER BY year DESC LIMIT 1)
+        ${where}
+        ORDER BY a.id ASC`,
+    )
+    .all(...params) as Array<Record<string, unknown>>;
+}
+
+/** 结果集 → 账户 JSON：附加 latestYield，剥掉两个辅助列 */
+function withLatestYield(rows: Array<Record<string, unknown>>): Array<Record<string, unknown>> {
+  return rows.map((row) => {
+    const { latestYieldYear, latestYieldPercent, ...account } = row;
+    const latestYield: LatestYield | null =
+      typeof latestYieldYear === 'number' && typeof latestYieldPercent === 'number'
+        ? { year: latestYieldYear, yieldPercent: latestYieldPercent }
+        : null;
+    return { ...account, latestYield };
+  });
+}
+
 /** GET /api/accounts?spaceId=N */
 accountsRouter.get('/', (req: Request, res: Response) => {
-  const db = getDb();
   const spaceId = req.query.spaceId;
-  let rows: AccountRow[];
+  let rows: Array<Record<string, unknown>>;
   if (spaceId !== undefined) {
     const sid = Number(spaceId);
     if (!Number.isFinite(sid)) {
       res.status(400).json({ error: 'spaceId 必须是数字' });
       return;
     }
-    rows = db
-      .prepare('SELECT * FROM accounts WHERE spaceId = ? ORDER BY id ASC')
-      .all(sid) as AccountRow[];
+    rows = selectAccounts('WHERE a.spaceId = ?', [sid]);
   } else {
-    rows = db
-      .prepare('SELECT * FROM accounts ORDER BY id ASC')
-      .all() as AccountRow[];
+    rows = selectAccounts('', []);
   }
+  res.json(withLatestYield(rows));
+});
+
+/** GET /api/accounts/:id/yields → [{ year, yieldPercent, note }]，按年份倒序 */
+accountsRouter.get('/:id/yields', (req: Request, res: Response) => {
+  const db = getDb();
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    res.status(400).json({ error: 'id 必须是正整数' });
+    return;
+  }
+  const account = db.prepare('SELECT id FROM accounts WHERE id = ?').get(id);
+  if (!account) {
+    res.status(404).json({ error: '账户不存在' });
+    return;
+  }
+  const rows = db
+    .prepare(
+      `SELECT year, yieldPercent, note
+         FROM accountYields
+        WHERE accountId = ?
+        ORDER BY year DESC`,
+    )
+    .all(id) as Array<{ year: number; yieldPercent: number; note: string | null }>;
   res.json(rows);
+});
+
+/**
+ * PUT /api/accounts/:id/yields/:year — upsert 某年收益率。
+ * body: { yieldPercent, note? }
+ *
+ * 落库用 ON CONFLICT(accountId, year) DO UPDATE：UNIQUE 约束是幂等的唯一依据，
+ * 同一年的第二次提交是"改数字"而不是"多一条"。
+ * 写成功后顺手解决该年的催填通知（resolveYieldReminders 内部已做去重）。
+ */
+accountsRouter.put('/:id/yields/:year', (req: Request, res: Response) => {
+  const db = getDb();
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    res.status(400).json({ error: 'id 必须是正整数' });
+    return;
+  }
+  const year = Number(req.params.year);
+  if (!Number.isInteger(year) || year < MIN_YEAR || year > MAX_YEAR) {
+    res.status(400).json({ error: `year 必须是 ${MIN_YEAR}~${MAX_YEAR} 的整数` });
+    return;
+  }
+  const account = db.prepare('SELECT id FROM accounts WHERE id = ?').get(id);
+  if (!account) {
+    res.status(404).json({ error: '账户不存在' });
+    return;
+  }
+
+  const body = req.body ?? {};
+  if (body.yieldPercent === undefined || body.yieldPercent === null || body.yieldPercent === '') {
+    res.status(400).json({ error: 'yieldPercent 必填' });
+    return;
+  }
+  const yieldPercent = Number(body.yieldPercent);
+  if (!Number.isFinite(yieldPercent)) {
+    res.status(400).json({ error: 'yieldPercent 必须是数字' });
+    return;
+  }
+  if (yieldPercent < -100 || yieldPercent > 100) {
+    res.status(400).json({ error: 'yieldPercent 须在 -100 到 100 之间' });
+    return;
+  }
+  const note =
+    body.note === undefined || body.note === null ? null : String(body.note).trim() || null;
+
+  db.prepare(
+    `INSERT INTO accountYields (accountId, year, yieldPercent, note, createdAt)
+     VALUES (?, ?, ?, ?, ?)
+     ON CONFLICT(accountId, year) DO UPDATE SET
+       yieldPercent = excluded.yieldPercent,
+       note = excluded.note`,
+  ).run(id, year, yieldPercent, note, nowMs());
+
+  // 补填即消提醒：这条不变量放在 yields/reminder.ts 里，路由只管调用
+  resolveYieldReminders(db, id, year);
+
+  const row = db
+    .prepare('SELECT year, yieldPercent, note FROM accountYields WHERE accountId = ? AND year = ?')
+    .get(id, year) as { year: number; yieldPercent: number; note: string | null };
+  res.json(row);
 });
 
 /** POST /api/accounts */

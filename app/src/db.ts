@@ -47,6 +47,13 @@ export interface Account {
   includeInNetAsset: boolean;
   /** 所属空间 id；undefined 视为默认空间 1 */
   spaceId?: number;
+  /**
+   * 最近一次填写的年收益率（core: GET /api/accounts 随账户一起下发）。
+   *
+   * 兼容说明：老版本 core 或接口失败时该字段整体缺失，
+   * 因此这里是可选的，展示层一律按 null / undefined 容错。
+   */
+  latestYield?: { year: number; yieldPercent: number } | null;
   createdAt: number;
   updatedAt: number;
 }

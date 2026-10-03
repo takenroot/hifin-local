@@ -4,9 +4,11 @@
  * 表定义在 src/db/schema.ts（勿改），这里只封装读写：
  *   - createNotification    落一条待处理通知（轮询器发现需要密码/导入失败时调用）
  *   - listNotifications     列表查询，支持按 status / type 过滤
- *   - resolveNotification   标记已解决（用户提交密码、导入成功）
+ *   - resolveNotification   标记已解决（用户提交密码、导入成功、收益率已补填）
  *   - dismissNotification   用户忽略
+ *   - expireNotification    窗口过期（收益率催填到 2 月 1 日还没填）
  *   - incrementRetry        密码重试计数 +1，返回新的 retry_count（3 次上限判定见设计文档）
+ *   - parseNotificationPayload  解析 v3 新增的 payload 列，脏数据返回 null
  *
  * 约定：所有写操作自动维护 updatedAt；不抛"不存在"以外的异常语义之外的东西，
  * 找不到行时抛 NotFoundError，由路由层转 404。
@@ -24,6 +26,7 @@ export const NOTIFICATION_TYPES: NotificationType[] = [
   'password_error',
   'import_success',
   'import_failed',
+  'yield-reminder',
 ];
 
 export const NOTIFICATION_STATUSES: NotificationStatus[] = [
@@ -31,6 +34,7 @@ export const NOTIFICATION_STATUSES: NotificationStatus[] = [
   'resolved',
   'dismissed',
   'failed',
+  'expired',
 ];
 
 /** 创建通知时的可选字段 */
@@ -41,6 +45,12 @@ export interface CreateNotificationInput {
   /** 关联的邮件 UID（schema 字段名是 snake_case 的 bill_uid） */
   bill_uid?: number;
   platform?: string;
+  /**
+   * 业务载荷（v3 新增的 payload 列，JSON 文本）。
+   * 传对象/数组会自动 JSON.stringify；已序列化的字符串原样落库；
+   * undefined → NULL。只有 yield-reminder 用它装 {accountId, year}。
+   */
+  payload?: unknown;
 }
 
 /** listNotifications 的过滤条件 */
@@ -72,6 +82,36 @@ function assertId(id: number): number {
     throw new Error(`通知 id 必须是正整数，收到：${String(id)}`);
   }
   return id;
+}
+
+/**
+ * 规范 payload：对象/数组 → JSON 文本；字符串原样（允许调用方自己序列化好）；
+ * undefined/null → null（不写这一列的语义）。其余类型（number/boolean）
+ * 也允许，统一转成 JSON 文本，免得因为调用方传了个裸数字就炸掉。
+ */
+function normalizePayload(payload: unknown): string | null {
+  if (payload === undefined || payload === null) return null;
+  if (typeof payload === 'string') return payload;
+  return JSON.stringify(payload);
+}
+
+/**
+ * 解析 payload 文本成对象；NULL / 空串 / 非法 JSON 一律返回 null。
+ * 读侧永远不该因为一条脏数据把整个列表接口带崩。
+ */
+export function parseNotificationPayload(row: {
+  payload?: string | null;
+}): Record<string, unknown> | null {
+  const raw = row?.payload;
+  if (typeof raw !== 'string' || raw.trim() === '') return null;
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : null;
+  } catch {
+    return null;
+  }
 }
 
 function assertStatus(status: NotificationStatus): NotificationStatus {
@@ -120,14 +160,15 @@ export function createNotification(
     throw new Error(`bill_uid 必须是数字，收到：${String(input.bill_uid)}`);
   }
   const platform = input.platform === undefined ? null : String(input.platform);
+  const payload = normalizePayload(input.payload);
 
   const ts = nowMs();
   const result = db
     .prepare(
-      `INSERT INTO notifications (type, title, message, bill_uid, platform, status, retry_count, createdAt, updatedAt)
-       VALUES (?, ?, ?, ?, ?, 'pending', 0, ?, ?)`,
+      `INSERT INTO notifications (type, title, message, bill_uid, platform, status, retry_count, createdAt, updatedAt, payload)
+       VALUES (?, ?, ?, ?, ?, 'pending', 0, ?, ?, ?)`,
     )
-    .run(type, title, message, billUid, platform, ts, ts);
+    .run(type, title, message, billUid, platform, ts, ts, payload);
 
   return getOrThrow(db, Number(result.lastInsertRowid));
 }
@@ -188,6 +229,22 @@ export function dismissNotification(db: Database.Database, id: number): void {
   const target = assertId(id);
   getOrThrow(db, target);
   db.prepare(`UPDATE notifications SET status = 'dismissed', updatedAt = ? WHERE id = ?`).run(
+    nowMs(),
+    target,
+  );
+}
+
+/**
+ * 窗口过期：status → expired，并维护 updatedAt。不存在抛 NotFoundError。
+ *
+ * expired 与 resolved 的区别是**语义**而非展示：resolved 是"用户做完了"
+ * （催填类通知里就是用户补了收益率），expired 是"这件事到此为止、用户没做"。
+ * 两者都不再出现在 pending 列表里，所以对用户来说都是"不再打扰"。
+ */
+export function expireNotification(db: Database.Database, id: number): void {
+  const target = assertId(id);
+  getOrThrow(db, target);
+  db.prepare(`UPDATE notifications SET status = 'expired', updatedAt = ? WHERE id = ?`).run(
     nowMs(),
     target,
   );

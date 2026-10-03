@@ -34,6 +34,7 @@ import {
   renderTypeIcon,
 } from './metadata';
 import { parseAmount } from './format';
+import { validateYieldInput, yieldInputValue, YIELD_MIN, YIELD_MAX } from './yield';
 
 interface AccountFormModalProps {
   open: boolean;
@@ -46,12 +47,19 @@ interface AccountFormModalProps {
 
 type Step = 'pick-type' | 'fill-form';
 
+/** 年收益率按自然年归档：提交时写到"当前年"，编辑时也只回填当前年 */
+function currentYear(): number {
+  return new Date().getFullYear();
+}
+
 interface FormState {
   name: string;
   balance: string;
   remark: string;
   tagIds: number[];
   includeInNetAsset: boolean;
+  /** 年收益率（%）原始输入；空串 = 不填 */
+  yieldPercent: string;
 }
 
 const NAME_LIMIT = 20;
@@ -62,6 +70,7 @@ const DEFAULT_FORM: FormState = {
   remark: '',
   tagIds: [],
   includeInNetAsset: true,
+  yieldPercent: '',
 };
 
 export function AccountFormModal({ open, onClose, account, onSaved }: AccountFormModalProps) {
@@ -74,6 +83,12 @@ export function AccountFormModal({ open, onClose, account, onSaved }: AccountFor
   const [submitted, setSubmitted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  /**
+   * 账户已保存、但年收益率没存上时的提示。
+   * 单独一个 state：这类失败不该占 saveError（账户其实是存成功的），
+   * 而且要把模态留住，用户才看得见"哪个字段没存上"。
+   */
+  const [yieldWarning, setYieldWarning] = useState<string | null>(null);
   const spaceId = useSpaceId();
 
   // 每次打开 / 切换编辑对象时，重置状态
@@ -89,11 +104,15 @@ export function AccountFormModal({ open, onClose, account, onSaved }: AccountFor
             remark: account.remark ?? '',
             tagIds: account.tagIds ?? [],
             includeInNetAsset: account.includeInNetAsset,
+            // 只回填当前年的收益率：latestYield 是"最近一次"的记录，
+            // 去年填的 2.1 不该出现在今年（可能是另一年）的输入框里
+            yieldPercent: yieldInputValue(account.latestYield, currentYear()),
           }
         : DEFAULT_FORM,
     );
     setSubmitted(false);
     setSaveError(null);
+    setYieldWarning(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, account?.id]);
 
@@ -108,12 +127,22 @@ export function AccountFormModal({ open, onClose, account, onSaved }: AccountFor
   const nameInvalid = submitted && trimmedName.length === 0;
   const nameTooLong = form.name.length > NAME_LIMIT;
   const remarkTooLong = form.remark.length > REMARK_LIMIT;
+  const yieldCheck = validateYieldInput(form.yieldPercent);
+  /*
+   * 收益率的红框/红字**立即**反馈，不等提交：
+   * 越界时「确认」是 disabled 的，用户按不下去，
+   * 若沿用账户名"提交后才提示"的写法，这个错误提示永远出不来 ——
+   * 用户只会看到一个点不亮的按钮，不知道哪里错了。
+   * 留空不报错（选填字段），非法数字才提示。
+   */
+  const yieldInvalid = !yieldCheck.ok;
 
   const canConfirm =
     trimmedName.length > 0 &&
     !nameTooLong &&
     !remarkTooLong &&
-    !!pickedType;
+    !!pickedType &&
+    yieldCheck.ok;
 
   const title = isEdit ? '编辑账户' : '新建账户';
 
@@ -141,14 +170,40 @@ export function AccountFormModal({ open, onClose, account, onSaved }: AccountFor
     };
     setSaving(true);
     setSaveError(null);
+    setYieldWarning(null);
     try {
-      if (account?.id != null) {
-        await apiFetch(`/api/accounts/${account.id}`, 'PUT', payload);
+      // ── 1. 先把账户本身存掉（这一步失败 = 整体失败，沿用原有错误提示）
+      let accountId = account?.id ?? null;
+      if (accountId != null) {
+        await apiFetch(`/api/accounts/${accountId}`, 'PUT', payload);
       } else {
-        await apiFetch('/api/accounts', 'POST', payload);
+        // 新建：必须拿到后端返回的 id，才能接着写该账户的年收益率
+        const created = await apiFetch<{ id?: number }>('/api/accounts', 'POST', payload);
+        accountId = created?.id ?? null;
       }
+
+      // ── 2. 再写年收益率（可选字段：留空就完全不调这个接口）
+      //
+      // 这里刻意不和外层 catch 共用：账户已经存成功了，收益率失败只是
+      // "附加信息没存上"，不能反过来把整次保存报成失败、更不能让用户白填一遍账户。
+      const yieldValue = validateYieldInput(form.yieldPercent).value;
+      let yieldFailed = false;
+      if (accountId != null && yieldValue != null) {
+        try {
+          await apiFetch(`/api/accounts/${accountId}/yields/${currentYear()}`, 'PUT', {
+            yieldPercent: yieldValue,
+          });
+        } catch (e) {
+          yieldFailed = true;
+          setYieldWarning(
+            `账户已保存，但年收益率没存上：${e instanceof Error ? e.message : String(e)}`,
+          );
+        }
+      }
+
       onSaved?.();
-      handleClose();
+      // 收益率没存上时把模态留着，用户才能看见提示并手动关闭
+      if (!yieldFailed) handleClose();
     } catch (e) {
       setSaveError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -208,9 +263,12 @@ export function AccountFormModal({ open, onClose, account, onSaved }: AccountFor
           tags={tagsByName}
           submitted={submitted}
           saveError={saveError}
+          yieldWarning={yieldWarning}
           nameInvalid={nameInvalid}
           nameTooLong={nameTooLong}
           remarkTooLong={remarkTooLong}
+          yieldInvalid={yieldInvalid}
+          yieldError={yieldInvalid ? yieldCheck.error : null}
         />
       )}
     </Modal>
@@ -333,6 +391,12 @@ interface FormStepProps {
   nameInvalid: boolean;
   nameTooLong: boolean;
   remarkTooLong: boolean;
+  /** 年收益率输入非法（且已提交过一次，用于抑制首次打开就飘红） */
+  yieldInvalid: boolean;
+  /** 年收益率非法原因 */
+  yieldError: string | null;
+  /** 账户已保存、年收益率没存上的提示 */
+  yieldWarning?: string | null;
   /** 保存失败时的服务端错误 */
   saveError?: string | null;
 }
@@ -346,6 +410,9 @@ function FormStep({
   nameInvalid,
   nameTooLong,
   remarkTooLong,
+  yieldInvalid,
+  yieldError,
+  yieldWarning,
   saveError,
 }: FormStepProps) {
   const meta = ACCOUNT_TYPE_META[type];
@@ -400,6 +467,24 @@ function FormStep({
         />
       </Field>
 
+      {/* 年收益率 */}
+      <Field label="年收益率（%）" hint={`选填，${YIELD_MIN}~${YIELD_MAX}，亏损可填负值`}>
+        <Input
+          placeholder="如 2.1，留空表示不统计"
+          inputMode="decimal"
+          value={form.yieldPercent}
+          invalid={yieldInvalid}
+          suffix={<span>%</span>}
+          data-testid="yield-percent-input"
+          onChange={(e) => setForm({ ...form, yieldPercent: e.target.value })}
+        />
+        {yieldInvalid && yieldError && (
+          <div className="text-xs text-expense" data-testid="yield-error">
+            {yieldError}
+          </div>
+        )}
+      </Field>
+
       {/* 备注 */}
       <Field label="备注">
         <Textarea
@@ -440,6 +525,17 @@ function FormStep({
           {nameInvalid && '账户名称不能为空；'}
           {nameTooLong && `账户名称不能超过 ${NAME_LIMIT} 字；`}
           {remarkTooLong && `备注不能超过 ${REMARK_LIMIT} 字；`}
+        </div>
+      )}
+
+      {/*
+       * 账户已存成功、只有收益率失败：这不是错误，用 brand 蓝提示即可，
+       * 让用户分清"整个保存失败"（红/绿 text-expense）和"附加信息没存上"。
+       * tailwind.config.js 不在本次授权范围内，不新增语义 token。
+       */}
+      {yieldWarning && (
+        <div className="text-xs text-brand" data-testid="yield-warning">
+          {yieldWarning}
         </div>
       )}
 

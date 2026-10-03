@@ -20,8 +20,12 @@ import {
   getNotification,
   resolveNotification,
   dismissNotification,
+  expireNotification,
   incrementRetry,
+  parseNotificationPayload,
   NotFoundError,
+  NOTIFICATION_TYPES,
+  NOTIFICATION_STATUSES,
 } from '../src/notifications/store.js';
 import { extractWechatDownloadUrl } from '../src/mail/url-extractor.js';
 import {
@@ -239,6 +243,58 @@ describe('notifications/store', () => {
     } finally {
       nowSpy.mockRestore();
     }
+  });
+
+  // ── v3：yield-reminder / expired / payload ──
+
+  it('createNotification 接受 yield-reminder 与 payload 对象', () => {
+    const row = createNotification(memDb, {
+      type: 'yield-reminder',
+      title: 'store: 记一下「零钱通」2025 年的收益率',
+      payload: { accountId: 42, year: 2025 },
+    });
+    expect(row.id).toBeGreaterThan(0);
+    expect(row.type).toBe('yield-reminder');
+    expect(row.status).toBe('pending');
+    expect(row.payload).toBe('{"accountId":42,"year":2025}');
+    expect(parseNotificationPayload(row)).toEqual({ accountId: 42, year: 2025 });
+  });
+
+  it('payload 缺省 / null 落成 NULL，parse 返回 null', () => {
+    const a = createNotification(memDb, { type: 'need_password', title: 'store: 无 payload' });
+    expect(a.payload).toBeNull();
+    expect(parseNotificationPayload(a)).toBeNull();
+    const b = createNotification(memDb, { type: 'need_password', title: 'store: null payload', payload: null });
+    expect(b.payload).toBeNull();
+  });
+
+  it('parseNotificationPayload 对脏数据一律返回 null（不抛）', () => {
+    for (const bad of ['not-json', '', '   ', '[1,2]', '"字符串"', 'null', '42']) {
+      expect(parseNotificationPayload({ payload: bad }), `payload=${bad}`).toBeNull();
+    }
+    expect(parseNotificationPayload({ payload: undefined })).toBeNull();
+    expect(parseNotificationPayload({})).toBeNull();
+  });
+
+  it('expireNotification 把 pending 收成 expired，找不到抛 NotFoundError', () => {
+    const r = createNotification(memDb, { type: 'yield-reminder', title: 'store: 待过期', payload: { accountId: 1, year: 2025 } });
+    const id = r.id as number;
+    expireNotification(memDb, id);
+    expect(getNotification(memDb, id)?.status).toBe('expired');
+    // 幂等：再过期一次不报错
+    expireNotification(memDb, id);
+    expect(getNotification(memDb, id)?.status).toBe('expired');
+    expect(() => expireNotification(memDb, 999999)).toThrow(NotFoundError);
+  });
+
+  it('NOTIFICATION_TYPES / STATUSES 含新增取值，旧的四个类型仍然合法', () => {
+    expect(NOTIFICATION_TYPES).toContain('yield-reminder');
+    expect(NOTIFICATION_STATUSES).toContain('expired');
+    for (const t of ['need_password', 'password_error', 'import_success', 'import_failed'] as const) {
+      expect(NOTIFICATION_TYPES).toContain(t);
+      expect(() => createNotification(memDb, { type: t, title: `store: ${t}` })).not.toThrow();
+    }
+    expect(() => createNotification(memDb, { type: 'yield-reminder', title: 'store: 终态写入' })).not.toThrow();
   });
 });
 
