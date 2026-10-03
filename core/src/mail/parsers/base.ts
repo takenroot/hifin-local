@@ -10,11 +10,26 @@ export interface ParsedTx {
   date: number;
   /** 金额（始终为正数，类型决定收支方向） */
   amount: number;
-  type: 'expense' | 'income';
+  /**
+   * 收支方向 / 划转。
+   *
+   * 'transfer' 表示"钱从一个账户挪到另一个账户"，不改变净资产：
+   * 解析层只给**账户名**（fromAccountName/toAccountName），落库时才按名
+   * 解析成 accountId/toAccountId——解析层不该知道库里的 id。
+   */
+  type: 'expense' | 'income' | 'transfer';
   /** 商户/交易对方 */
   merchant: string;
   /** 备注（可选） */
   remark?: string;
+  /**
+   * 划转的转出账户**名**（仅 type='transfer' 时有值）。
+   * 解析层不落 id：账单里只有"花呗""工商银行储蓄卡(1230)"这种渠道原文，
+   * 账户 id 要由 importTransactions 在事务内按名查库解析。
+   */
+  fromAccountName?: string;
+  /** 划转的转入账户名（仅 type='transfer' 时有值） */
+  toAccountName?: string;
   /**
    * 平台账单自带的粗粒度分类原文：支付宝「交易分类」/ 微信「交易类型」。
    * 邮件账单解析器（cmb/alipay/wechat mail）拿不到这列，留空即可。

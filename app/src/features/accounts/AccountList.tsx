@@ -23,7 +23,7 @@ import { useSpaceId } from '@/db';
 import type { Account, Tag } from '@/db';
 import { useApi } from '@/hooks/useApi';
 import { toAccounts, type RestAccount } from './rest';
-import { formatMoney, balanceToneClass } from './format';
+import { formatMoney, balanceToneClass, accountBalanceDisplay, isDebtType } from './format';
 import {
   ACCOUNT_TONE_BG,
   ACCOUNT_TYPE_META,
@@ -179,15 +179,21 @@ function AccountSection({
   tags: Tag[];
 }) {
   if (accounts.length === 0) return null;
+  const isDebtSection = accounts.every((a) => isDebtType(a.type));
   return (
     <section>
       <div className="flex items-end justify-between mb-4">
         <h2 className="section-title">{title}</h2>
         <div className="flex items-baseline gap-2">
           <span className="text-xs text-text-muted dark:text-text-muted-dark">{totalLabel}</span>
-          {/* 合计按正负着色：负数（净资产为负）显示绿色，正数显示红色 */}
-          <span className={clsx('text-lg font-medium tabular-nums', balanceToneClass(total))}>
-            {formatMoney(total)}
+          {/* 合计按正负着色：资产合计为负（净资产亏了）显绿色；负债合计恒显红色 */}
+          <span
+            className={clsx(
+              'text-lg font-medium tabular-nums',
+              isDebtSection ? 'text-income' : balanceToneClass(total),
+            )}
+          >
+            {formatMoney(isDebtSection ? Math.abs(total) : total)}
           </span>
         </div>
       </div>
@@ -203,7 +209,9 @@ function AccountSection({
 function AccountCard({ account, tags }: { account: Account; tags: Tag[] }) {
   const navigate = useNavigate();
   const meta = ACCOUNT_TYPE_META[account.type];
-  const isDebt = account.type === 'credit' || account.type === 'debt';
+  // 负债账户恒显示红色 + 绝对值（不按正负着色）：分组已经说明了"这是要还的钱"，
+  // 余额为正的花呗若按"红=有钱"着色会和资产账户混在一起，扫一眼分不出欠没欠。
+  const shown = accountBalanceDisplay(account.balance, account.type);
   // 标签随列表一次性拉取（/api/tags），此处按 id 本地关联，避免每张卡片单独请求。
   const accountTags = useMemo(() => {
     const ids = account.tagIds ?? [];
@@ -239,11 +247,20 @@ function AccountCard({ account, tags }: { account: Account; tags: Tag[] }) {
         />
       </div>
 
-      <div className="mt-4">
-        {/* 余额按正负着色：负债类账户仍取绝对值展示，负余额显示绿色 */}
-        <div className={clsx('text-xl font-medium tabular-nums', balanceToneClass(account.balance))}>
-          {formatMoney(isDebt ? Math.abs(account.balance) : account.balance)}
-        </div>
+      <div className="mt-4 flex items-center justify-between gap-2">
+        <div className={clsx('text-xl font-medium tabular-nums', shown.toneClass)}>{shown.text}</div>
+        {/*
+         * 负债角标：分组标题已经写了"负债"，但用户在网格里逐张扫卡片时
+         * 未必会先看标题。花呗这类账户尤其需要一眼认出它是欠的。
+         */}
+        {shown.isDebt && (
+          <span
+            className="flex-none px-2 py-0.5 rounded-md text-xs text-income bg-income/10"
+            data-testid="debt-badge"
+          >
+            负债
+          </span>
+        )}
       </div>
 
       {accountTags.length > 0 && (

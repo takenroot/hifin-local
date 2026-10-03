@@ -14,6 +14,46 @@ export function balanceToneClass(balance: number): string {
   return 'text-text-muted dark:text-text-muted-dark';
 }
 
+/** 负债类账户（花呗 / 白条 / 房贷…）在账户类型里的取值 */
+export function isDebtType(type: string): boolean {
+  return type === 'credit' || type === 'debt';
+}
+
+/**
+ * 负债账户的余额配色：**恒为红**，不看正负。
+ *
+ * 为什么不给它套用 balanceToneClass
+ * -----------------------------------------------------------------
+ * 全局约定是"红=有钱、绿=欠钱"，这在资产账户上是对的：正就是有钱。
+ * 但负债账户上就反直觉了——花呗还清之后余额是正的（可用额度），按约定会
+ * 显示成红色"有钱"，而它明明躺在"负债"分组里；欠钱时反而是绿色。
+ * 用户扫一眼列表根本判断不出哪个是欠的。
+ *
+ * 所以负债账户统一用红色 + 绝对值展示，语义只由"它在负债分组里"决定：
+ * 红色 = 这是笔要还的钱。资产账户仍按正负着色，行为不变。
+ */
+export function debtBalanceToneClass(): string {
+  return 'text-income';
+}
+
+/**
+ * 账户卡片上余额的展示口径：数字 + 配色类。
+ *
+ * 负债账户取绝对值（欠 300 显示 300，不显示 -300）并强制红色；
+ * 资产账户原样显示并按正负着色。
+ */
+export function accountBalanceDisplay(
+  balance: number,
+  type: string,
+): { text: string; toneClass: string; isDebt: boolean } {
+  const debt = isDebtType(type);
+  return {
+    text: formatMoney(debt ? Math.abs(balance) : balance),
+    toneClass: debt ? debtBalanceToneClass() : balanceToneClass(balance),
+    isDebt: debt,
+  };
+}
+
 /** 金额格式化：保留 2 位小数 + 千分位；负数前加 "-" */
 export function formatMoney(value: number, withSymbol = true): string {
   const sign = value < 0 ? '-' : '';

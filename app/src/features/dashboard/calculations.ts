@@ -110,6 +110,58 @@ export function distributionByAccountType(accounts: Account[]): Array<{ name: st
   return Array.from(buckets.entries()).map(([name, value]) => ({ name, value }));
 }
 
+/** 资产分布的分组口径 */
+export type DistributionMode = 'account' | 'type';
+
+/**
+ * 资产分布 + "没画进去的部分"的对账信息。
+ *
+ * 为什么要单独返回后两项
+ * -----------------------------------------------------------------
+ * 饼图画不了负数，所以 distributionBy* 只收正余额的资产账户。多账户之前
+ * 这没什么问题（就一两个账户，余额基本为正）；分流成 7 个账户之后就不行了：
+ * 花呗还款是从银行卡里扣钱走的，银行卡很可能被扣成负数，于是它会**静默
+ * 消失**在资产分布里——用户看到饼图比净资产大，却找不到少掉的钱去哪了。
+ *
+ * 所以这里把"因为是负数 / 是负债而没进饼图"的金额一并算出来交给 UI 显式
+ * 说明。宁可多一行小字，也不要让用户对不上账。
+ */
+export interface DistributionBreakdown {
+  /** 画进饼图的份额（恒为正数） */
+  items: Array<{ name: string; value: number }>;
+  /** 没进饼图的负余额资产账户合计（负数） */
+  excludedNegative: number;
+  /** 没进饼图的负债账户合计（负数，取绝对值展示由 UI 决定） */
+  excludedDebt: number;
+}
+
+/** 资产/负债的判定：与账户列表页的分组口径保持一致 */
+export function isDebtAccount(a: Account): boolean {
+  return a.type === 'credit' || a.type === 'debt';
+}
+
+/**
+ * 算出资产分布，并同时给出"没画进去的钱"。
+ *
+ * 与 distributionByAccount/ByAccountType 的差异只有一处：额外返回被排除的
+ * 负值与负债金额。饼图数据本身逐项一致，所以换用本函数不会改变图形。
+ */
+export function buildDistribution(accounts: Account[], mode: DistributionMode): DistributionBreakdown {
+  const items = mode === 'account' ? distributionByAccount(accounts) : distributionByAccountType(accounts);
+  let excludedNegative = 0;
+  let excludedDebt = 0;
+  for (const a of accounts) {
+    if (!a.includeInNetAsset) continue;
+    if (isDebtAccount(a)) {
+      // 负债一律不进"资产分布"，但金额要报出来
+      excludedDebt += a.balance;
+      continue;
+    }
+    if (a.balance < 0) excludedNegative += a.balance;
+  }
+  return { items, excludedNegative, excludedDebt };
+}
+
 /** 月内日历数据：按日聚合收入/支出 */
 export interface CalendarDay {
   date: dayjs.Dayjs;

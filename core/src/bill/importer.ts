@@ -20,8 +20,14 @@ import { createRequire } from 'node:module';
 import { basename, dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { unzipBill, findBillCsv, cleanupBillDir, BillCsvNotFoundError } from './unzip.js';
-import { importTransactions } from '../mail/importer.js';
+import { importTransactions, type AccountMap } from '../mail/importer.js';
 import type { ParsedTx } from '../mail/parsers/base.js';
+import {
+  isSelfTransfer,
+  isEffectiveTransferStatus,
+  parseAlipayRepayTransfer,
+  parseWechatTransfer,
+} from './account-map.js';
 
 /** 当前 MVP 只支持这两个平台的加密账单 ZIP */
 export type BillPlatform = 'alipay' | 'wechat';
@@ -36,6 +42,21 @@ export interface ImportBillResult {
   platform: string;
   /** 本次解压出的文件绝对路径，便于 CLI 打印给用户核对 */
   files: string[];
+  /**
+   * 因为"账户不存在"而被降级到兜底账户的划转（账户名 → 笔数）。
+   *
+   * 空对象表示一切正常。调用方（CLI/进度提示）应该把它讲给用户听：
+   * 划转账的**钱数是对的**（记到了兜底账户上），但归属可能不是用户以为的那个，
+   * 只在静默落库不吭声的话，用户会以为导入没问题。
+   */
+  unmappedTransfers?: Record<string, number>;
+  /**
+   * 因"归并后自己转自己"被跳过的行数（实测微信"转入零钱通-来自零钱"13 行）。
+   *
+   * 它们不是解析失败，是**本来就不该记**：钱在同一个账户里转了一圈，
+   * 记下来只会给流水表灌一堆零余额的噪声转账。
+   */
+  selfTransfers?: number;
 }
 
 /** app 侧 parseCsvText 的返回结构（只声明用得到的字段） */
@@ -110,33 +131,42 @@ export function normalizeSource(platform: string | null | undefined): string {
 
 /**
  * 把 app 解析结果收敛成 core 的 ParsedTx[]。
- * app 的 type 还包含 transfer / excluded，而 core 的 ParsedTx 只认收支两类；
- * 不计收支的行按"跳过"计，不进库。
+ *
+ * 除了收支行，这里还负责把**划转行救回来**：
+ * 微信「转入零钱通/零钱通转出」和支付宝「花呗还款成功」在账单里的收/支列
+ * 都写着 `/`，app 的 parseType() 因此给出 'excluded'，在本次改造前
+ * 一律按"不计收支"丢弃（实测微信 27 行、支付宝 10 行还款被丢）。
+ * 它们是账户之间的钱搬家，不记的话两边的余额都会错，所以这里按
+ * 账户名产出 type='transfer' 的行，方向交给 importTransactions 落库。
  *
  * platform + billCategory 一起带下去：分类决策要靠它们查 category-map 的映射表，
  * 单独传 billCategory 而不传 platform 的话，importTransactions 无从判断这是
  * 微信的"交易类型"还是某个银行流水的"交易类型"（后者语义完全不同，不能乱套）。
+ *
+ * resolveTransfers 决定要不要把不计收支行救成划转：**只在调用方给了
+ * accountMap 时才为 true**。没有分流表就没有账户 id 可落，一条"转出却
+ * 不知道转入到哪儿"的流水只会让余额凭空少一块——那正是改造前这些行被丢弃
+ * 的原因。保持它为 false 才算真正的向后兼容：没启用多账户的用户，
+ * 同一份账单导入后行数与余额与改造前逐项一致。
  */
 function toCoreTxs(
   items: AppParseResult['items'],
   platform: string,
-): { txs: ParsedTx[]; dropped: number } {
+  resolveTransfers: boolean,
+): { txs: ParsedTx[]; dropped: number; selfTransfers: number } {
   const txs: ParsedTx[] = [];
   let dropped = 0;
+  let selfTransfers = 0;
   for (const it of items) {
     // 解析失败的行（rawLine 有值）与不计收支的行都不入库
     if (it.rawLine || !it.date || !it.amount) {
       dropped++;
       continue;
     }
-    if (it.type !== 'expense' && it.type !== 'income') {
-      dropped++;
-      continue;
-    }
-    txs.push({
+
+    const base = {
       date: it.date,
       amount: it.amount,
-      type: it.type,
       merchant: it.merchant || '账单导入',
       remark: it.remark,
       billCategory: it.billCategory,
@@ -147,9 +177,62 @@ function toCoreTxs(
       externalId: it.externalId,
       paymentMethod: it.paymentMethod,
       status: it.status,
-    });
+    };
+
+    if (it.type !== 'expense' && it.type !== 'income') {
+      // 不计收支的行还有一种可能是账户间划转，试着救回来
+      const legs = resolveTransfers ? detectTransfer(it, platform) : null;
+      if (legs) {
+        /**
+         * 归并后自己转自己（实测"转入零钱通-来自零钱"13 行）必须跳过。
+         * 记下来会给同一个账户加一笔再减一笔，余额对得上、流水表里却凭空
+         * 多出一堆无意义的转账，资产分布也会被它搅乱。
+         */
+        if (isSelfTransfer(legs)) {
+          selfTransfers++;
+          dropped++;
+          continue;
+        }
+        txs.push({
+          ...base,
+          type: 'transfer',
+          merchant: it.merchant || '账户划转',
+          fromAccountName: legs.fromAccountName,
+          toAccountName: legs.toAccountName,
+        });
+        continue;
+      }
+      dropped++;
+      continue;
+    }
+
+    txs.push({ ...base, type: it.type });
   }
-  return { txs, dropped };
+  return { txs, dropped, selfTransfers };
+}
+
+/**
+ * 这一行是不是账户间划转；是则给出两端账户名，不是返回 null。
+ *
+ * 认得两种：
+ *   - 微信：交易类型形如「转入零钱通-来自X」/「零钱通转出-到X」
+ *   - 支付宝：交易状态=还款成功且对方/分类指向花呗/信用
+ *
+ * 状态闸门在各自的条件里：微信"转出失败"、支付宝"还款失败"都不生成，
+ * 与账单里"不计收支"那一列的语义一致——没动过钱的不该联动余额。
+ */
+function detectTransfer(
+  it: AppParseResult['items'][number],
+  platform: string,
+): { fromAccountName: string; toAccountName: string } | null {
+  if (platform === 'wechat') {
+    if (!isEffectiveTransferStatus(it.status)) return null;
+    return parseWechatTransfer(it.billCategory);
+  }
+  if (platform === 'alipay') {
+    return parseAlipayRepayTransfer(it.status, it.merchant, it.billCategory, it.paymentMethod);
+  }
+  return null;
 }
 
 /**
@@ -163,6 +246,9 @@ function toCoreTxs(
  * @param spaceId   空间 ID，默认 1
  * @param onProgress 入库完成后回调一次已写入行数（poller 用它把"正在解压…"换成"已导入 N 笔"）。
  *                   可选、纯旁路：抛错会被吞掉，绝不影响导入结果。
+ * @param accountMap 账户名 → id 的分流表（可选）。
+ *                   传了：普通收支行按 paymentMethod 落到对应账户、划转按两端账户名落；
+ *                   不传：行为与改造前完全一致（所有行都进 accountId），保证向后兼容。
  */
 export async function importBillZip(
   db: Database.Database,
@@ -172,6 +258,7 @@ export async function importBillZip(
   accountId: number,
   spaceId?: number,
   onProgress?: (imported: number) => void,
+  accountMap?: AccountMap,
 ): Promise<ImportBillResult> {
   if (!Number.isFinite(accountId) || accountId <= 0) {
     throw new Error('accountId 必须是正整数');
@@ -221,11 +308,11 @@ export async function importBillZip(
       throw new BillCsvNotFoundError(`账单表格无法解析（${billFileName}）：${parsed.error}`);
     }
 
-    const { txs, dropped } = toCoreTxs(parsed.items, platform);
+    const { txs, dropped, selfTransfers } = toCoreTxs(parsed.items, platform, !!accountMap);
 
     // 外层事务：解析 → 落库整体原子（内层 importTransactions 走 SAVEPOINT）
     const res = db.transaction(() =>
-      importTransactions(db, txs, accountId, { spaceId: spaceId ?? 1 }),
+      importTransactions(db, txs, accountId, { spaceId: spaceId ?? 1, accountMap }),
     )();
 
     // 进度回调是纯旁路：用户的 UI 回调挂了不该让整笔导入算失败
@@ -237,9 +324,15 @@ export async function importBillZip(
 
     return {
       imported: res.imported,
+      // 自转（"转入零钱通-来自零钱"）算跳过：钱确实没动，记一笔就是噪声
       skipped: res.skipped + dropped,
       platform,
       files,
+      // 划转有终点账户时才有降级报告；没起 accountMap 则根本不分流，无从谈起
+      ...(accountMap && res.unmappedTransfers && Object.keys(res.unmappedTransfers).length > 0
+        ? { unmappedTransfers: res.unmappedTransfers }
+        : {}),
+      ...(selfTransfers > 0 ? { selfTransfers } : {}),
     };
   } finally {
     cleanupBillDir(tempRootOf(files));

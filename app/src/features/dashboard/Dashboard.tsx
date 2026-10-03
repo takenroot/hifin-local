@@ -77,8 +77,7 @@ import {
   sumIncome,
   sumExpense,
   netAssetTrend,
-  distributionByAccount,
-  distributionByAccountType,
+  buildDistribution,
   buildCalendar,
   transactionsOnDay,
 } from './calculations';
@@ -317,10 +316,11 @@ export default function Dashboard() {
 
   // 资产分布
   const [distTab, setDistTab] = useState<'account' | 'type'>('account');
-  const distData = useMemo(
-    () => (distTab === 'account' ? distributionByAccount(accounts) : distributionByAccountType(accounts)),
-    [distTab, accounts],
-  );
+  // 用 buildDistribution 而不是裸的 distributionBy*：多账户之后会出现负余额的
+  // 资产账户（花呗还款把银行卡扣穿了），它们画不进饼图，必须把金额显式报出来，
+  // 否则用户会发现饼图加起来和净资产对不上却找不到差额在哪。
+  const dist = useMemo(() => buildDistribution(accounts, distTab), [distTab, accounts]);
+  const distData = dist.items;
   const hasDistribution = distData.length > 0;
 
   /* 日历：月份独立 state
@@ -637,6 +637,26 @@ export default function Dashboard() {
                           </div>
                         );
                       })}
+
+                      {/*
+                       * 对账说明：饼图只画正余额的资产账户，负余额账户与负债账户
+                       * 画不进去。多账户之后（花呗还款把银行卡扣成负数）这不再是个
+                       * 理论问题，不说出来用户就会觉得"饼图和净资产对不上"。
+                       */}
+                      {(dist.excludedNegative < 0 || dist.excludedDebt !== 0) && (
+                        <div className="pt-2 mt-2 border-t border-border dark:border-border-dark text-xs text-text-muted dark:text-text-muted-dark space-y-1">
+                          {dist.excludedNegative < 0 && (
+                            <div>
+                              另有 {formatMoney(dist.excludedNegative)} 的账户余额为负，未计入上方占比
+                            </div>
+                          )}
+                          {dist.excludedDebt !== 0 && (
+                            <div>
+                              负债账户合计 {formatMoney(Math.abs(dist.excludedDebt))}，不计入资产分布
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ) : (

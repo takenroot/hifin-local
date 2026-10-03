@@ -13,6 +13,16 @@
 import type Database from 'better-sqlite3';
 import type { ParsedTx } from './parsers/base.js';
 import { resolveBillCategory, type TxDirection } from '../bill/category-map.js';
+import { resolveAccountName, ACCOUNT_NAMES, type BillPlatform } from '../bill/account-map.js';
+
+/**
+ * 账户名 → 账户 id 的分流表。
+ *
+ * 由调用方（REST 层 / CLI）从 accounts 表读出来传进来，导入链路**不自己查
+ * accounts 表**：一是为了让"用户建了哪些账户"这件事只有一处决定，二是
+ * 让纯逻辑（分流、判重、分类）能在没有库的单测里被完整测到。
+ */
+export type AccountMap = Readonly<Record<string, number>>;
 
 export interface ImportOptions {
   /** 默认 1 */
@@ -31,11 +41,36 @@ export interface ImportOptions {
    * 没有则退回 accountId+date+amount+merchant 四字段启发式。
    */
   dedupe?: boolean;
+  /**
+   * 账户名 → id 的分流表（可选，**不传即完全向后兼容**）。
+   *
+   * 传了之后两件事会变：
+   *   1. 普通收支行按 paymentMethod 解析出账户名再查 id，落到对应账户，
+   *      查不到（或 paymentMethod 缺失）就退回调用方给的兜底 accountId；
+   *   2. type='transfer' 的行按 fromAccountName/toAccountName 落
+   *      accountId/toAccountId，并联动两边余额。
+   *
+   * 不传时 transfer 行按"没有对端账户"处理：只落转账出、不联动，
+   * 保证改造前后同一份账单导入出的行数与余额完全一致。
+   */
+  accountMap?: AccountMap;
+  /**
+   * 分流时的兜底账户 id（默认取 accountId 入参）。
+   * 账单渠道认不出、或分流表里没有对应账户名时用它，绝不因为"找不到账户"
+   * 就丢行或抛异常——丢行是静默的数据丢失，抛异常是整批导入失败，
+   * 两者都比"记到兜底账户、并在结果里报告"更糟。
+   */
+  fallbackAccountId?: number;
 }
 
 export interface ImportResult {
   imported: number;
   skipped: number;
+  /**
+   * 划转因账户名查不到而被降级到兜底账户的统计（账户名 → 笔数）。
+   * 钱记对了、归属可能错了，所以要让调用方能报给用户。非空才出现。
+   */
+  unmappedTransfers?: Record<string, number>;
 }
 
 interface RuleRow {
@@ -79,6 +114,16 @@ export function importTransactions(
   const applyRules = opts.applyRules ?? true;
   const applyBillCategories = opts.applyBillCategories ?? true;
   const dedupe = opts.dedupe ?? true;
+  const accountMap = opts.accountMap;
+  const fallbackAccountId = opts.fallbackAccountId ?? accountId;
+
+  /**
+   * 分流开关：只有调用方给了分流表才按渠道落账户。
+   *
+   * 没给时**每一行都落 accountId**（改造前的行为），划转也只落转账出侧、
+   * 不联动对端。这样"同一个库、没启用多账户的用户"导入结果与改造前逐字节一致。
+   */
+  const useAccountMap = !!accountMap;
 
   const account = db.prepare('SELECT id, balance FROM accounts WHERE id = ?').get(accountId) as
     | { id: number; balance: number }
@@ -121,11 +166,15 @@ export function importTransactions(
     }
   }
 
+  /**
+   * 插入语句。带上 toAccountId —— 划转行的"钱到哪儿去了"就靠这一列，
+   * 少了它转账只剩一条"少了钱"的流水，对端余额永远不会涨。
+   */
   const insert = db.prepare(`
     INSERT INTO transactions
-      (type, name, amount, date, accountId, categoryId, remark, includeInAsset, spaceId, createdAt,
+      (type, name, amount, date, accountId, toAccountId, categoryId, remark, includeInAsset, spaceId, createdAt,
        source, externalId, paymentMethod, status)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   const updateBalance = db.prepare(
@@ -182,9 +231,13 @@ export function importTransactions(
    *   1. resolveBillCategory 内部已按收支方向做过类型闸门；
    *   2. 这里再按 categories.type 复查一次——映射表是按名字写的，
    *      而库里的分类名/类型可以被用户改过，不能只信代码里的常量。
+   *
+   * 划转不分类：账户之间搬钱没有"消费场景"，给它挂一个支出分类会让
+   * 统计凭空多出一笔支出（收支方向闸门挡不住，因为这里的 type 可能是 transfer）。
    */
   function findBillCategoryId(it: ParsedTx): number | null {
     if (!applyBillCategories) return null;
+    if (it.type !== 'expense' && it.type !== 'income') return null;
     if (!it.platform || !it.billCategory) return null;
     const name = resolveBillCategory(it.platform, it.billCategory, it.type);
     if (!name) return null;
@@ -192,6 +245,30 @@ export function importTransactions(
     if (!row) return null;
     if (row.type !== it.type) return null;
     return row.id;
+  }
+
+  /**
+   * 账户名 → id。分流表里没有、或 id 不可用时返回 null，由调用点决定降级。
+   *
+   * 刻意不"查不到就返回兜底"：划转的两端各有一次查找，转出侧和转入侧可能
+   * 一个查得到一个查不到，混在一次调用里就分不清该报告谁、降级谁。
+   */
+  function lookupAccount(name: string | null | undefined): number | null {
+    if (!name || !accountMap) return null;
+    const id = accountMap[name];
+    return typeof id === 'number' && Number.isFinite(id) && id > 0 ? id : null;
+  }
+
+  /**
+   * 划转的"账户不存在"降级统计。
+   *
+   * 钱照记（记到兜底账户上，总额是对的），但归属可能不是用户以为的那个账户，
+   * 所以把账户名与笔数攒起来交给调用方报给用户，而不是静默落库。
+   */
+  const unmapped: Record<string, number> = {};
+
+  function noteUnmapped(name: string): void {
+    unmapped[name] = (unmapped[name] ?? 0) + 1;
   }
 
   const tx = db.transaction((items: ParsedTx[]) => {
@@ -208,6 +285,49 @@ export function importTransactions(
       const status = blankToNull(it.status);
       const remark = blankToNull(it.remark);
 
+      /**
+       * 这一行最终落哪个（转出侧）账户。
+       *
+       * 分流开启时：划转看 fromAccountName，收支看 paymentMethod 解析出的账户名。
+       * 任何一个环节查不到账户 id 就退回兜底账户——**绝不因为查不到就不记**。
+       */
+      let accountIdForRow = accountId;
+      let toAccountIdForRow: number | null = null;
+      /**
+       * 自转：钱在同一个账户里转了一圈，净额必须是 0。
+       *
+       * 判据取**名字**而不是 id：归并后"零钱"与"零钱通"是同一个账户名，
+       * 名字相同就已经是自转了，不该等它们各自解析成 id 再比。
+       */
+      let selfTransfer = false;
+
+      if (useAccountMap) {
+        if (it.type === 'transfer') {
+          selfTransfer =
+            !!it.fromAccountName && !!it.toAccountName && it.fromAccountName === it.toAccountName;
+
+          const fromId = lookupAccount(it.fromAccountName);
+          accountIdForRow = fromId ?? fallbackAccountId;
+          if (!fromId) noteUnmapped(it.fromAccountName ?? ACCOUNT_NAMES.fallback);
+
+          const toId = lookupAccount(it.toAccountName);
+          if (toId !== null && toId !== accountIdForRow && !selfTransfer) {
+            toAccountIdForRow = toId;
+          } else if (toId === null) {
+            /**
+             * 对端查不到时**不写 toAccountId**：写个等于转出侧的 id 会让这条划转
+             * 变成"自己转自己"，余额加了又减，看着对其实是在掩盖降级。
+             */
+            noteUnmapped(it.toAccountName ?? ACCOUNT_NAMES.fallback);
+          }
+        } else {
+          const name = resolveAccountName(paymentMethod, it.platform as BillPlatform | undefined);
+          const id = lookupAccount(name);
+          accountIdForRow = id ?? fallbackAccountId;
+          if (!id) noteUnmapped(name);
+        }
+      }
+
       if (dedupe) {
         /**
          * 两条去重路径二选一，取决于有没有平台单号：
@@ -218,10 +338,13 @@ export function importTransactions(
          *
          * 两条路径不叠加：叠加会让"同一天同金额同商户的两笔真实消费"被误杀——
          * 那恰好是启发式最经典的误判，也正是引入单号要解决的问题。
+         *
+         * 启发式用分流后的 accountId：同一笔消费落在哪个账户是分流决定的，
+         * 拿分流前的 id 去比会把"其实同一个账户"的重复行漏判掉。
          */
         const dup = externalId
           ? (dupByExternalId.get(source, externalId) as unknown)
-          : (dupCheck.get(accountId, it.amount, it.date, it.merchant) as unknown);
+          : (dupCheck.get(accountIdForRow, it.amount, it.date, it.merchant) as unknown);
         if (dup) {
           skipped++;
           continue;
@@ -229,14 +352,17 @@ export function importTransactions(
       }
       // 分类优先级：规则引擎 > 账单自带分类映射 > null（留空）
       // 方向由 it.type 带进规则引擎：闸门要求规则的 categories.type 与流水方向一致
-      const categoryId = findCategory(it.merchant, it.type, remark) ?? findBillCategoryId(it);
+      // 划转不算收支，不分类：给一笔转账挂消费分类会让统计凭空多出一笔支出
+      const categoryId =
+        it.type === 'transfer' ? null : findCategory(it.merchant, it.type, remark) ?? findBillCategoryId(it);
       try {
         insert.run(
           it.type,
           it.merchant,
           it.amount,
           it.date,
-          accountId,
+          accountIdForRow,
+          toAccountIdForRow,
           categoryId,
           remark,
           1,
@@ -261,16 +387,37 @@ export function importTransactions(
         }
         throw err;
       }
-      // expense → 余额减少；amount 字段为正数
-      const delta = it.type === 'income' ? it.amount : -it.amount;
-      updateBalance.run(delta, now, accountId);
+      /**
+       * 转出侧余额。划转且两端是同一个账户时净额为 0（钱在账户内部转了一圈），
+       * 直接减会凭空扣掉一笔、后续又没人加回来。
+       */
+      const delta = selfTransfer ? 0 : it.type === 'income' ? it.amount : -it.amount;
+      updateBalance.run(delta, now, accountIdForRow);
+
+      /**
+       * 划转的对端：钱要真的到账，只减不加就等于凭空销毁了这笔钱。
+       *
+       * 口径与 routes/transactions.ts 的 POST 落库一致（转出侧 -amount、
+       * 转入侧 +amount），且**只在 toAccountId 存在时**联动：
+       *   - 没分流（向后兼容路径）→ 对端是未知的，只能减，不能瞎加；
+       *   - 对端账户缺失（降级）→ 已经记进 unmapped 由调用方报告，
+       *     这时再加钱到兜底账户会凭空增记；
+       *   - 自转 → 上面 delta 已经是 0，这里也绝不能再加一次。
+       */
+      if (toAccountIdForRow !== null) {
+        updateBalance.run(it.amount, now, toAccountIdForRow);
+      }
       imported++;
     }
   });
 
   tx(parsed);
 
-  return { imported, skipped };
+  return {
+    imported,
+    skipped,
+    ...(Object.keys(unmapped).length > 0 ? { unmappedTransfers: unmapped } : {}),
+  };
 }
 
 /** 是不是唯一索引/唯一约束冲突（而不是别的数据库错误，比如 CHECK 失败） */
