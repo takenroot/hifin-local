@@ -130,6 +130,29 @@ describe('CSV 解析：脏数据容错', () => {
     expect(r.total).toBe(2);
     expect(r.valid).toBe(2);
   });
+
+  it('分隔符按表头整份统一：字段内的制表符/分号不再多切列', () => {
+    // 逗号 CSV 里「交易对方」含分号、备注含制表符：分隔符只认表头数出来的 ','，
+    // 这两个字符留在字段内部，不会把后面的列顶掉
+    const csv = [
+      '日期,金额,收/支,交易对方,备注',
+      '2024-01-01,50,支出,京东;旗舰店,促\t销',
+      '2024-01-02,80,支出,淘宝,',
+    ].join('\n');
+    const r = parseCsvText(csv);
+    expect(r.valid).toBe(2);
+    expect(r.items[0].merchant).toBe('京东;旗舰店');
+    expect(r.items[0].remark).toBe('促\t销');
+    expect(r.items[1].merchant).toBe('淘宝');
+  });
+
+  it('分号分隔的表（表头数出 ; 占多数）', () => {
+    const csv = ['日期;金额;收/支;交易对方', '2024-01-01;50;支出;京东'].join('\n');
+    const r = parseCsvText(csv);
+    expect(r.valid).toBe(1);
+    expect(r.items[0].amount).toBe(50);
+    expect(r.items[0].merchant).toBe('京东');
+  });
 });
 
 describe('escapeCsv', () => {
