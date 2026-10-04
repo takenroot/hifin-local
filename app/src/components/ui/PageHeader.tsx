@@ -10,6 +10,8 @@ export interface PageHeaderProps {
   actions?: ReactNode;
   /** 标题旁的图标（如 📊） */
   icon?: ReactNode;
+  /** 标题语义级别：页面级传 h1，嵌套子标题传 h2，纯视觉标题传 div */
+  titleLevel?: 'h1' | 'h2' | 'div';
   className?: string;
 }
 
@@ -17,7 +19,15 @@ export interface PageHeaderProps {
  * 页面标题栏：左侧图标+标题+描述，右侧快捷操作槽位。
  * 与 Tailwind 默认行为兼容，可被任意 page 顶部直接使用。
  */
-export function PageHeader({ title, description, actions, icon, className }: PageHeaderProps) {
+export function PageHeader({
+  title,
+  description,
+  actions,
+  icon,
+  titleLevel = 'h1',
+  className,
+}: PageHeaderProps) {
+  const Title = titleLevel;
   return (
     <header
       className={clsx(
@@ -28,7 +38,9 @@ export function PageHeader({ title, description, actions, icon, className }: Pag
       <div className="flex items-center gap-3 min-w-0">
         {icon && <div className="text-text-muted">{icon}</div>}
         <div className="min-w-0">
-          <div className="text-base font-medium text-text dark:text-text-dark truncate">{title}</div>
+          <Title className="text-base font-medium text-text dark:text-text-dark truncate">
+            {title}
+          </Title>
           {description && (
             <div className="text-xs text-text-muted truncate">{description}</div>
           )}

@@ -18,7 +18,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         'flex items-center gap-2 h-10 px-3 rounded-xl border bg-bg-card dark:bg-bg-card-dark',
         'border-border dark:border-border-dark',
         'focus-within:ring-2 focus-within:ring-brand/40',
-        invalid && 'border-expense ring-2 ring-expense/30',
+        // 错误态挂 danger：原先用 expense(绿)，而绿在本项目是"支出"语义
+        invalid && 'border-danger ring-2 ring-danger/30',
         block && 'w-full',
         className,
       )}

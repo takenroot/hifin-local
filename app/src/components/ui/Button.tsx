@@ -13,8 +13,8 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantClass: Record<ButtonVariant, string> = {
-  primary:
-    'bg-text text-bg-card dark:bg-text-dark dark:text-bg-dark hover:opacity-90 disabled:opacity-40',
+  // primary = 品牌靛蓝（2026-10-05 用户决策，替代近黑 bg-text）
+  primary: 'bg-brand text-white hover:opacity-90 disabled:opacity-40',
   secondary:
     'bg-bg-card dark:bg-bg-card-dark text-text dark:text-text-dark border border-border dark:border-border-dark hover:bg-bg dark:hover:bg-bg-dark',
   ghost: 'text-text-muted hover:bg-bg dark:hover:bg-bg-card-dark',
@@ -45,6 +45,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       ref={ref}
       className={clsx(
         'inline-flex items-center justify-center font-medium transition select-none',
+        // 触觉反馈：transform 走合成层，transition 已含 transform 属性；
+        // motion-safe 前缀让 prefers-reduced-motion 用户拿不到缩放
+        'motion-safe:active:scale-[0.97]',
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/50',
         variantClass[variant],
         sizeClass[size],

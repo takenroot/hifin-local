@@ -51,3 +51,27 @@
 .recharts-wrapper :focus-visible {
   outline: none;
 }
+
+/* 动效令牌（2026-10-05 设计审查 Plan 001）：时长/缓动统一走 CSS 变量，
+   组件里用任意值引用，如 transition-[color_var(--dur-surface)_var(--ease-out)]。
+   入场/退场一律 --ease-out；禁用 ease-in（项目约定）。 */
+:root {
+  --dur-press: 120ms;
+  --dur-surface: 160ms;
+  --dur-overlay: 220ms; /* modal / 下拉 / 抽屉 / toast 统一 */
+  --dur-data: 700ms; /* 数字滚动等数据动画 */
+  --dur-chart: 600ms; /* recharts series */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+/* prefers-reduced-motion（WCAG 2.2.2 / 2.3.3）：
+   只停无限/无界动画（骨架屏 pulse、打字点 bounce）。
+   animate-spin 刻意保留——16px 圆环是长耗时场景唯一的进度信号，
+   停掉会让用户以为界面卡死（设计审查 §3.5）。 */
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse,
+  .animate-bounce {
+    animation: none;
+  }
+}

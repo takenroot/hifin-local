@@ -36,6 +36,14 @@ interface NavItem {
   label: string;
   icon: ReactNode;
   to: string;
+  /** 激活态匹配前缀（段匹配）；缺省用 to */
+  match?: string;
+}
+
+// 段前缀匹配：/account 命中 /account 与 /account/detail/1，但不命中 /accountant
+function isNavActive(it: NavItem, pathname: string): boolean {
+  const prefix = it.match ?? it.to;
+  return pathname === prefix || pathname.startsWith(prefix + '/');
 }
 
 function useMenuVisibility() {
@@ -94,14 +102,13 @@ export default function AppLayout() {
 
   const items: NavItem[] = [
     { key: 'home', label: '看板', icon: <IconLayoutDashboard size={18} />, to: '/home' },
-    { key: 'home', label: '账户', icon: <IconWallet size={18} />, to: '/account/list' },
+    { key: 'home', label: '账户', icon: <IconWallet size={18} />, to: '/account/list', match: '/account' },
     { key: 'home', label: '交易', icon: <IconArrowsLeftRight size={18} />, to: '/transaction' },
     { key: 'budget', label: '预算', icon: <IconCirclePlus size={18} />, to: '/budget' },
-    { key: 'goal', label: '目标', icon: <IconTarget size={18} />, to: '/goal/list' },
-    { key: 'report', label: '报表', icon: <IconChartBar size={18} />, to: '/report/list' },
+    { key: 'goal', label: '目标', icon: <IconTarget size={18} />, to: '/goal/list', match: '/goal' },
+    { key: 'report', label: '报表', icon: <IconChartBar size={18} />, to: '/report/list', match: '/report' },
     { key: 'discover', label: '发现', icon: <IconSparkles size={18} />, to: '/discover' },
   ];
-
   const visibleItems = items.filter((it) => {
     if (it.label === '预算') return mv.budget;
     if (it.label === '目标') return mv.goal;
@@ -131,7 +138,10 @@ export default function AppLayout() {
   })();
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-bg dark:bg-bg-dark text-text dark:text-text-dark">
+    <div
+      className="flex h-dvh w-screen overflow-hidden bg-bg dark:bg-bg-dark text-text dark:text-text-dark"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+    >
       {/* 桌面侧边栏（lg 及以上常驻） */}
       <aside className="hidden lg:flex w-[200px] flex-none border-r border-border dark:border-border-dark flex-col bg-bg-card dark:bg-bg-card-dark">
         <SidebarBody
@@ -160,7 +170,7 @@ export default function AppLayout() {
             <IconMenu2 size={20} />
           </button>
           <span className="text-sm font-medium truncate">
-            {visibleItems.find((it) => location.pathname.startsWith(it.to))?.label ?? 'HiFin'}
+            {visibleItems.find((it) => isNavActive(it, location.pathname))?.label ?? 'HiFin'}
           </span>
         </div>
 
@@ -282,7 +292,7 @@ function SidebarBody({
       {/* Main nav */}
       <nav className="flex-1 px-2 space-y-0.5 overflow-auto">
         {visibleItems.map((it) => {
-          const active = pathname.startsWith(it.to);
+          const active = isNavActive(it, pathname);
           return (
             <NavLink
               key={it.label}
@@ -510,7 +520,7 @@ function SpaceSwitcher({ spaces, spaceId, onPick, onRefreshSpaces }: SpaceSwitch
           )}
 
           {/* 描述 / 统计 */}
-          <div className="px-3 pt-2 pb-1 text-[10px] text-text-muted leading-relaxed">
+          <div className="px-3 pt-2 pb-1 text-[0.625rem] text-text-muted leading-relaxed">
             {spaceId === ALL_SPACES_ID
               ? ALL_SPACES_DESC
               : `当前仅展示「${headerLabel}」中的数据`}

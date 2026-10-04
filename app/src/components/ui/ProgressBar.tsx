@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import clsx from 'clsx';
 
 export interface ProgressBarProps {
@@ -25,6 +26,16 @@ export function ProgressBar({
   className,
 }: ProgressBarProps) {
   const v = Math.max(0, Math.min(100, value));
+  // 宽度动画走 transform（合成层，不触发布局）；will-change 只在值真的变了、
+  // 动画真的在跑的那段时间挂着，transitionend 后撤掉
+  const prev = useRef(v);
+  const [animating, setAnimating] = useState(false);
+  useEffect(() => {
+    if (prev.current === v) return;
+    prev.current = v;
+    setAnimating(true);
+  }, [v]);
+
   return (
     <div className={clsx('flex items-center gap-3', className)}>
       <div
@@ -34,8 +45,12 @@ export function ProgressBar({
         )}
       >
         <div
-          className={clsx('h-full rounded-full transition-all', toneClass[tone])}
-          style={{ width: `${v}%` }}
+          className={clsx(
+            'h-full w-full rounded-full origin-left transition-transform motion-reduce:transition-none',
+            toneClass[tone],
+          )}
+          style={{ transform: `scaleX(${v / 100})`, willChange: animating ? 'transform' : undefined }}
+          onTransitionEnd={() => setAnimating(false)}
         />
       </div>
       {showLabel && (
