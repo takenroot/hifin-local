@@ -178,9 +178,9 @@ describe('资产分布：对账——画不进饼图的钱要被报出来', () =
   it('饼图合计 + 负值 = 资产合计，资产合计 - 负债 = 净资产（两步都对得上账）', () => {
     const d = buildDistribution(SEVEN, 'account');
     const pieSum = d.items.reduce((s, i) => s + i.value, 0);
-    // 与看板净资产同一口径：资产类余额求和 - 负债类余额绝对值求和
+    // 与看板净资产同一口径：负债账户余额为负才是欠款（见 calcNetAsset / ISSUE-005）
     const assets = SEVEN.filter((a) => !isDebtAccount(a)).reduce((s, a) => s + a.balance, 0);
-    const debts = SEVEN.filter(isDebtAccount).reduce((s, a) => s + Math.abs(a.balance), 0);
+    const debts = SEVEN.filter(isDebtAccount).reduce((s, a) => s - a.balance, 0);
 
     // 第一步：饼图 + 被排除的负值 = 全部资产余额（一分不差）
     expect(pieSum + d.excludedNegative).toBeCloseTo(assets, 6);

@@ -4,15 +4,20 @@
 import dayjs from 'dayjs';
 import type { Account, Transaction } from '@/db';
 
-/** 净资产：includeInNetAsset=true 的资产类账户余额 - 负债类(credit/debt)余额 */
+/**
+ * 净资产：includeInNetAsset=true 的资产类账户余额 - 负债类(credit/debt)余额
+ *
+ * 负债账户(credit/debt)的余额符号约定与资产账户一致——余额为负才是负债：
+ *   负余额（欠款）→ 记正负债；正余额（多还/退款在途）→ 记负负债，即算资产。
+ * 曾经用 Math.abs，会把花呗这类"多还了钱"的正余额当欠款，净资产凭空少 2×该金额。
+ */
 export function calcNetAsset(accounts: Account[]): number {
   let asset = 0;
   let debt = 0;
   for (const a of accounts) {
     if (!a.includeInNetAsset) continue;
     if (a.type === 'credit' || a.type === 'debt') {
-      // 负债余额：通常账户余额以"未还金额"或"额度"形式存在，统一视为负债正值
-      debt += Math.abs(a.balance);
+      debt += -a.balance;
     } else {
       asset += a.balance;
     }

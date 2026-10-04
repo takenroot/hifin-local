@@ -643,7 +643,8 @@ export default function Dashboard() {
                           )}
                           {dist.excludedDebt !== 0 && (
                             <div>
-                              负债账户合计 {formatMoney(Math.abs(dist.excludedDebt))}，不计入资产分布
+                              负债账户合计 {formatMoney(dist.excludedDebt)}
+                              （负值为实际欠款，正值为退款在途），不计入资产分布
                             </div>
                           )}
                         </div>

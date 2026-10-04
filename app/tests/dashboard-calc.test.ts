@@ -39,7 +39,7 @@ describe('calcNetAsset', () => {
     const accounts: Account[] = [
       makeAccount({ id: 1, type: 'fund', balance: 1000, includeInNetAsset: true }),
       makeAccount({ id: 2, type: 'asset', balance: 5000, includeInNetAsset: true }),
-      makeAccount({ id: 3, type: 'credit', balance: 2000, includeInNetAsset: true }),
+      makeAccount({ id: 3, type: 'credit', balance: -2000, includeInNetAsset: true }),
     ];
     expect(calcNetAsset(accounts)).toBe(1000 + 5000 - 2000);
   });
@@ -52,12 +52,50 @@ describe('calcNetAsset', () => {
     expect(calcNetAsset(accounts)).toBe(1000);
   });
 
-  it('credit/debt 余额按绝对值计入负债', () => {
+  it('负余额 credit/debt 记负债：净资产 = 资产 - 欠款', () => {
     const accounts: Account[] = [
       makeAccount({ id: 1, type: 'credit', balance: -1500, includeInNetAsset: true }),
-      makeAccount({ id: 2, type: 'debt', balance: 3000, includeInNetAsset: true }),
+      makeAccount({ id: 2, type: 'debt', balance: -3000, includeInNetAsset: true }),
     ];
     expect(calcNetAsset(accounts)).toBe(-(1500 + 3000));
+  });
+
+  it('正余额 credit/debt 记资产（多还/退款在途），不是负债', () => {
+    const accounts: Account[] = [
+      makeAccount({ id: 1, type: 'fund', balance: 1000, includeInNetAsset: true }),
+      makeAccount({ id: 2, type: 'credit', balance: 139.29, includeInNetAsset: true }),
+    ];
+    expect(calcNetAsset(accounts)).toBeCloseTo(1139.29, 6);
+  });
+
+  it('正负余额混合：净资产恒等于 Σ 计入账户的余额', () => {
+    const accounts: Account[] = [
+      makeAccount({ id: 1, type: 'fund', balance: 1000, includeInNetAsset: true }),
+      makeAccount({ id: 2, type: 'asset', balance: 5000, includeInNetAsset: true }),
+      makeAccount({ id: 3, type: 'credit', balance: -1500, includeInNetAsset: true }),
+      makeAccount({ id: 4, type: 'debt', balance: 300, includeInNetAsset: true }),
+      makeAccount({ id: 5, type: 'invest', balance: -411.76, includeInNetAsset: true }),
+    ];
+    const sum = accounts.reduce((s, a) => s + a.balance, 0);
+    expect(calcNetAsset(accounts)).toBeCloseTo(sum, 6);
+  });
+
+  it('回归 ISSUE-005：花呗正余额曾被当成负债，净资产比 Σ 余额少 2×139.29', () => {
+    // 实测 7 账户形状（工行卡被还款扣成负数、花呗多还为正）
+    const accounts: Account[] = [
+      makeAccount({ id: 1, type: 'fund', balance: 12248.71, includeInNetAsset: true }),
+      makeAccount({ id: 2, type: 'invest', balance: 960.81, includeInNetAsset: true }),
+      makeAccount({ id: 3, type: 'invest', balance: -411.76, includeInNetAsset: true }),
+      makeAccount({ id: 4, type: 'fund', balance: -36089.78, includeInNetAsset: true }),
+      makeAccount({ id: 5, type: 'fund', balance: -2084.36, includeInNetAsset: true }),
+      makeAccount({ id: 6, type: 'fund', balance: -3000, includeInNetAsset: true }),
+      makeAccount({ id: 7, type: 'credit', balance: 139.29, includeInNetAsset: true }),
+    ];
+    const sum = accounts.reduce((s, a) => s + a.balance, 0);
+    expect(sum).toBeCloseTo(-28237.09, 2);
+    expect(calcNetAsset(accounts)).toBeCloseTo(-28237.09, 2);
+    // 旧口径（Math.abs）会得到 -28515.67，即多扣了 2×139.29
+    expect(calcNetAsset(accounts)).not.toBeCloseTo(-28515.67, 2);
   });
 
   it('空数组：净资产为 0', () => {

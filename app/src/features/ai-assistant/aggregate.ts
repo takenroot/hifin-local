@@ -41,7 +41,7 @@ function calcNetAsset(accounts: Account[]): number {
   for (const a of accounts) {
     if (!a.includeInNetAsset) continue;
     if (a.type === 'credit' || a.type === 'debt') {
-      debt += Math.abs(a.balance);
+      debt += -a.balance; // ISSUE-005：正余额信用账户是资产（退款在途），负余额才是欠款
     } else {
       asset += a.balance;
     }
