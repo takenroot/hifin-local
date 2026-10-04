@@ -7,7 +7,7 @@
  *   - 其余银行：通用映射（按表头行模糊匹配：日期/金额/收/支/对方/备注）
  *
  * 解析过程：
- *   1. 智能分隔（CSV, TSV, 半角逗号；忽略空行与首行 BOM）
+ *   1. 按表头行探测分隔符（逗号 / 制表符 / 分号，整份文件统一；忽略空行与首行 BOM）
  *   2. 找表头并映射字段
  *   3. 逐行解析成 ParsedTx（解析失败保留 rawLine）
  * ---------------------------------------------------------------
@@ -77,8 +77,45 @@ interface FieldMap {
 
 /* ---------- CSV 文本 → 二维数组 ---------- */
 
-function splitCsvLine(line: string): string[] {
-  // 极简 CSV 解析：支持双引号包裹、半角逗号 / 制表符；不做 RFC 完整实现
+const DELIMS = [',', '\t', ';'];
+
+/**
+ * 按**表头行**猜一个分隔符，整份文件统一用它切。
+ *
+ * 原先每个字符位上把 `,` `\t` `;` 同时当分隔符，于是逗号 CSV 里某个字段**内含**
+ * 一个制表符（支付宝「交易订单号」尾部就有）时会被硬生生多切一列，后面所有字段
+ * 整体右移一格：
+ *   - 多切点落在「金额」列之前 → 金额列读到「支出」→ parseAmount 返回 null
+ *     → 该行被判解析失败、丢进 rawLine（正是这 1 笔 ¥39.35 的下场）；
+ *   - 落在「金额」列之后 → 金额还读得对，但「商家订单号」会顶替「备注」
+ *     被静默写进库（错值不报错，更难发现）。
+ * 一份账单只有一个分隔符，猜一次就够；TSV / 分号表照样认得出来。
+ */
+function detectDelimiter(line: string): string {
+  const counts = new Map<string, number>();
+  let inQuotes = false;
+  for (const ch of line) {
+    if (ch === '"') {
+      inQuotes = !inQuotes;
+    } else if (!inQuotes && DELIMS.includes(ch)) {
+      counts.set(ch, (counts.get(ch) ?? 0) + 1);
+    }
+  }
+  let best = ',';
+  let bestCount = 0;
+  for (const d of DELIMS) {
+    const n = counts.get(d) ?? 0;
+    if (n > bestCount) {
+      best = d;
+      bestCount = n;
+    }
+  }
+  return best; // 一个候选都没出现（如无表头的提示行）→ 退回 ','
+}
+
+function splitCsvLine(line: string, delim: string): string[] {
+  // 极简 CSV 解析：支持双引号包裹 + 单一分隔符；不做 RFC 完整实现
+  // （字段里未转义的分隔符仍会错位——那是 CSV 本身的歧义，无从判别）
   const cells: string[] = [];
   let cur = '';
   let inQuotes = false;
@@ -98,7 +135,7 @@ function splitCsvLine(line: string): string[] {
     } else {
       if (ch === '"') {
         inQuotes = true;
-      } else if (ch === ',' || ch === '\t' || ch === ';') {
+      } else if (ch === delim) {
         cells.push(cur);
         cur = '';
       } else {
@@ -113,11 +150,9 @@ function splitCsvLine(line: string): string[] {
 function parseCsv(text: string): string[][] {
   // 去 BOM
   const cleaned = text.replace(/^\uFEFF/, '');
-  return cleaned
-    .split(/\r?\n/)
-    .map((l) => l)
-    .filter((l) => l.trim().length > 0)
-    .map(splitCsvLine);
+  const lines = cleaned.split(/\r?\n/).filter((l) => l.trim().length > 0);
+  const delim = detectDelimiter(lines[0] ?? '');
+  return lines.map((l) => splitCsvLine(l, delim));
 }
 
 /* ---------- 字段匹配 ---------- */
