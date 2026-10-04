@@ -7,36 +7,35 @@
 - design-review.md 修正批次的遗留（2026-10-05）
 - 各批次 agent 交接时发现但未授权处理的事项
 
-## 已完成（2026-10-05 第一批，额度耗尽前完成 2 个）
+## 已完成（2026-10-05 第一批 2 个 + 第二批 4 个，全部验收提交）
 - [x] **T1 ISSUE-005 calcNetAsset 信用账户符号翻转**（bcb3a54）
       三处副本全修 + 14 例新单测 + Dashboard 负债标签签名化
 - [x] **T2 ISSUE-006 分类色暗色对比度**（bcb3a54）
       分类名中性文字+彩色圆点，darkmode-audit 3 issue 消除，14.06:1
+- [x] **T3 a11y 尾巴**（b584b55）前提过时未照做，改打 7 个真缺陷：无名 Input/group、
+      星号混入 accname（Field required+aria-hidden 一处修全站），+9 例
+- [x] **T4 csv 分隔符探测**（e09ebd8）根因比记载更深：,\t; 同时当分隔符致列错位，
+      表头探测一次统一切；+4 例；发现 T7 新问题
+- [x] **T5 审计误报定性**（428f3e4）5 条全为 disabled:opacity-40 按钮（1.94:1 观感色），
+      WCAG 豁免 inactive 组件，降级 advisory 带实测值，issue 11→6
+- [x] **T6 基准图标注**（5f6a3e6）README 四要素+scrim/暗色辨析；纠正 design-review 过期描述
 
 ## 下一个任务（按此顺序继续）
 
-### T3 a11y 尾巴：裸 label + Select 读屏取名
-- 背景：Field×5 已收敛，但 features/ 下仍有 ~15 处手写裸 `<label>`（无 htmlFor）；
-  Select.tsx 是自写 role=combobox 按钮，读屏取不到名字
-- 修法：裸 label 换用 components/ui/Field 或补 htmlFor+id；Select 加 aria-label/aria-labelledby prop（Field 集成自动传）
-- 授权：app/src/features/ 相关文件、components/ui/{Select,Field}.tsx、app/tests/
-- 验收：裸 label 残留 0；Select ≥3 处调用有可访问名；app vitest 全过（当前基线 223）
+### T7 app 导入路径读不进真实支付宝导出（T4 发现的新问题，优先级最高）
+- 背景：app 侧 TransactionImportView 只按 UTF-8 裸读，无前言剥离——带 22 行前言的
+  真实支付宝导出走 app 路径 valid=0 整份丢光；core 在 importer.ts:288-295 有
+  前言剥离+GBK 解码，但 core 与 app 共享的 csv parser 只管字段级解析
+- 修法：把前言剥离+编码探测下沉到 app 导入路径（或共享预处理函数）；注意全平台
+  表头探测语义对齐 core
+- 授权：app/src/features/transactions/（TransactionImportView/csv.ts）、app/tests/、
+  必要时 core/src/bill/importer.ts（保持两边语义一致）
+- 验收：真实支付宝导出文件（GBK+前言）走 app 路径能解析出全部行；core 399/app 240+ 全过
 
-### T4 app 侧 csv.ts 漏 1 行
-- 背景：支付宝 1 笔（¥39.35 花呗·班尼路·2026-05-17，订单号字段带尾随 Tab）被判解析失败丢弃
-- 修法：定位 split 后未 trim 的根因，修 parser，构造样本回归
-- 授权：app/src/features/transactions/csv.ts、app/tests/csv*.test.ts
-
-### T5 darkmode-audit「保存/下一步/确认」5 条告警定性
-- 背景：改动前后 selector 一致，疑似误报但需实测
-- 要求：读审计脚本判定逻辑 → Playwright 取按钮真实 computed color 算对比度 →
-  达标则脚本加豁免注释（写实测值）；不达标则修按钮样式
-- 授权：accept/scripts/darkmode-audit.mjs、（若真问题）对应按钮源文件
-
-### T6 过期基准图标注
-- 背景：docs/exploration-originals/*.png 拍于 2026-08-20，早当前代码 6 周，暗色零基准
-- 要求：写 README.md：拍摄日期、对应哪代设计（对照点）、勿当视觉真相警示、暗色无基准说明
-- 授权：docs/exploration-originals/README.md（新建）
+### T8 未转义逗号丢行（CSV 固有歧义，低优先）
+- 背景：逗号 CSV 字段内含裸 , 同样错位丢行；廉价修不了，csv.ts 注释已写明
+- 候选：引号感知切分（RFC 4180 -lite）或明确报错"该文件含未转义逗号"而非静默丢行
+- 倾向后者（YAGNI：真实账单都由 core 管道导入，app 路径是手工补充）
 
 ## 暂缓项（需用户决策，不派 agent）
 - 账户期初余额校准（等用户抄 7 个真实余额）
