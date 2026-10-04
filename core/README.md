@@ -42,11 +42,11 @@ Web SPA（`app/`）已全面切到这套 REST API，浏览器端不再有自己�
 
 ```bash
 npm run dev        # tsx watch 启动 REST 服务（:8787）
-npm run test       # vitest（265 例，--pool=threads）
+npm run test       # vitest（393 例，--pool=threads）
 npm run build      # tsc → dist/
 ```
 
-## 数据模型要点（schema v2）
+## 数据模型要点（schema v4）
 
 `transactions` 在基础字段外带四个账单溯源列（均 nullable，老数据可为空）：
 
@@ -57,19 +57,31 @@ npm run build      # tsc → dist/
 | `paymentMethod` | 支付方式主渠道（零钱通/花呗/银行卡…，组合支付取 `&` 前段） | 账单原件 |
 | `status` | 交易状态原文（交易成功/已全额退款…） | 账单原件 |
 
+**多账户分流**：`bill/account-map.ts` 的 `resolveAccountName(paymentMethod, platform)` 把
+支付方式解析到真实账户——零钱/账户余额归并零钱通/余额宝（过渡渠道），组合支付取 `&` 前段，
+未识别/空 → 现金兜底。微信"转入零钱通-来自X"/"零钱通转出-到X"与支付宝花呗还款行
+（交易对方=花呗 + 分类=信用借还 + 状态=还款成功）解析为 **transfer**：
+双边余额联动（from -= amount, to += amount），同账户自转跳过。
+
+**账户年度收益**：`accountYields` 表按年存每个账户的实际收益金额（元，
+UNIQUE(accountId,year)）；`yields/reminder.ts` 每年 1 月对缺上年记录的资产账户
+（invest/fund/other 且计入净资产）发催填通知，填写即解决，2/1 未填自动过期。
+REST：`GET /api/accounts` 附 `latestYield`；`GET/PUT /api/accounts/:id/yields[/:year]`。
+
 **去重**：有 `externalId` 时按 `(source, externalId)` 部分唯一索引精确去重，重复导入直接跳过；
 无 externalId 退回四字段启发式（账户+金额+日期+商户）。
 
 **自动分类决策顺序**：rules 规则（含收支方向闸门：规则指向分类的类型与流水类型不匹配即跳过）
 → 账单原件分类列映射（`bill/category-map.ts`）→ null（未分类）。
 
-**余额不变量**：`accounts.balance == Σ(income) - Σ(expense)`（excluded/transfer 不计）；
-任何批量改数脚本都必须复核该不变量。
+**余额不变量**：`accounts.balance == Σ(income) - Σ(expense)`（excluded/transfer 不计，
+transfer 双边对称）；任何批量改数脚本都必须复核该不变量。
 
 ## 运维脚本（`scripts/`，均为 dry-run + `--apply` 两段式）
 
 | 脚本 | 用途 |
 | --- | --- |
+| `split-accounts.ts` | 多账户拆分：建 7 账户、817 笔按 paymentMethod 分流、重导原件还原转账、10 项校验 |
 | `backfill-fields.ts` | 从账单原件回填 source/externalId/paymentMethod/status |
 | `backfill-categories.ts` | 用账单分类列回填存量流水分类 |
 | `apply-merchant-rules.ts` | 把审核过的商户→分类映射写入 rules 表并回填 |

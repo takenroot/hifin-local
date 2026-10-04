@@ -10,7 +10,7 @@
 npm run dev        # 开发服务（vite 默认 http://127.0.0.1:5173）
 npm run build      # tsc 类型检查 + Vite 产物构建
 npm run preview    # 预览构建产物
-npm run test       # Vitest 单元测试（105 例）
+npm run test       # Vitest 单元测试（177 例，10 个文件）
 ```
 
 > 端口说明：`vite.config.ts` 中 `server.port` 为 **5173**。本机多人/多 agent 并行预览时常被占用，实际使用中一般以 `npx vite --port <端口> --strictPort` 覆盖（例如 :5199）。接口不受影响——`/api` 由 vite proxy 转发到 core。
@@ -112,7 +112,7 @@ const theme = useAtomValue(themeAtom);     // 'light' | 'dark' | 'system'
 
 ## 单元测试
 
-`tests/` 下共 105 例（6 个文件）：
+`tests/` 下共 177 例（10 个文件）：
 
 - `balance.test.ts` —— 流水余额联动
 - `csv.test.ts` —— CSV 解析（支付宝/微信/通用）
@@ -120,6 +120,10 @@ const theme = useAtomValue(themeAtom);     // 'light' | 'dark' | 'system'
 - `dashboard-calc.test.ts` —— 看板计算（净资产/收支/分布/日历）
 - `grouping.test.ts` —— 流水日/周/月/年分组（ISO 周、跨月跨年边界）
 - `stats.test.ts` —— 统计 Tab 聚合（分类占比、月份工具）
+- `month-picker.test.ts` —— 日历月份选择器（年份翻页/网格/边界）
+- `tx-search.test.ts` —— 交易关键字搜索（匹配范围/防抖语义/空关键字）
+- `multi-account.test.ts` —— 多账户展示（资产分布对账/负债角标）
+- `account-yield.test.ts` —— 账户年度收益（留空合法/金额校验/展示口径）
 
 全部为纯计算用例，`tests/setup.ts` 已移除浏览器数据库垫片。运行：`npm run test`
 
