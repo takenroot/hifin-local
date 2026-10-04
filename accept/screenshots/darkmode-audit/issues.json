@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generatedAt": "2026-10-02T15:55:30.360Z",
+    "generatedAt": "2026-10-04T15:12:23.992Z",
     "tool": "accept/scripts/darkmode-audit.mjs",
     "baseUrl": "http://127.0.0.1:5185",
     "viewport": {
@@ -91,31 +91,27 @@
       "console: Failed to load resource: the server responded with a status of 404 (Not Found)",
       "console: Failed to load resource: the server responded with a status of 404 (Not Found)",
       "console: Failed to load resource: the server responded with a status of 404 (Not Found)",
-      "console: Failed to load resource: the server responded with a status of 404 (Not Found)",
-      "console: Failed to load resource: the server responded with a status of 404 (Not Found)",
-      "console: Failed to load resource: the server responded with a status of 404 (Not Found)",
-      "console: Failed to load resource: the server responded with a status of 404 (Not Found)",
-      "console: Failed to load resource: the server responded with a status of 404 (Not Found)",
-      "console: Failed to load resource: the server responded with a status of 404 (Not Found)",
-      "console: Failed to load resource: the server responded with a status of 404 (Not Found)",
       "console: Failed to load resource: the server responded with a status of 404 (Not Found)"
     ]
   },
   "summary": {
-    "totalIssues": 11,
-    "totalAdvisories": 116,
+    "totalIssues": 14,
+    "totalAdvisories": 137,
     "byCategory": {
       "图标不可见": 2,
+      "其他文本不可见": 3,
       "禁用状态不可见": 5,
       "边框太淡": 4
     },
     "advisoryByCategory": {
-      "其他文本不可见": 89,
+      "其他文本不可见": 99,
       "辅助文字不可见": 19,
-      "placeholder不可见": 8
+      "按钮文字不可见": 9,
+      "placeholder不可见": 10
     },
     "byPage": {
       "home": 1,
+      "transaction": 3,
       "settings": 1,
       "account-create-step1": 1,
       "account-create-step2": 2,
@@ -124,6 +120,7 @@
     },
     "pagesWithIssues": [
       "home",
+      "transaction",
       "settings",
       "account-create-step1",
       "account-create-step2",
@@ -138,11 +135,11 @@
       "screenshot": "accept/screenshots/darkmode-audit/home.png",
       "darkClassApplied": true,
       "storedTheme": "\"dark\"",
-      "text": 131,
+      "text": 139,
       "placeholder": 0,
-      "border": 56,
-      "icon": 23,
-      "deduped": 14,
+      "border": 57,
+      "icon": 28,
+      "deduped": 13,
       "hiddenByOpacity": [],
       "intentionallyTransparent": [],
       "unparsed": [],
@@ -154,11 +151,11 @@
       "screenshot": "accept/screenshots/darkmode-audit/account-list.png",
       "darkClassApplied": true,
       "storedTheme": "\"dark\"",
-      "text": 20,
+      "text": 42,
       "placeholder": 0,
-      "border": 7,
-      "icon": 15,
-      "deduped": 10,
+      "border": 31,
+      "icon": 21,
+      "deduped": 12,
       "hiddenByOpacity": [],
       "intentionallyTransparent": [],
       "unparsed": [],
@@ -170,11 +167,11 @@
       "screenshot": "accept/screenshots/darkmode-audit/transaction.png",
       "darkClassApplied": true,
       "storedTheme": "\"dark\"",
-      "text": 3738,
-      "placeholder": 0,
-      "border": 1173,
-      "icon": 1518,
-      "deduped": 11,
+      "text": 7645,
+      "placeholder": 1,
+      "border": 1686,
+      "icon": 1734,
+      "deduped": 26,
       "hiddenByOpacity": [],
       "intentionallyTransparent": [],
       "unparsed": [],
@@ -190,7 +187,7 @@
       "placeholder": 0,
       "border": 11,
       "icon": 15,
-      "deduped": 10,
+      "deduped": 11,
       "hiddenByOpacity": [],
       "intentionallyTransparent": [],
       "unparsed": [],
@@ -206,7 +203,7 @@
       "placeholder": 0,
       "border": 11,
       "icon": 15,
-      "deduped": 10,
+      "deduped": 11,
       "hiddenByOpacity": [],
       "intentionallyTransparent": [],
       "unparsed": [],
@@ -222,7 +219,7 @@
       "placeholder": 0,
       "border": 11,
       "icon": 15,
-      "deduped": 11,
+      "deduped": 12,
       "hiddenByOpacity": [],
       "intentionallyTransparent": [],
       "unparsed": [],
@@ -234,9 +231,9 @@
       "screenshot": "accept/screenshots/darkmode-audit/discover.png",
       "darkClassApplied": true,
       "storedTheme": "\"dark\"",
-      "text": 38,
+      "text": 42,
       "placeholder": 0,
-      "border": 39,
+      "border": 43,
       "icon": 18,
       "deduped": 11,
       "hiddenByOpacity": [],
@@ -270,7 +267,7 @@
       "placeholder": 0,
       "border": 7,
       "icon": 15,
-      "deduped": 12,
+      "deduped": 13,
       "hiddenByOpacity": [],
       "intentionallyTransparent": [],
       "unparsed": [],
@@ -290,7 +287,7 @@
       "placeholder": 3,
       "border": 45,
       "icon": 8,
-      "deduped": 0,
+      "deduped": 1,
       "hiddenByOpacity": [],
       "intentionallyTransparent": [],
       "unparsed": [],
@@ -308,7 +305,7 @@
       "placeholder": 0,
       "border": 45,
       "icon": 8,
-      "deduped": 0,
+      "deduped": 1,
       "hiddenByOpacity": [],
       "intentionallyTransparent": [],
       "unparsed": [],
@@ -340,11 +337,11 @@
       "openStrategy": "先选账户类型，再点「下一步」进入表单",
       "opened": true,
       "screenshot": "accept/screenshots/darkmode-audit/modal-account-create-step2.png",
-      "text": 17,
-      "placeholder": 3,
-      "border": 21,
+      "text": 20,
+      "placeholder": 4,
+      "border": 25,
       "icon": 3,
-      "deduped": 7,
+      "deduped": 8,
       "hiddenByOpacity": [],
       "intentionallyTransparent": [],
       "unparsed": [],
@@ -362,7 +359,7 @@
       "placeholder": 0,
       "border": 13,
       "icon": 5,
-      "deduped": 0,
+      "deduped": 1,
       "hiddenByOpacity": [],
       "intentionallyTransparent": [],
       "unparsed": [],
@@ -452,7 +449,7 @@
   ],
   "issues": [
     {
-      "id": "DM-112",
+      "id": "DM-135",
       "category": "图标不可见",
       "kind": "icon",
       "level": "issue",
@@ -475,7 +472,7 @@
       ]
     },
     {
-      "id": "DM-014",
+      "id": "DM-013",
       "category": "图标不可见",
       "kind": "icon",
       "level": "issue",
@@ -492,13 +489,134 @@
       "threshold": 3,
       "largeText": false,
       "disabled": false,
-      "occurrences": 1,
+      "occurrences": 2,
       "sampleSelectors": [
-        "div.card.p-6 > div.h-64.-mx-2:nth-of-type(2) > div.recharts-responsive-container > div.recharts-wrapper > svg"
+        "div.card.p-6 > div.h-64.-mx-2:nth-of-type(2) > div.recharts-responsive-container > div.recharts-wrapper > svg",
+        "div.grid.grid-cols-1.md\\:grid-cols-2:nth-of-type(2) > div.h-64:nth-of-type(1) > div.recharts-responsive-container > div.recharts-wrapper > svg"
       ]
     },
     {
-      "id": "DM-123",
+      "id": "DM-109",
+      "category": "禁用状态不可见",
+      "kind": "text",
+      "level": "issue",
+      "severity": "high",
+      "page": "settings",
+      "route": "/settings",
+      "scope": "page",
+      "selector": "div.card.p-6:nth-of-type(1) > div.space-y-4.max-w-\\[560px\\]:nth-of-type(2) > div:nth-of-type(1) > div.flex.gap-2:nth-of-type(1) > button.inline-flex.items-center.justify-center",
+      "text": "保存",
+      "color": "rgb(161, 163, 247)",
+      "colorRaw": "rgb(255, 255, 255)",
+      "background": "rgb(99, 102, 241)",
+      "contrast": 1.94,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": true,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "div.card.p-6:nth-of-type(1) > div.space-y-4.max-w-\\[560px\\]:nth-of-type(2) > div:nth-of-type(1) > div.flex.gap-2:nth-of-type(1) > button.inline-flex.items-center.justify-center"
+      ]
+    },
+    {
+      "id": "DM-127",
+      "category": "禁用状态不可见",
+      "kind": "text",
+      "level": "issue",
+      "severity": "high",
+      "page": "account-create-step1",
+      "route": "/account/list?create=1",
+      "scope": "modal",
+      "selector": "body.bg-bg.text-text.dark\\:bg-bg-dark > div.fixed.inset-0.z-50:nth-of-type(2) > div.relative.card.max-h-\\[85vh\\]:nth-of-type(2) > div.px-6.py-4.border-t:nth-of-type(3) > button.inline-flex.items-center.justify-center",
+      "text": "下一步",
+      "color": "rgb(161, 163, 247)",
+      "colorRaw": "rgb(255, 255, 255)",
+      "background": "rgb(99, 102, 241)",
+      "contrast": 1.94,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": true,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "body.bg-bg.text-text.dark\\:bg-bg-dark > div.fixed.inset-0.z-50:nth-of-type(2) > div.relative.card.max-h-\\[85vh\\]:nth-of-type(2) > div.px-6.py-4.border-t:nth-of-type(3) > button.inline-flex.items-center.justify-center"
+      ]
+    },
+    {
+      "id": "DM-130",
+      "category": "禁用状态不可见",
+      "kind": "text",
+      "level": "issue",
+      "severity": "high",
+      "page": "account-create-step2",
+      "route": "/account/list?create=1",
+      "scope": "modal",
+      "selector": "body.bg-bg.text-text.dark\\:bg-bg-dark > div.fixed.inset-0.z-50:nth-of-type(2) > div.relative.card.max-h-\\[85vh\\]:nth-of-type(2) > div.px-6.py-4.border-t:nth-of-type(3) > button.inline-flex.items-center.justify-center:nth-of-type(2)",
+      "text": "确认",
+      "color": "rgb(161, 163, 247)",
+      "colorRaw": "rgb(255, 255, 255)",
+      "background": "rgb(99, 102, 241)",
+      "contrast": 1.94,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": true,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "body.bg-bg.text-text.dark\\:bg-bg-dark > div.fixed.inset-0.z-50:nth-of-type(2) > div.relative.card.max-h-\\[85vh\\]:nth-of-type(2) > div.px-6.py-4.border-t:nth-of-type(3) > button.inline-flex.items-center.justify-center:nth-of-type(2)"
+      ]
+    },
+    {
+      "id": "DM-139",
+      "category": "禁用状态不可见",
+      "kind": "text",
+      "level": "issue",
+      "severity": "high",
+      "page": "budget-create",
+      "route": "/budget?create=1",
+      "scope": "modal",
+      "selector": "body.bg-bg.text-text.dark\\:bg-bg-dark > div.fixed.inset-0.z-50:nth-of-type(2) > div.relative.card.max-h-\\[85vh\\]:nth-of-type(2) > div.px-6.py-4.border-t:nth-of-type(3) > button.inline-flex.items-center.justify-center:nth-of-type(2)",
+      "text": "确认",
+      "color": "rgb(161, 163, 247)",
+      "colorRaw": "rgb(255, 255, 255)",
+      "background": "rgb(99, 102, 241)",
+      "contrast": 1.94,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": true,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "body.bg-bg.text-text.dark\\:bg-bg-dark > div.fixed.inset-0.z-50:nth-of-type(2) > div.relative.card.max-h-\\[85vh\\]:nth-of-type(2) > div.px-6.py-4.border-t:nth-of-type(3) > button.inline-flex.items-center.justify-center:nth-of-type(2)"
+      ]
+    },
+    {
+      "id": "DM-146",
+      "category": "禁用状态不可见",
+      "kind": "text",
+      "level": "issue",
+      "severity": "high",
+      "page": "report-create",
+      "route": "/report/list",
+      "scope": "modal",
+      "selector": "body.bg-bg.text-text.dark\\:bg-bg-dark > div.fixed.inset-0.z-50:nth-of-type(2) > div.relative.card.max-h-\\[85vh\\]:nth-of-type(2) > div.px-6.py-4.border-t:nth-of-type(3) > button.inline-flex.items-center.justify-center:nth-of-type(2)",
+      "text": "确认",
+      "color": "rgb(161, 163, 247)",
+      "colorRaw": "rgb(255, 255, 255)",
+      "background": "rgb(99, 102, 241)",
+      "contrast": 1.94,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": true,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "body.bg-bg.text-text.dark\\:bg-bg-dark > div.fixed.inset-0.z-50:nth-of-type(2) > div.relative.card.max-h-\\[85vh\\]:nth-of-type(2) > div.px-6.py-4.border-t:nth-of-type(3) > button.inline-flex.items-center.justify-center:nth-of-type(2)"
+      ]
+    },
+    {
+      "id": "DM-147",
       "category": "边框太淡",
       "kind": "border",
       "level": "issue",
@@ -519,7 +637,7 @@
       ]
     },
     {
-      "id": "DM-124",
+      "id": "DM-148",
       "category": "边框太淡",
       "kind": "border",
       "level": "issue",
@@ -540,7 +658,7 @@
       ]
     },
     {
-      "id": "DM-125",
+      "id": "DM-149",
       "category": "边框太淡",
       "kind": "border",
       "level": "issue",
@@ -561,7 +679,7 @@
       ]
     },
     {
-      "id": "DM-126",
+      "id": "DM-150",
       "category": "边框太淡",
       "kind": "border",
       "level": "issue",
@@ -582,129 +700,135 @@
       ]
     },
     {
-      "id": "DM-090",
-      "category": "禁用状态不可见",
+      "id": "DM-050",
+      "category": "其他文本不可见",
       "kind": "text",
       "level": "issue",
       "severity": "medium",
-      "page": "settings",
-      "route": "/settings",
+      "page": "transaction",
+      "route": "/transaction",
       "scope": "page",
-      "selector": "div.card.p-6:nth-of-type(1) > div.space-y-4.max-w-\\[560px\\]:nth-of-type(2) > div:nth-of-type(1) > div.flex.gap-2:nth-of-type(1) > button.inline-flex.items-center.justify-center",
-      "text": "保存",
-      "color": "rgb(143, 145, 149)",
-      "colorRaw": "rgb(15, 17, 21)",
-      "background": "rgb(229, 231, 235)",
-      "contrast": 2.54,
+      "selector": "div.card.\\!p-0.divide-y:nth-of-type(2) > div.flex.items-center.gap-3:nth-of-type(2) > div.flex-1.min-w-0:nth-of-type(2) > div.flex.items-center.gap-1\\.5:nth-of-type(2) > span:nth-of-type(1)",
+      "text": "数码电器",
+      "color": "rgb(126, 34, 206)",
+      "colorRaw": "rgb(126, 34, 206)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 2.49,
       "threshold": 3,
       "largeText": false,
-      "fontSize": 14,
-      "disabled": true,
-      "occurrences": 1,
+      "fontSize": 12,
+      "disabled": false,
+      "occurrences": 4,
       "sampleSelectors": [
-        "div.card.p-6:nth-of-type(1) > div.space-y-4.max-w-\\[560px\\]:nth-of-type(2) > div:nth-of-type(1) > div.flex.gap-2:nth-of-type(1) > button.inline-flex.items-center.justify-center"
+        "div.card.\\!p-0.divide-y:nth-of-type(2) > div.flex.items-center.gap-3:nth-of-type(2) > div.flex-1.min-w-0:nth-of-type(2) > div.flex.items-center.gap-1\\.5:nth-of-type(2) > span:nth-of-type(1)",
+        "div.card.\\!p-0.divide-y:nth-of-type(2) > div.flex.items-center.gap-3:nth-of-type(3) > div.flex-1.min-w-0:nth-of-type(2) > div.flex.items-center.gap-1\\.5:nth-of-type(2) > span:nth-of-type(1)",
+        "div.card.\\!p-0.divide-y:nth-of-type(2) > div.flex.items-center.gap-3:nth-of-type(5) > div.flex-1.min-w-0:nth-of-type(2) > div.flex.items-center.gap-1\\.5:nth-of-type(2) > span:nth-of-type(1)"
       ]
     },
     {
-      "id": "DM-105",
-      "category": "禁用状态不可见",
+      "id": "DM-049",
+      "category": "其他文本不可见",
       "kind": "text",
       "level": "issue",
       "severity": "medium",
-      "page": "account-create-step1",
-      "route": "/account/list?create=1",
-      "scope": "modal",
-      "selector": "body.bg-bg.text-text.dark\\:bg-bg-dark > div.fixed.inset-0.z-50:nth-of-type(2) > div.relative.card.max-h-\\[85vh\\]:nth-of-type(2) > div.px-6.py-4.border-t:nth-of-type(3) > button.inline-flex.items-center.justify-center",
-      "text": "下一步",
-      "color": "rgb(143, 145, 149)",
-      "colorRaw": "rgb(15, 17, 21)",
-      "background": "rgb(229, 231, 235)",
-      "contrast": 2.54,
+      "page": "transaction",
+      "route": "/transaction",
+      "scope": "page",
+      "selector": "div.card.\\!p-0.divide-y:nth-of-type(2) > div.flex.items-center.gap-3 > div.flex-1.min-w-0:nth-of-type(2) > div.flex.items-center.gap-1\\.5:nth-of-type(2) > span:nth-of-type(1)",
+      "text": "停车费",
+      "color": "rgb(29, 78, 216)",
+      "colorRaw": "rgb(29, 78, 216)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 2.6,
       "threshold": 3,
       "largeText": false,
-      "fontSize": 14,
-      "disabled": true,
+      "fontSize": 12,
+      "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "body.bg-bg.text-text.dark\\:bg-bg-dark > div.fixed.inset-0.z-50:nth-of-type(2) > div.relative.card.max-h-\\[85vh\\]:nth-of-type(2) > div.px-6.py-4.border-t:nth-of-type(3) > button.inline-flex.items-center.justify-center"
+        "div.card.\\!p-0.divide-y:nth-of-type(2) > div.flex.items-center.gap-3 > div.flex-1.min-w-0:nth-of-type(2) > div.flex.items-center.gap-1\\.5:nth-of-type(2) > span:nth-of-type(1)"
       ]
     },
     {
-      "id": "DM-108",
-      "category": "禁用状态不可见",
+      "id": "DM-045",
+      "category": "其他文本不可见",
       "kind": "text",
       "level": "issue",
       "severity": "medium",
-      "page": "account-create-step2",
-      "route": "/account/list?create=1",
-      "scope": "modal",
-      "selector": "body.bg-bg.text-text.dark\\:bg-bg-dark > div.fixed.inset-0.z-50:nth-of-type(2) > div.relative.card.max-h-\\[85vh\\]:nth-of-type(2) > div.px-6.py-4.border-t:nth-of-type(3) > button.inline-flex.items-center.justify-center:nth-of-type(2)",
-      "text": "确认",
-      "color": "rgb(143, 145, 149)",
-      "colorRaw": "rgb(15, 17, 21)",
-      "background": "rgb(229, 231, 235)",
-      "contrast": 2.54,
+      "page": "transaction",
+      "route": "/transaction",
+      "scope": "page",
+      "selector": "div.card.\\!p-0.divide-y:nth-of-type(2) > div.flex.items-center.gap-3:nth-of-type(8) > div.flex-1.min-w-0:nth-of-type(2) > div.flex.items-center.gap-1\\.5:nth-of-type(2) > span:nth-of-type(1)",
+      "text": "加油",
+      "color": "rgb(3, 105, 161)",
+      "colorRaw": "rgb(3, 105, 161)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 2.93,
       "threshold": 3,
       "largeText": false,
-      "fontSize": 14,
-      "disabled": true,
-      "occurrences": 1,
+      "fontSize": 12,
+      "disabled": false,
+      "occurrences": 22,
       "sampleSelectors": [
-        "body.bg-bg.text-text.dark\\:bg-bg-dark > div.fixed.inset-0.z-50:nth-of-type(2) > div.relative.card.max-h-\\[85vh\\]:nth-of-type(2) > div.px-6.py-4.border-t:nth-of-type(3) > button.inline-flex.items-center.justify-center:nth-of-type(2)"
-      ]
-    },
-    {
-      "id": "DM-115",
-      "category": "禁用状态不可见",
-      "kind": "text",
-      "level": "issue",
-      "severity": "medium",
-      "page": "budget-create",
-      "route": "/budget?create=1",
-      "scope": "modal",
-      "selector": "body.bg-bg.text-text.dark\\:bg-bg-dark > div.fixed.inset-0.z-50:nth-of-type(2) > div.relative.card.max-h-\\[85vh\\]:nth-of-type(2) > div.px-6.py-4.border-t:nth-of-type(3) > button.inline-flex.items-center.justify-center:nth-of-type(2)",
-      "text": "确认",
-      "color": "rgb(143, 145, 149)",
-      "colorRaw": "rgb(15, 17, 21)",
-      "background": "rgb(229, 231, 235)",
-      "contrast": 2.54,
-      "threshold": 3,
-      "largeText": false,
-      "fontSize": 14,
-      "disabled": true,
-      "occurrences": 1,
-      "sampleSelectors": [
-        "body.bg-bg.text-text.dark\\:bg-bg-dark > div.fixed.inset-0.z-50:nth-of-type(2) > div.relative.card.max-h-\\[85vh\\]:nth-of-type(2) > div.px-6.py-4.border-t:nth-of-type(3) > button.inline-flex.items-center.justify-center:nth-of-type(2)"
-      ]
-    },
-    {
-      "id": "DM-122",
-      "category": "禁用状态不可见",
-      "kind": "text",
-      "level": "issue",
-      "severity": "medium",
-      "page": "report-create",
-      "route": "/report/list",
-      "scope": "modal",
-      "selector": "body.bg-bg.text-text.dark\\:bg-bg-dark > div.fixed.inset-0.z-50:nth-of-type(2) > div.relative.card.max-h-\\[85vh\\]:nth-of-type(2) > div.px-6.py-4.border-t:nth-of-type(3) > button.inline-flex.items-center.justify-center:nth-of-type(2)",
-      "text": "确认",
-      "color": "rgb(143, 145, 149)",
-      "colorRaw": "rgb(15, 17, 21)",
-      "background": "rgb(229, 231, 235)",
-      "contrast": 2.54,
-      "threshold": 3,
-      "largeText": false,
-      "fontSize": 14,
-      "disabled": true,
-      "occurrences": 1,
-      "sampleSelectors": [
-        "body.bg-bg.text-text.dark\\:bg-bg-dark > div.fixed.inset-0.z-50:nth-of-type(2) > div.relative.card.max-h-\\[85vh\\]:nth-of-type(2) > div.px-6.py-4.border-t:nth-of-type(3) > button.inline-flex.items-center.justify-center:nth-of-type(2)"
+        "div.card.\\!p-0.divide-y:nth-of-type(2) > div.flex.items-center.gap-3:nth-of-type(8) > div.flex-1.min-w-0:nth-of-type(2) > div.flex.items-center.gap-1\\.5:nth-of-type(2) > span:nth-of-type(1)",
+        "div.card.\\!p-0.divide-y:nth-of-type(2) > div.flex.items-center.gap-3 > div.flex-1.min-w-0:nth-of-type(2) > div.flex.items-center.gap-1\\.5:nth-of-type(2) > span:nth-of-type(1)",
+        "div.card.\\!p-0.divide-y:nth-of-type(2) > div.flex.items-center.gap-3:nth-of-type(4) > div.flex-1.min-w-0:nth-of-type(2) > div.flex.items-center.gap-1\\.5:nth-of-type(2) > span:nth-of-type(1)"
       ]
     }
   ],
   "advisories": [
     {
-      "id": "DM-120",
+      "id": "DM-048",
+      "category": "其他文本不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "transaction",
+      "route": "/transaction",
+      "scope": "page",
+      "selector": "div.card.\\!p-0.divide-y:nth-of-type(2) > div.flex.items-center.gap-3:nth-of-type(5) > div.flex-1.min-w-0:nth-of-type(2) > div.flex.items-center.gap-1\\.5:nth-of-type(2) > span:nth-of-type(1)",
+      "text": "保险",
+      "color": "rgb(4, 120, 87)",
+      "colorRaw": "rgb(4, 120, 87)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 3.17,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 12,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "div.card.\\!p-0.divide-y:nth-of-type(2) > div.flex.items-center.gap-3:nth-of-type(5) > div.flex-1.min-w-0:nth-of-type(2) > div.flex.items-center.gap-1\\.5:nth-of-type(2) > span:nth-of-type(1)"
+      ]
+    },
+    {
+      "id": "DM-046",
+      "category": "其他文本不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "transaction",
+      "route": "/transaction",
+      "scope": "page",
+      "selector": "div.card.\\!p-0.divide-y:nth-of-type(2) > div.flex.items-center.gap-3:nth-of-type(2) > div.flex-1.min-w-0:nth-of-type(2) > div.flex.items-center.gap-1\\.5:nth-of-type(2) > span:nth-of-type(1)",
+      "text": "服饰",
+      "color": "rgb(147, 51, 234)",
+      "colorRaw": "rgb(147, 51, 234)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 3.24,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 12,
+      "disabled": false,
+      "occurrences": 20,
+      "sampleSelectors": [
+        "div.card.\\!p-0.divide-y:nth-of-type(2) > div.flex.items-center.gap-3:nth-of-type(2) > div.flex-1.min-w-0:nth-of-type(2) > div.flex.items-center.gap-1\\.5:nth-of-type(2) > span:nth-of-type(1)",
+        "div.card.\\!p-0.divide-y:nth-of-type(2) > div.flex.items-center.gap-3:nth-of-type(1) > div.flex-1.min-w-0:nth-of-type(2) > div.flex.items-center.gap-1\\.5:nth-of-type(2) > span:nth-of-type(1)",
+        "div.card.\\!p-0.divide-y:nth-of-type(2) > div.flex.items-center.gap-3:nth-of-type(6) > div.flex-1.min-w-0:nth-of-type(2) > div.flex.items-center.gap-1\\.5:nth-of-type(2) > span:nth-of-type(1)"
+      ]
+    },
+    {
+      "id": "DM-144",
       "category": "其他文本不可见",
       "kind": "text",
       "level": "advisory",
@@ -728,6 +852,32 @@
       ]
     },
     {
+      "id": "DM-040",
+      "category": "其他文本不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "transaction",
+      "route": "/transaction",
+      "scope": "page",
+      "selector": "div.card.\\!p-0.divide-y:nth-of-type(2) > div.flex.items-center.gap-3:nth-of-type(1) > div.flex-1.min-w-0:nth-of-type(2) > div.flex.items-center.gap-1\\.5:nth-of-type(2) > span:nth-of-type(1)",
+      "text": "咖啡奶茶",
+      "color": "rgb(180, 83, 9)",
+      "colorRaw": "rgb(180, 83, 9)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 3.47,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 12,
+      "disabled": false,
+      "occurrences": 20,
+      "sampleSelectors": [
+        "div.card.\\!p-0.divide-y:nth-of-type(2) > div.flex.items-center.gap-3:nth-of-type(1) > div.flex-1.min-w-0:nth-of-type(2) > div.flex.items-center.gap-1\\.5:nth-of-type(2) > span:nth-of-type(1)",
+        "div.card.\\!p-0.divide-y:nth-of-type(2) > div.flex.items-center.gap-3:nth-of-type(4) > div.flex-1.min-w-0:nth-of-type(2) > div.flex.items-center.gap-1\\.5:nth-of-type(2) > span:nth-of-type(1)",
+        "div.card.\\!p-0.divide-y:nth-of-type(2) > div.flex.items-center.gap-3:nth-of-type(5) > div.flex-1.min-w-0:nth-of-type(2) > div.flex.items-center.gap-1\\.5:nth-of-type(2) > span:nth-of-type(1)"
+      ]
+    },
+    {
       "id": "DM-003",
       "category": "其他文本不可见",
       "kind": "text",
@@ -736,7 +886,7 @@
       "page": "home",
       "route": "/home",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(2) > span.truncate:nth-of-type(2)",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(2) > span.truncate:nth-of-type(2)",
       "text": "账户",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -748,7 +898,7 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(2) > span.truncate:nth-of-type(2)"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(2) > span.truncate:nth-of-type(2)"
       ]
     },
     {
@@ -760,7 +910,7 @@
       "page": "home",
       "route": "/home",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(3) > span.truncate:nth-of-type(2)",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(3) > span.truncate:nth-of-type(2)",
       "text": "交易",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -772,7 +922,7 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(3) > span.truncate:nth-of-type(2)"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(3) > span.truncate:nth-of-type(2)"
       ]
     },
     {
@@ -784,7 +934,7 @@
       "page": "home",
       "route": "/home",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(4) > span.truncate:nth-of-type(2)",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(4) > span.truncate:nth-of-type(2)",
       "text": "预算",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -796,7 +946,7 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(4) > span.truncate:nth-of-type(2)"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(4) > span.truncate:nth-of-type(2)"
       ]
     },
     {
@@ -808,7 +958,7 @@
       "page": "home",
       "route": "/home",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(5) > span.truncate:nth-of-type(2)",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(5) > span.truncate:nth-of-type(2)",
       "text": "目标",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -820,7 +970,7 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(5) > span.truncate:nth-of-type(2)"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(5) > span.truncate:nth-of-type(2)"
       ]
     },
     {
@@ -832,7 +982,7 @@
       "page": "home",
       "route": "/home",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(6) > span.truncate:nth-of-type(2)",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(6) > span.truncate:nth-of-type(2)",
       "text": "报表",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -844,7 +994,7 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(6) > span.truncate:nth-of-type(2)"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(6) > span.truncate:nth-of-type(2)"
       ]
     },
     {
@@ -856,7 +1006,7 @@
       "page": "home",
       "route": "/home",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(7) > span.truncate:nth-of-type(2)",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(7) > span.truncate:nth-of-type(2)",
       "text": "发现",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -868,7 +1018,7 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(7) > span.truncate:nth-of-type(2)"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(7) > span.truncate:nth-of-type(2)"
       ]
     },
     {
@@ -880,7 +1030,7 @@
       "page": "home",
       "route": "/home",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > button.w-full.flex.items-center > span",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > button.w-full.flex.items-center > span",
       "text": "设置",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -892,7 +1042,7 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > button.w-full.flex.items-center > span"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > button.w-full.flex.items-center > span"
       ]
     },
     {
@@ -904,7 +1054,7 @@
       "page": "home",
       "route": "/home",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > div.flex.items-center.gap-2 > div.text-xs.text-text-muted.truncate:nth-of-type(2)",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > div.flex.items-center.gap-2 > div.text-xs.text-text-muted.truncate:nth-of-type(2)",
       "text": "默认空间",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -916,35 +1066,11 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > div.flex.items-center.gap-2 > div.text-xs.text-text-muted.truncate:nth-of-type(2)"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > div.flex.items-center.gap-2 > div.text-xs.text-text-muted.truncate:nth-of-type(2)"
       ]
     },
     {
-      "id": "DM-011",
-      "category": "辅助文字不可见",
-      "kind": "text",
-      "level": "advisory",
-      "severity": "low",
-      "page": "home",
-      "route": "/home",
-      "scope": "page",
-      "selector": "section:nth-of-type(2) > div.grid.grid-cols-1.md\\:grid-cols-3 > div.card.p-6.\\!p-5:nth-of-type(1) > div.mt-1.text-xs.text-text-muted:nth-of-type(3) > span.text-text-muted",
-      "text": "0.00%",
-      "color": "rgb(107, 114, 128)",
-      "colorRaw": "rgb(107, 114, 128)",
-      "background": "rgb(23, 26, 33)",
-      "contrast": 3.6,
-      "threshold": 3,
-      "largeText": false,
-      "fontSize": 12,
-      "disabled": false,
-      "occurrences": 1,
-      "sampleSelectors": [
-        "section:nth-of-type(2) > div.grid.grid-cols-1.md\\:grid-cols-3 > div.card.p-6.\\!p-5:nth-of-type(1) > div.mt-1.text-xs.text-text-muted:nth-of-type(3) > span.text-text-muted"
-      ]
-    },
-    {
-      "id": "DM-013",
+      "id": "DM-012",
       "category": "辅助文字不可见",
       "kind": "text",
       "level": "advisory",
@@ -968,7 +1094,7 @@
       ]
     },
     {
-      "id": "DM-017",
+      "id": "DM-016",
       "category": "其他文本不可见",
       "kind": "text",
       "level": "advisory",
@@ -976,7 +1102,7 @@
       "page": "account-list",
       "route": "/account/list",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(1) > span.truncate:nth-of-type(2)",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(1) > span.truncate:nth-of-type(2)",
       "text": "看板",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -988,7 +1114,31 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(1) > span.truncate:nth-of-type(2)"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(1) > span.truncate:nth-of-type(2)"
+      ]
+    },
+    {
+      "id": "DM-017",
+      "category": "其他文本不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "account-list",
+      "route": "/account/list",
+      "scope": "page",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(3) > span.truncate:nth-of-type(2)",
+      "text": "交易",
+      "color": "rgb(107, 114, 128)",
+      "colorRaw": "rgb(107, 114, 128)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 3.6,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(3) > span.truncate:nth-of-type(2)"
       ]
     },
     {
@@ -1000,8 +1150,8 @@
       "page": "account-list",
       "route": "/account/list",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(3) > span.truncate:nth-of-type(2)",
-      "text": "交易",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(4) > span.truncate:nth-of-type(2)",
+      "text": "预算",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
       "background": "rgb(23, 26, 33)",
@@ -1012,7 +1162,7 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(3) > span.truncate:nth-of-type(2)"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(4) > span.truncate:nth-of-type(2)"
       ]
     },
     {
@@ -1024,8 +1174,8 @@
       "page": "account-list",
       "route": "/account/list",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(4) > span.truncate:nth-of-type(2)",
-      "text": "预算",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(5) > span.truncate:nth-of-type(2)",
+      "text": "目标",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
       "background": "rgb(23, 26, 33)",
@@ -1036,7 +1186,7 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(4) > span.truncate:nth-of-type(2)"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(5) > span.truncate:nth-of-type(2)"
       ]
     },
     {
@@ -1048,8 +1198,8 @@
       "page": "account-list",
       "route": "/account/list",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(5) > span.truncate:nth-of-type(2)",
-      "text": "目标",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(6) > span.truncate:nth-of-type(2)",
+      "text": "报表",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
       "background": "rgb(23, 26, 33)",
@@ -1060,7 +1210,7 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(5) > span.truncate:nth-of-type(2)"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(6) > span.truncate:nth-of-type(2)"
       ]
     },
     {
@@ -1072,8 +1222,8 @@
       "page": "account-list",
       "route": "/account/list",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(6) > span.truncate:nth-of-type(2)",
-      "text": "报表",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(7) > span.truncate:nth-of-type(2)",
+      "text": "发现",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
       "background": "rgb(23, 26, 33)",
@@ -1084,7 +1234,7 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(6) > span.truncate:nth-of-type(2)"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(7) > span.truncate:nth-of-type(2)"
       ]
     },
     {
@@ -1096,31 +1246,7 @@
       "page": "account-list",
       "route": "/account/list",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(7) > span.truncate:nth-of-type(2)",
-      "text": "发现",
-      "color": "rgb(107, 114, 128)",
-      "colorRaw": "rgb(107, 114, 128)",
-      "background": "rgb(23, 26, 33)",
-      "contrast": 3.6,
-      "threshold": 3,
-      "largeText": false,
-      "fontSize": 14,
-      "disabled": false,
-      "occurrences": 1,
-      "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(7) > span.truncate:nth-of-type(2)"
-      ]
-    },
-    {
-      "id": "DM-023",
-      "category": "其他文本不可见",
-      "kind": "text",
-      "level": "advisory",
-      "severity": "low",
-      "page": "account-list",
-      "route": "/account/list",
-      "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > button.w-full.flex.items-center > span",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > button.w-full.flex.items-center > span",
       "text": "设置",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -1132,11 +1258,11 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > button.w-full.flex.items-center > span"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > button.w-full.flex.items-center > span"
       ]
     },
     {
-      "id": "DM-024",
+      "id": "DM-023",
       "category": "辅助文字不可见",
       "kind": "text",
       "level": "advisory",
@@ -1144,7 +1270,7 @@
       "page": "account-list",
       "route": "/account/list",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > div.flex.items-center.gap-2 > div.text-xs.text-text-muted.truncate:nth-of-type(2)",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > div.flex.items-center.gap-2 > div.text-xs.text-text-muted.truncate:nth-of-type(2)",
       "text": "默认空间",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -1156,31 +1282,7 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > div.flex.items-center.gap-2 > div.text-xs.text-text-muted.truncate:nth-of-type(2)"
-      ]
-    },
-    {
-      "id": "DM-027",
-      "category": "其他文本不可见",
-      "kind": "text",
-      "level": "advisory",
-      "severity": "low",
-      "page": "transaction",
-      "route": "/transaction",
-      "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(1) > span.truncate:nth-of-type(2)",
-      "text": "看板",
-      "color": "rgb(107, 114, 128)",
-      "colorRaw": "rgb(107, 114, 128)",
-      "background": "rgb(23, 26, 33)",
-      "contrast": 3.6,
-      "threshold": 3,
-      "largeText": false,
-      "fontSize": 14,
-      "disabled": false,
-      "occurrences": 1,
-      "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(1) > span.truncate:nth-of-type(2)"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > div.flex.items-center.gap-2 > div.text-xs.text-text-muted.truncate:nth-of-type(2)"
       ]
     },
     {
@@ -1192,8 +1294,8 @@
       "page": "transaction",
       "route": "/transaction",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(2) > span.truncate:nth-of-type(2)",
-      "text": "账户",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(1) > span.truncate:nth-of-type(2)",
+      "text": "看板",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
       "background": "rgb(23, 26, 33)",
@@ -1204,7 +1306,7 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(2) > span.truncate:nth-of-type(2)"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(1) > span.truncate:nth-of-type(2)"
       ]
     },
     {
@@ -1216,8 +1318,8 @@
       "page": "transaction",
       "route": "/transaction",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(4) > span.truncate:nth-of-type(2)",
-      "text": "预算",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(2) > span.truncate:nth-of-type(2)",
+      "text": "账户",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
       "background": "rgb(23, 26, 33)",
@@ -1228,7 +1330,7 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(4) > span.truncate:nth-of-type(2)"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(2) > span.truncate:nth-of-type(2)"
       ]
     },
     {
@@ -1240,8 +1342,8 @@
       "page": "transaction",
       "route": "/transaction",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(5) > span.truncate:nth-of-type(2)",
-      "text": "目标",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(4) > span.truncate:nth-of-type(2)",
+      "text": "预算",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
       "background": "rgb(23, 26, 33)",
@@ -1252,7 +1354,7 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(5) > span.truncate:nth-of-type(2)"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(4) > span.truncate:nth-of-type(2)"
       ]
     },
     {
@@ -1264,8 +1366,8 @@
       "page": "transaction",
       "route": "/transaction",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(6) > span.truncate:nth-of-type(2)",
-      "text": "报表",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(5) > span.truncate:nth-of-type(2)",
+      "text": "目标",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
       "background": "rgb(23, 26, 33)",
@@ -1276,7 +1378,7 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(6) > span.truncate:nth-of-type(2)"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(5) > span.truncate:nth-of-type(2)"
       ]
     },
     {
@@ -1288,8 +1390,8 @@
       "page": "transaction",
       "route": "/transaction",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(7) > span.truncate:nth-of-type(2)",
-      "text": "发现",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(6) > span.truncate:nth-of-type(2)",
+      "text": "报表",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
       "background": "rgb(23, 26, 33)",
@@ -1300,7 +1402,7 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(7) > span.truncate:nth-of-type(2)"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(6) > span.truncate:nth-of-type(2)"
       ]
     },
     {
@@ -1312,7 +1414,31 @@
       "page": "transaction",
       "route": "/transaction",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > button.w-full.flex.items-center > span",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(7) > span.truncate:nth-of-type(2)",
+      "text": "发现",
+      "color": "rgb(107, 114, 128)",
+      "colorRaw": "rgb(107, 114, 128)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 3.6,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(7) > span.truncate:nth-of-type(2)"
+      ]
+    },
+    {
+      "id": "DM-034",
+      "category": "其他文本不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "transaction",
+      "route": "/transaction",
+      "scope": "page",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > button.w-full.flex.items-center > span",
       "text": "设置",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -1324,11 +1450,11 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > button.w-full.flex.items-center > span"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > button.w-full.flex.items-center > span"
       ]
     },
     {
-      "id": "DM-034",
+      "id": "DM-035",
       "category": "辅助文字不可见",
       "kind": "text",
       "level": "advisory",
@@ -1336,7 +1462,7 @@
       "page": "transaction",
       "route": "/transaction",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > div.flex.items-center.gap-2 > div.text-xs.text-text-muted.truncate:nth-of-type(2)",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > div.flex.items-center.gap-2 > div.text-xs.text-text-muted.truncate:nth-of-type(2)",
       "text": "默认空间",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -1348,79 +1474,7 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > div.flex.items-center.gap-2 > div.text-xs.text-text-muted.truncate:nth-of-type(2)"
-      ]
-    },
-    {
-      "id": "DM-038",
-      "category": "其他文本不可见",
-      "kind": "text",
-      "level": "advisory",
-      "severity": "low",
-      "page": "goal-list",
-      "route": "/goal/list",
-      "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(1) > span.truncate:nth-of-type(2)",
-      "text": "看板",
-      "color": "rgb(107, 114, 128)",
-      "colorRaw": "rgb(107, 114, 128)",
-      "background": "rgb(23, 26, 33)",
-      "contrast": 3.6,
-      "threshold": 3,
-      "largeText": false,
-      "fontSize": 14,
-      "disabled": false,
-      "occurrences": 1,
-      "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(1) > span.truncate:nth-of-type(2)"
-      ]
-    },
-    {
-      "id": "DM-039",
-      "category": "其他文本不可见",
-      "kind": "text",
-      "level": "advisory",
-      "severity": "low",
-      "page": "goal-list",
-      "route": "/goal/list",
-      "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(2) > span.truncate:nth-of-type(2)",
-      "text": "账户",
-      "color": "rgb(107, 114, 128)",
-      "colorRaw": "rgb(107, 114, 128)",
-      "background": "rgb(23, 26, 33)",
-      "contrast": 3.6,
-      "threshold": 3,
-      "largeText": false,
-      "fontSize": 14,
-      "disabled": false,
-      "occurrences": 1,
-      "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(2) > span.truncate:nth-of-type(2)"
-      ]
-    },
-    {
-      "id": "DM-040",
-      "category": "其他文本不可见",
-      "kind": "text",
-      "level": "advisory",
-      "severity": "low",
-      "page": "goal-list",
-      "route": "/goal/list",
-      "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(3) > span.truncate:nth-of-type(2)",
-      "text": "交易",
-      "color": "rgb(107, 114, 128)",
-      "colorRaw": "rgb(107, 114, 128)",
-      "background": "rgb(23, 26, 33)",
-      "contrast": 3.6,
-      "threshold": 3,
-      "largeText": false,
-      "fontSize": 14,
-      "disabled": false,
-      "occurrences": 1,
-      "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(3) > span.truncate:nth-of-type(2)"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > div.flex.items-center.gap-2 > div.text-xs.text-text-muted.truncate:nth-of-type(2)"
       ]
     },
     {
@@ -1429,107 +1483,11 @@
       "kind": "text",
       "level": "advisory",
       "severity": "low",
-      "page": "goal-list",
-      "route": "/goal/list",
+      "page": "transaction",
+      "route": "/transaction",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(4) > span.truncate:nth-of-type(2)",
-      "text": "预算",
-      "color": "rgb(107, 114, 128)",
-      "colorRaw": "rgb(107, 114, 128)",
-      "background": "rgb(23, 26, 33)",
-      "contrast": 3.6,
-      "threshold": 3,
-      "largeText": false,
-      "fontSize": 14,
-      "disabled": false,
-      "occurrences": 1,
-      "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(4) > span.truncate:nth-of-type(2)"
-      ]
-    },
-    {
-      "id": "DM-042",
-      "category": "其他文本不可见",
-      "kind": "text",
-      "level": "advisory",
-      "severity": "low",
-      "page": "goal-list",
-      "route": "/goal/list",
-      "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(6) > span.truncate:nth-of-type(2)",
-      "text": "报表",
-      "color": "rgb(107, 114, 128)",
-      "colorRaw": "rgb(107, 114, 128)",
-      "background": "rgb(23, 26, 33)",
-      "contrast": 3.6,
-      "threshold": 3,
-      "largeText": false,
-      "fontSize": 14,
-      "disabled": false,
-      "occurrences": 1,
-      "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(6) > span.truncate:nth-of-type(2)"
-      ]
-    },
-    {
-      "id": "DM-043",
-      "category": "其他文本不可见",
-      "kind": "text",
-      "level": "advisory",
-      "severity": "low",
-      "page": "goal-list",
-      "route": "/goal/list",
-      "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(7) > span.truncate:nth-of-type(2)",
-      "text": "发现",
-      "color": "rgb(107, 114, 128)",
-      "colorRaw": "rgb(107, 114, 128)",
-      "background": "rgb(23, 26, 33)",
-      "contrast": 3.6,
-      "threshold": 3,
-      "largeText": false,
-      "fontSize": 14,
-      "disabled": false,
-      "occurrences": 1,
-      "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(7) > span.truncate:nth-of-type(2)"
-      ]
-    },
-    {
-      "id": "DM-044",
-      "category": "其他文本不可见",
-      "kind": "text",
-      "level": "advisory",
-      "severity": "low",
-      "page": "goal-list",
-      "route": "/goal/list",
-      "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > button.w-full.flex.items-center > span",
-      "text": "设置",
-      "color": "rgb(107, 114, 128)",
-      "colorRaw": "rgb(107, 114, 128)",
-      "background": "rgb(23, 26, 33)",
-      "contrast": 3.6,
-      "threshold": 3,
-      "largeText": false,
-      "fontSize": 14,
-      "disabled": false,
-      "occurrences": 1,
-      "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > button.w-full.flex.items-center > span"
-      ]
-    },
-    {
-      "id": "DM-045",
-      "category": "辅助文字不可见",
-      "kind": "text",
-      "level": "advisory",
-      "severity": "low",
-      "page": "goal-list",
-      "route": "/goal/list",
-      "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > div.flex.items-center.gap-2 > div.text-xs.text-text-muted.truncate:nth-of-type(2)",
-      "text": "默认空间",
+      "selector": "div.card.\\!p-0.divide-y:nth-of-type(2) > div.flex.items-center.gap-3:nth-of-type(2) > div.flex-1.min-w-0:nth-of-type(2) > div.flex.items-center.gap-1\\.5:nth-of-type(2) > span:nth-of-type(1)",
+      "text": "其他支出",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
       "background": "rgb(23, 26, 33)",
@@ -1538,94 +1496,24 @@
       "largeText": false,
       "fontSize": 12,
       "disabled": false,
-      "occurrences": 1,
+      "occurrences": 81,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > div.flex.items-center.gap-2 > div.text-xs.text-text-muted.truncate:nth-of-type(2)"
-      ]
-    },
-    {
-      "id": "DM-048",
-      "category": "其他文本不可见",
-      "kind": "text",
-      "level": "advisory",
-      "severity": "low",
-      "page": "report-list",
-      "route": "/report/list",
-      "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(1) > span.truncate:nth-of-type(2)",
-      "text": "看板",
-      "color": "rgb(107, 114, 128)",
-      "colorRaw": "rgb(107, 114, 128)",
-      "background": "rgb(23, 26, 33)",
-      "contrast": 3.6,
-      "threshold": 3,
-      "largeText": false,
-      "fontSize": 14,
-      "disabled": false,
-      "occurrences": 1,
-      "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(1) > span.truncate:nth-of-type(2)"
-      ]
-    },
-    {
-      "id": "DM-049",
-      "category": "其他文本不可见",
-      "kind": "text",
-      "level": "advisory",
-      "severity": "low",
-      "page": "report-list",
-      "route": "/report/list",
-      "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(2) > span.truncate:nth-of-type(2)",
-      "text": "账户",
-      "color": "rgb(107, 114, 128)",
-      "colorRaw": "rgb(107, 114, 128)",
-      "background": "rgb(23, 26, 33)",
-      "contrast": 3.6,
-      "threshold": 3,
-      "largeText": false,
-      "fontSize": 14,
-      "disabled": false,
-      "occurrences": 1,
-      "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(2) > span.truncate:nth-of-type(2)"
-      ]
-    },
-    {
-      "id": "DM-050",
-      "category": "其他文本不可见",
-      "kind": "text",
-      "level": "advisory",
-      "severity": "low",
-      "page": "report-list",
-      "route": "/report/list",
-      "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(3) > span.truncate:nth-of-type(2)",
-      "text": "交易",
-      "color": "rgb(107, 114, 128)",
-      "colorRaw": "rgb(107, 114, 128)",
-      "background": "rgb(23, 26, 33)",
-      "contrast": 3.6,
-      "threshold": 3,
-      "largeText": false,
-      "fontSize": 14,
-      "disabled": false,
-      "occurrences": 1,
-      "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(3) > span.truncate:nth-of-type(2)"
+        "div.card.\\!p-0.divide-y:nth-of-type(2) > div.flex.items-center.gap-3:nth-of-type(2) > div.flex-1.min-w-0:nth-of-type(2) > div.flex.items-center.gap-1\\.5:nth-of-type(2) > span:nth-of-type(1)",
+        "div.card.\\!p-0.divide-y:nth-of-type(2) > div.flex.items-center.gap-3:nth-of-type(4) > div.flex-1.min-w-0:nth-of-type(2) > div.flex.items-center.gap-1\\.5:nth-of-type(2) > span:nth-of-type(1)",
+        "div.card.\\!p-0.divide-y:nth-of-type(2) > div.flex.items-center.gap-3:nth-of-type(1) > div.flex-1.min-w-0:nth-of-type(2) > div.flex.items-center.gap-1\\.5:nth-of-type(2) > span:nth-of-type(1)"
       ]
     },
     {
       "id": "DM-051",
-      "category": "其他文本不可见",
-      "kind": "text",
+      "category": "placeholder不可见",
+      "kind": "placeholder",
       "level": "advisory",
       "severity": "low",
-      "page": "report-list",
-      "route": "/report/list",
+      "page": "transaction",
+      "route": "/transaction",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(4) > span.truncate:nth-of-type(2)",
-      "text": "预算",
+      "selector": "[data-testid=\"tx-search\"]",
+      "text": "搜索名称 / 商户 / 备注 / 分类",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
       "background": "rgb(23, 26, 33)",
@@ -1636,55 +1524,7 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(4) > span.truncate:nth-of-type(2)"
-      ]
-    },
-    {
-      "id": "DM-052",
-      "category": "其他文本不可见",
-      "kind": "text",
-      "level": "advisory",
-      "severity": "low",
-      "page": "report-list",
-      "route": "/report/list",
-      "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(5) > span.truncate:nth-of-type(2)",
-      "text": "目标",
-      "color": "rgb(107, 114, 128)",
-      "colorRaw": "rgb(107, 114, 128)",
-      "background": "rgb(23, 26, 33)",
-      "contrast": 3.6,
-      "threshold": 3,
-      "largeText": false,
-      "fontSize": 14,
-      "disabled": false,
-      "occurrences": 1,
-      "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(5) > span.truncate:nth-of-type(2)"
-      ]
-    },
-    {
-      "id": "DM-053",
-      "category": "其他文本不可见",
-      "kind": "text",
-      "level": "advisory",
-      "severity": "low",
-      "page": "report-list",
-      "route": "/report/list",
-      "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(7) > span.truncate:nth-of-type(2)",
-      "text": "发现",
-      "color": "rgb(107, 114, 128)",
-      "colorRaw": "rgb(107, 114, 128)",
-      "background": "rgb(23, 26, 33)",
-      "contrast": 3.6,
-      "threshold": 3,
-      "largeText": false,
-      "fontSize": 14,
-      "disabled": false,
-      "occurrences": 1,
-      "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(7) > span.truncate:nth-of-type(2)"
+        "[data-testid=\"tx-search\"]"
       ]
     },
     {
@@ -1693,11 +1533,11 @@
       "kind": "text",
       "level": "advisory",
       "severity": "low",
-      "page": "report-list",
-      "route": "/report/list",
+      "page": "goal-list",
+      "route": "/goal/list",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > button.w-full.flex.items-center > span",
-      "text": "设置",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(1) > span.truncate:nth-of-type(2)",
+      "text": "看板",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
       "background": "rgb(23, 26, 33)",
@@ -1708,31 +1548,79 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > button.w-full.flex.items-center > span"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(1) > span.truncate:nth-of-type(2)"
       ]
     },
     {
       "id": "DM-055",
-      "category": "辅助文字不可见",
+      "category": "其他文本不可见",
       "kind": "text",
       "level": "advisory",
       "severity": "low",
-      "page": "report-list",
-      "route": "/report/list",
+      "page": "goal-list",
+      "route": "/goal/list",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > div.flex.items-center.gap-2 > div.text-xs.text-text-muted.truncate:nth-of-type(2)",
-      "text": "默认空间",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(2) > span.truncate:nth-of-type(2)",
+      "text": "账户",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
       "background": "rgb(23, 26, 33)",
       "contrast": 3.6,
       "threshold": 3,
       "largeText": false,
-      "fontSize": 12,
+      "fontSize": 14,
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > div.flex.items-center.gap-2 > div.text-xs.text-text-muted.truncate:nth-of-type(2)"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(2) > span.truncate:nth-of-type(2)"
+      ]
+    },
+    {
+      "id": "DM-056",
+      "category": "其他文本不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "goal-list",
+      "route": "/goal/list",
+      "scope": "page",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(3) > span.truncate:nth-of-type(2)",
+      "text": "交易",
+      "color": "rgb(107, 114, 128)",
+      "colorRaw": "rgb(107, 114, 128)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 3.6,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(3) > span.truncate:nth-of-type(2)"
+      ]
+    },
+    {
+      "id": "DM-057",
+      "category": "其他文本不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "goal-list",
+      "route": "/goal/list",
+      "scope": "page",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(4) > span.truncate:nth-of-type(2)",
+      "text": "预算",
+      "color": "rgb(107, 114, 128)",
+      "colorRaw": "rgb(107, 114, 128)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 3.6,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(4) > span.truncate:nth-of-type(2)"
       ]
     },
     {
@@ -1741,11 +1629,11 @@
       "kind": "text",
       "level": "advisory",
       "severity": "low",
-      "page": "budget",
-      "route": "/budget",
+      "page": "goal-list",
+      "route": "/goal/list",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(1) > span.truncate:nth-of-type(2)",
-      "text": "看板",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(6) > span.truncate:nth-of-type(2)",
+      "text": "报表",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
       "background": "rgb(23, 26, 33)",
@@ -1756,7 +1644,7 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(1) > span.truncate:nth-of-type(2)"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(6) > span.truncate:nth-of-type(2)"
       ]
     },
     {
@@ -1765,11 +1653,11 @@
       "kind": "text",
       "level": "advisory",
       "severity": "low",
-      "page": "budget",
-      "route": "/budget",
+      "page": "goal-list",
+      "route": "/goal/list",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(2) > span.truncate:nth-of-type(2)",
-      "text": "账户",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(7) > span.truncate:nth-of-type(2)",
+      "text": "发现",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
       "background": "rgb(23, 26, 33)",
@@ -1780,7 +1668,7 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(2) > span.truncate:nth-of-type(2)"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(7) > span.truncate:nth-of-type(2)"
       ]
     },
     {
@@ -1789,106 +1677,10 @@
       "kind": "text",
       "level": "advisory",
       "severity": "low",
-      "page": "budget",
-      "route": "/budget",
+      "page": "goal-list",
+      "route": "/goal/list",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(3) > span.truncate:nth-of-type(2)",
-      "text": "交易",
-      "color": "rgb(107, 114, 128)",
-      "colorRaw": "rgb(107, 114, 128)",
-      "background": "rgb(23, 26, 33)",
-      "contrast": 3.6,
-      "threshold": 3,
-      "largeText": false,
-      "fontSize": 14,
-      "disabled": false,
-      "occurrences": 1,
-      "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(3) > span.truncate:nth-of-type(2)"
-      ]
-    },
-    {
-      "id": "DM-061",
-      "category": "其他文本不可见",
-      "kind": "text",
-      "level": "advisory",
-      "severity": "low",
-      "page": "budget",
-      "route": "/budget",
-      "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(5) > span.truncate:nth-of-type(2)",
-      "text": "目标",
-      "color": "rgb(107, 114, 128)",
-      "colorRaw": "rgb(107, 114, 128)",
-      "background": "rgb(23, 26, 33)",
-      "contrast": 3.6,
-      "threshold": 3,
-      "largeText": false,
-      "fontSize": 14,
-      "disabled": false,
-      "occurrences": 1,
-      "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(5) > span.truncate:nth-of-type(2)"
-      ]
-    },
-    {
-      "id": "DM-062",
-      "category": "其他文本不可见",
-      "kind": "text",
-      "level": "advisory",
-      "severity": "low",
-      "page": "budget",
-      "route": "/budget",
-      "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(6) > span.truncate:nth-of-type(2)",
-      "text": "报表",
-      "color": "rgb(107, 114, 128)",
-      "colorRaw": "rgb(107, 114, 128)",
-      "background": "rgb(23, 26, 33)",
-      "contrast": 3.6,
-      "threshold": 3,
-      "largeText": false,
-      "fontSize": 14,
-      "disabled": false,
-      "occurrences": 1,
-      "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(6) > span.truncate:nth-of-type(2)"
-      ]
-    },
-    {
-      "id": "DM-063",
-      "category": "其他文本不可见",
-      "kind": "text",
-      "level": "advisory",
-      "severity": "low",
-      "page": "budget",
-      "route": "/budget",
-      "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(7) > span.truncate:nth-of-type(2)",
-      "text": "发现",
-      "color": "rgb(107, 114, 128)",
-      "colorRaw": "rgb(107, 114, 128)",
-      "background": "rgb(23, 26, 33)",
-      "contrast": 3.6,
-      "threshold": 3,
-      "largeText": false,
-      "fontSize": 14,
-      "disabled": false,
-      "occurrences": 1,
-      "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(7) > span.truncate:nth-of-type(2)"
-      ]
-    },
-    {
-      "id": "DM-064",
-      "category": "其他文本不可见",
-      "kind": "text",
-      "level": "advisory",
-      "severity": "low",
-      "page": "budget",
-      "route": "/budget",
-      "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > button.w-full.flex.items-center > span",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > button.w-full.flex.items-center > span",
       "text": "设置",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -1900,19 +1692,19 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > button.w-full.flex.items-center > span"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > button.w-full.flex.items-center > span"
       ]
     },
     {
-      "id": "DM-065",
+      "id": "DM-061",
       "category": "辅助文字不可见",
       "kind": "text",
       "level": "advisory",
       "severity": "low",
-      "page": "budget",
-      "route": "/budget",
+      "page": "goal-list",
+      "route": "/goal/list",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > div.flex.items-center.gap-2 > div.text-xs.text-text-muted.truncate:nth-of-type(2)",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > div.flex.items-center.gap-2 > div.text-xs.text-text-muted.truncate:nth-of-type(2)",
       "text": "默认空间",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -1924,7 +1716,103 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > div.flex.items-center.gap-2 > div.text-xs.text-text-muted.truncate:nth-of-type(2)"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > div.flex.items-center.gap-2 > div.text-xs.text-text-muted.truncate:nth-of-type(2)"
+      ]
+    },
+    {
+      "id": "DM-065",
+      "category": "其他文本不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "report-list",
+      "route": "/report/list",
+      "scope": "page",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(1) > span.truncate:nth-of-type(2)",
+      "text": "看板",
+      "color": "rgb(107, 114, 128)",
+      "colorRaw": "rgb(107, 114, 128)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 3.6,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(1) > span.truncate:nth-of-type(2)"
+      ]
+    },
+    {
+      "id": "DM-066",
+      "category": "其他文本不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "report-list",
+      "route": "/report/list",
+      "scope": "page",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(2) > span.truncate:nth-of-type(2)",
+      "text": "账户",
+      "color": "rgb(107, 114, 128)",
+      "colorRaw": "rgb(107, 114, 128)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 3.6,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(2) > span.truncate:nth-of-type(2)"
+      ]
+    },
+    {
+      "id": "DM-067",
+      "category": "其他文本不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "report-list",
+      "route": "/report/list",
+      "scope": "page",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(3) > span.truncate:nth-of-type(2)",
+      "text": "交易",
+      "color": "rgb(107, 114, 128)",
+      "colorRaw": "rgb(107, 114, 128)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 3.6,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(3) > span.truncate:nth-of-type(2)"
+      ]
+    },
+    {
+      "id": "DM-068",
+      "category": "其他文本不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "report-list",
+      "route": "/report/list",
+      "scope": "page",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(4) > span.truncate:nth-of-type(2)",
+      "text": "预算",
+      "color": "rgb(107, 114, 128)",
+      "colorRaw": "rgb(107, 114, 128)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 3.6,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(4) > span.truncate:nth-of-type(2)"
       ]
     },
     {
@@ -1933,11 +1821,11 @@
       "kind": "text",
       "level": "advisory",
       "severity": "low",
-      "page": "discover",
-      "route": "/discover",
+      "page": "report-list",
+      "route": "/report/list",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(1) > span.truncate:nth-of-type(2)",
-      "text": "看板",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(5) > span.truncate:nth-of-type(2)",
+      "text": "目标",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
       "background": "rgb(23, 26, 33)",
@@ -1948,7 +1836,7 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(1) > span.truncate:nth-of-type(2)"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(5) > span.truncate:nth-of-type(2)"
       ]
     },
     {
@@ -1957,322 +1845,10 @@
       "kind": "text",
       "level": "advisory",
       "severity": "low",
-      "page": "discover",
-      "route": "/discover",
+      "page": "report-list",
+      "route": "/report/list",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(2) > span.truncate:nth-of-type(2)",
-      "text": "账户",
-      "color": "rgb(107, 114, 128)",
-      "colorRaw": "rgb(107, 114, 128)",
-      "background": "rgb(23, 26, 33)",
-      "contrast": 3.6,
-      "threshold": 3,
-      "largeText": false,
-      "fontSize": 14,
-      "disabled": false,
-      "occurrences": 1,
-      "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(2) > span.truncate:nth-of-type(2)"
-      ]
-    },
-    {
-      "id": "DM-071",
-      "category": "其他文本不可见",
-      "kind": "text",
-      "level": "advisory",
-      "severity": "low",
-      "page": "discover",
-      "route": "/discover",
-      "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(3) > span.truncate:nth-of-type(2)",
-      "text": "交易",
-      "color": "rgb(107, 114, 128)",
-      "colorRaw": "rgb(107, 114, 128)",
-      "background": "rgb(23, 26, 33)",
-      "contrast": 3.6,
-      "threshold": 3,
-      "largeText": false,
-      "fontSize": 14,
-      "disabled": false,
-      "occurrences": 1,
-      "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(3) > span.truncate:nth-of-type(2)"
-      ]
-    },
-    {
-      "id": "DM-072",
-      "category": "其他文本不可见",
-      "kind": "text",
-      "level": "advisory",
-      "severity": "low",
-      "page": "discover",
-      "route": "/discover",
-      "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(4) > span.truncate:nth-of-type(2)",
-      "text": "预算",
-      "color": "rgb(107, 114, 128)",
-      "colorRaw": "rgb(107, 114, 128)",
-      "background": "rgb(23, 26, 33)",
-      "contrast": 3.6,
-      "threshold": 3,
-      "largeText": false,
-      "fontSize": 14,
-      "disabled": false,
-      "occurrences": 1,
-      "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(4) > span.truncate:nth-of-type(2)"
-      ]
-    },
-    {
-      "id": "DM-073",
-      "category": "其他文本不可见",
-      "kind": "text",
-      "level": "advisory",
-      "severity": "low",
-      "page": "discover",
-      "route": "/discover",
-      "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(5) > span.truncate:nth-of-type(2)",
-      "text": "目标",
-      "color": "rgb(107, 114, 128)",
-      "colorRaw": "rgb(107, 114, 128)",
-      "background": "rgb(23, 26, 33)",
-      "contrast": 3.6,
-      "threshold": 3,
-      "largeText": false,
-      "fontSize": 14,
-      "disabled": false,
-      "occurrences": 1,
-      "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(5) > span.truncate:nth-of-type(2)"
-      ]
-    },
-    {
-      "id": "DM-074",
-      "category": "其他文本不可见",
-      "kind": "text",
-      "level": "advisory",
-      "severity": "low",
-      "page": "discover",
-      "route": "/discover",
-      "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(6) > span.truncate:nth-of-type(2)",
-      "text": "报表",
-      "color": "rgb(107, 114, 128)",
-      "colorRaw": "rgb(107, 114, 128)",
-      "background": "rgb(23, 26, 33)",
-      "contrast": 3.6,
-      "threshold": 3,
-      "largeText": false,
-      "fontSize": 14,
-      "disabled": false,
-      "occurrences": 1,
-      "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(6) > span.truncate:nth-of-type(2)"
-      ]
-    },
-    {
-      "id": "DM-075",
-      "category": "其他文本不可见",
-      "kind": "text",
-      "level": "advisory",
-      "severity": "low",
-      "page": "discover",
-      "route": "/discover",
-      "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > button.w-full.flex.items-center > span",
-      "text": "设置",
-      "color": "rgb(107, 114, 128)",
-      "colorRaw": "rgb(107, 114, 128)",
-      "background": "rgb(23, 26, 33)",
-      "contrast": 3.6,
-      "threshold": 3,
-      "largeText": false,
-      "fontSize": 14,
-      "disabled": false,
-      "occurrences": 1,
-      "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > button.w-full.flex.items-center > span"
-      ]
-    },
-    {
-      "id": "DM-076",
-      "category": "辅助文字不可见",
-      "kind": "text",
-      "level": "advisory",
-      "severity": "low",
-      "page": "discover",
-      "route": "/discover",
-      "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > div.flex.items-center.gap-2 > div.text-xs.text-text-muted.truncate:nth-of-type(2)",
-      "text": "默认空间",
-      "color": "rgb(107, 114, 128)",
-      "colorRaw": "rgb(107, 114, 128)",
-      "background": "rgb(23, 26, 33)",
-      "contrast": 3.6,
-      "threshold": 3,
-      "largeText": false,
-      "fontSize": 12,
-      "disabled": false,
-      "occurrences": 1,
-      "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > div.flex.items-center.gap-2 > div.text-xs.text-text-muted.truncate:nth-of-type(2)"
-      ]
-    },
-    {
-      "id": "DM-080",
-      "category": "其他文本不可见",
-      "kind": "text",
-      "level": "advisory",
-      "severity": "low",
-      "page": "settings",
-      "route": "/settings",
-      "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(1) > span.truncate:nth-of-type(2)",
-      "text": "看板",
-      "color": "rgb(107, 114, 128)",
-      "colorRaw": "rgb(107, 114, 128)",
-      "background": "rgb(23, 26, 33)",
-      "contrast": 3.6,
-      "threshold": 3,
-      "largeText": false,
-      "fontSize": 14,
-      "disabled": false,
-      "occurrences": 1,
-      "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(1) > span.truncate:nth-of-type(2)"
-      ]
-    },
-    {
-      "id": "DM-081",
-      "category": "其他文本不可见",
-      "kind": "text",
-      "level": "advisory",
-      "severity": "low",
-      "page": "settings",
-      "route": "/settings",
-      "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(2) > span.truncate:nth-of-type(2)",
-      "text": "账户",
-      "color": "rgb(107, 114, 128)",
-      "colorRaw": "rgb(107, 114, 128)",
-      "background": "rgb(23, 26, 33)",
-      "contrast": 3.6,
-      "threshold": 3,
-      "largeText": false,
-      "fontSize": 14,
-      "disabled": false,
-      "occurrences": 1,
-      "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(2) > span.truncate:nth-of-type(2)"
-      ]
-    },
-    {
-      "id": "DM-082",
-      "category": "其他文本不可见",
-      "kind": "text",
-      "level": "advisory",
-      "severity": "low",
-      "page": "settings",
-      "route": "/settings",
-      "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(3) > span.truncate:nth-of-type(2)",
-      "text": "交易",
-      "color": "rgb(107, 114, 128)",
-      "colorRaw": "rgb(107, 114, 128)",
-      "background": "rgb(23, 26, 33)",
-      "contrast": 3.6,
-      "threshold": 3,
-      "largeText": false,
-      "fontSize": 14,
-      "disabled": false,
-      "occurrences": 1,
-      "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(3) > span.truncate:nth-of-type(2)"
-      ]
-    },
-    {
-      "id": "DM-083",
-      "category": "其他文本不可见",
-      "kind": "text",
-      "level": "advisory",
-      "severity": "low",
-      "page": "settings",
-      "route": "/settings",
-      "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(4) > span.truncate:nth-of-type(2)",
-      "text": "预算",
-      "color": "rgb(107, 114, 128)",
-      "colorRaw": "rgb(107, 114, 128)",
-      "background": "rgb(23, 26, 33)",
-      "contrast": 3.6,
-      "threshold": 3,
-      "largeText": false,
-      "fontSize": 14,
-      "disabled": false,
-      "occurrences": 1,
-      "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(4) > span.truncate:nth-of-type(2)"
-      ]
-    },
-    {
-      "id": "DM-084",
-      "category": "其他文本不可见",
-      "kind": "text",
-      "level": "advisory",
-      "severity": "low",
-      "page": "settings",
-      "route": "/settings",
-      "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(5) > span.truncate:nth-of-type(2)",
-      "text": "目标",
-      "color": "rgb(107, 114, 128)",
-      "colorRaw": "rgb(107, 114, 128)",
-      "background": "rgb(23, 26, 33)",
-      "contrast": 3.6,
-      "threshold": 3,
-      "largeText": false,
-      "fontSize": 14,
-      "disabled": false,
-      "occurrences": 1,
-      "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(5) > span.truncate:nth-of-type(2)"
-      ]
-    },
-    {
-      "id": "DM-085",
-      "category": "其他文本不可见",
-      "kind": "text",
-      "level": "advisory",
-      "severity": "low",
-      "page": "settings",
-      "route": "/settings",
-      "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(6) > span.truncate:nth-of-type(2)",
-      "text": "报表",
-      "color": "rgb(107, 114, 128)",
-      "colorRaw": "rgb(107, 114, 128)",
-      "background": "rgb(23, 26, 33)",
-      "contrast": 3.6,
-      "threshold": 3,
-      "largeText": false,
-      "fontSize": 14,
-      "disabled": false,
-      "occurrences": 1,
-      "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(6) > span.truncate:nth-of-type(2)"
-      ]
-    },
-    {
-      "id": "DM-086",
-      "category": "其他文本不可见",
-      "kind": "text",
-      "level": "advisory",
-      "severity": "low",
-      "page": "settings",
-      "route": "/settings",
-      "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(7) > span.truncate:nth-of-type(2)",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(7) > span.truncate:nth-of-type(2)",
       "text": "发现",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -2284,19 +1860,19 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(7) > span.truncate:nth-of-type(2)"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(7) > span.truncate:nth-of-type(2)"
       ]
     },
     {
-      "id": "DM-087",
+      "id": "DM-071",
       "category": "其他文本不可见",
       "kind": "text",
       "level": "advisory",
       "severity": "low",
-      "page": "settings",
-      "route": "/settings",
+      "page": "report-list",
+      "route": "/report/list",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > button.w-full.flex.items-center > span",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > button.w-full.flex.items-center > span",
       "text": "设置",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -2308,19 +1884,19 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > button.w-full.flex.items-center > span"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > button.w-full.flex.items-center > span"
       ]
     },
     {
-      "id": "DM-088",
+      "id": "DM-072",
       "category": "辅助文字不可见",
       "kind": "text",
       "level": "advisory",
       "severity": "low",
-      "page": "settings",
-      "route": "/settings",
+      "page": "report-list",
+      "route": "/report/list",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > div.flex.items-center.gap-2 > div.text-xs.text-text-muted.truncate:nth-of-type(2)",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > div.flex.items-center.gap-2 > div.text-xs.text-text-muted.truncate:nth-of-type(2)",
       "text": "默认空间",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -2332,11 +1908,611 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > div.flex.items-center.gap-2 > div.text-xs.text-text-muted.truncate:nth-of-type(2)"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > div.flex.items-center.gap-2 > div.text-xs.text-text-muted.truncate:nth-of-type(2)"
+      ]
+    },
+    {
+      "id": "DM-076",
+      "category": "其他文本不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "budget",
+      "route": "/budget",
+      "scope": "page",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(1) > span.truncate:nth-of-type(2)",
+      "text": "看板",
+      "color": "rgb(107, 114, 128)",
+      "colorRaw": "rgb(107, 114, 128)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 3.6,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(1) > span.truncate:nth-of-type(2)"
+      ]
+    },
+    {
+      "id": "DM-077",
+      "category": "其他文本不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "budget",
+      "route": "/budget",
+      "scope": "page",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(2) > span.truncate:nth-of-type(2)",
+      "text": "账户",
+      "color": "rgb(107, 114, 128)",
+      "colorRaw": "rgb(107, 114, 128)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 3.6,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(2) > span.truncate:nth-of-type(2)"
+      ]
+    },
+    {
+      "id": "DM-078",
+      "category": "其他文本不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "budget",
+      "route": "/budget",
+      "scope": "page",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(3) > span.truncate:nth-of-type(2)",
+      "text": "交易",
+      "color": "rgb(107, 114, 128)",
+      "colorRaw": "rgb(107, 114, 128)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 3.6,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(3) > span.truncate:nth-of-type(2)"
+      ]
+    },
+    {
+      "id": "DM-079",
+      "category": "其他文本不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "budget",
+      "route": "/budget",
+      "scope": "page",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(5) > span.truncate:nth-of-type(2)",
+      "text": "目标",
+      "color": "rgb(107, 114, 128)",
+      "colorRaw": "rgb(107, 114, 128)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 3.6,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(5) > span.truncate:nth-of-type(2)"
+      ]
+    },
+    {
+      "id": "DM-080",
+      "category": "其他文本不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "budget",
+      "route": "/budget",
+      "scope": "page",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(6) > span.truncate:nth-of-type(2)",
+      "text": "报表",
+      "color": "rgb(107, 114, 128)",
+      "colorRaw": "rgb(107, 114, 128)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 3.6,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(6) > span.truncate:nth-of-type(2)"
+      ]
+    },
+    {
+      "id": "DM-081",
+      "category": "其他文本不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "budget",
+      "route": "/budget",
+      "scope": "page",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(7) > span.truncate:nth-of-type(2)",
+      "text": "发现",
+      "color": "rgb(107, 114, 128)",
+      "colorRaw": "rgb(107, 114, 128)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 3.6,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(7) > span.truncate:nth-of-type(2)"
+      ]
+    },
+    {
+      "id": "DM-082",
+      "category": "其他文本不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "budget",
+      "route": "/budget",
+      "scope": "page",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > button.w-full.flex.items-center > span",
+      "text": "设置",
+      "color": "rgb(107, 114, 128)",
+      "colorRaw": "rgb(107, 114, 128)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 3.6,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > button.w-full.flex.items-center > span"
+      ]
+    },
+    {
+      "id": "DM-083",
+      "category": "辅助文字不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "budget",
+      "route": "/budget",
+      "scope": "page",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > div.flex.items-center.gap-2 > div.text-xs.text-text-muted.truncate:nth-of-type(2)",
+      "text": "默认空间",
+      "color": "rgb(107, 114, 128)",
+      "colorRaw": "rgb(107, 114, 128)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 3.6,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 12,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > div.flex.items-center.gap-2 > div.text-xs.text-text-muted.truncate:nth-of-type(2)"
+      ]
+    },
+    {
+      "id": "DM-088",
+      "category": "其他文本不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "discover",
+      "route": "/discover",
+      "scope": "page",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(1) > span.truncate:nth-of-type(2)",
+      "text": "看板",
+      "color": "rgb(107, 114, 128)",
+      "colorRaw": "rgb(107, 114, 128)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 3.6,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(1) > span.truncate:nth-of-type(2)"
+      ]
+    },
+    {
+      "id": "DM-089",
+      "category": "其他文本不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "discover",
+      "route": "/discover",
+      "scope": "page",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(2) > span.truncate:nth-of-type(2)",
+      "text": "账户",
+      "color": "rgb(107, 114, 128)",
+      "colorRaw": "rgb(107, 114, 128)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 3.6,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(2) > span.truncate:nth-of-type(2)"
+      ]
+    },
+    {
+      "id": "DM-090",
+      "category": "其他文本不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "discover",
+      "route": "/discover",
+      "scope": "page",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(3) > span.truncate:nth-of-type(2)",
+      "text": "交易",
+      "color": "rgb(107, 114, 128)",
+      "colorRaw": "rgb(107, 114, 128)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 3.6,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(3) > span.truncate:nth-of-type(2)"
       ]
     },
     {
       "id": "DM-091",
+      "category": "其他文本不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "discover",
+      "route": "/discover",
+      "scope": "page",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(4) > span.truncate:nth-of-type(2)",
+      "text": "预算",
+      "color": "rgb(107, 114, 128)",
+      "colorRaw": "rgb(107, 114, 128)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 3.6,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(4) > span.truncate:nth-of-type(2)"
+      ]
+    },
+    {
+      "id": "DM-092",
+      "category": "其他文本不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "discover",
+      "route": "/discover",
+      "scope": "page",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(5) > span.truncate:nth-of-type(2)",
+      "text": "目标",
+      "color": "rgb(107, 114, 128)",
+      "colorRaw": "rgb(107, 114, 128)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 3.6,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(5) > span.truncate:nth-of-type(2)"
+      ]
+    },
+    {
+      "id": "DM-093",
+      "category": "其他文本不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "discover",
+      "route": "/discover",
+      "scope": "page",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(6) > span.truncate:nth-of-type(2)",
+      "text": "报表",
+      "color": "rgb(107, 114, 128)",
+      "colorRaw": "rgb(107, 114, 128)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 3.6,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(6) > span.truncate:nth-of-type(2)"
+      ]
+    },
+    {
+      "id": "DM-094",
+      "category": "其他文本不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "discover",
+      "route": "/discover",
+      "scope": "page",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > button.w-full.flex.items-center > span",
+      "text": "设置",
+      "color": "rgb(107, 114, 128)",
+      "colorRaw": "rgb(107, 114, 128)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 3.6,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > button.w-full.flex.items-center > span"
+      ]
+    },
+    {
+      "id": "DM-095",
+      "category": "辅助文字不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "discover",
+      "route": "/discover",
+      "scope": "page",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > div.flex.items-center.gap-2 > div.text-xs.text-text-muted.truncate:nth-of-type(2)",
+      "text": "默认空间",
+      "color": "rgb(107, 114, 128)",
+      "colorRaw": "rgb(107, 114, 128)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 3.6,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 12,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > div.flex.items-center.gap-2 > div.text-xs.text-text-muted.truncate:nth-of-type(2)"
+      ]
+    },
+    {
+      "id": "DM-099",
+      "category": "其他文本不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "settings",
+      "route": "/settings",
+      "scope": "page",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(1) > span.truncate:nth-of-type(2)",
+      "text": "看板",
+      "color": "rgb(107, 114, 128)",
+      "colorRaw": "rgb(107, 114, 128)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 3.6,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(1) > span.truncate:nth-of-type(2)"
+      ]
+    },
+    {
+      "id": "DM-100",
+      "category": "其他文本不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "settings",
+      "route": "/settings",
+      "scope": "page",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(2) > span.truncate:nth-of-type(2)",
+      "text": "账户",
+      "color": "rgb(107, 114, 128)",
+      "colorRaw": "rgb(107, 114, 128)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 3.6,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(2) > span.truncate:nth-of-type(2)"
+      ]
+    },
+    {
+      "id": "DM-101",
+      "category": "其他文本不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "settings",
+      "route": "/settings",
+      "scope": "page",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(3) > span.truncate:nth-of-type(2)",
+      "text": "交易",
+      "color": "rgb(107, 114, 128)",
+      "colorRaw": "rgb(107, 114, 128)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 3.6,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(3) > span.truncate:nth-of-type(2)"
+      ]
+    },
+    {
+      "id": "DM-102",
+      "category": "其他文本不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "settings",
+      "route": "/settings",
+      "scope": "page",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(4) > span.truncate:nth-of-type(2)",
+      "text": "预算",
+      "color": "rgb(107, 114, 128)",
+      "colorRaw": "rgb(107, 114, 128)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 3.6,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(4) > span.truncate:nth-of-type(2)"
+      ]
+    },
+    {
+      "id": "DM-103",
+      "category": "其他文本不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "settings",
+      "route": "/settings",
+      "scope": "page",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(5) > span.truncate:nth-of-type(2)",
+      "text": "目标",
+      "color": "rgb(107, 114, 128)",
+      "colorRaw": "rgb(107, 114, 128)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 3.6,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(5) > span.truncate:nth-of-type(2)"
+      ]
+    },
+    {
+      "id": "DM-104",
+      "category": "其他文本不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "settings",
+      "route": "/settings",
+      "scope": "page",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(6) > span.truncate:nth-of-type(2)",
+      "text": "报表",
+      "color": "rgb(107, 114, 128)",
+      "colorRaw": "rgb(107, 114, 128)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 3.6,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(6) > span.truncate:nth-of-type(2)"
+      ]
+    },
+    {
+      "id": "DM-105",
+      "category": "其他文本不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "settings",
+      "route": "/settings",
+      "scope": "page",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(7) > span.truncate:nth-of-type(2)",
+      "text": "发现",
+      "color": "rgb(107, 114, 128)",
+      "colorRaw": "rgb(107, 114, 128)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 3.6,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(7) > span.truncate:nth-of-type(2)"
+      ]
+    },
+    {
+      "id": "DM-106",
+      "category": "其他文本不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "settings",
+      "route": "/settings",
+      "scope": "page",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > button.w-full.flex.items-center > span",
+      "text": "设置",
+      "color": "rgb(107, 114, 128)",
+      "colorRaw": "rgb(107, 114, 128)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 3.6,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > button.w-full.flex.items-center > span"
+      ]
+    },
+    {
+      "id": "DM-107",
+      "category": "辅助文字不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "settings",
+      "route": "/settings",
+      "scope": "page",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > div.flex.items-center.gap-2 > div.text-xs.text-text-muted.truncate:nth-of-type(2)",
+      "text": "默认空间",
+      "color": "rgb(107, 114, 128)",
+      "colorRaw": "rgb(107, 114, 128)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 3.6,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 12,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > div.flex.items-center.gap-2 > div.text-xs.text-text-muted.truncate:nth-of-type(2)"
+      ]
+    },
+    {
+      "id": "DM-110",
       "category": "placeholder不可见",
       "kind": "placeholder",
       "level": "advisory",
@@ -2360,7 +2536,7 @@
       ]
     },
     {
-      "id": "DM-092",
+      "id": "DM-111",
       "category": "placeholder不可见",
       "kind": "placeholder",
       "level": "advisory",
@@ -2384,7 +2560,7 @@
       ]
     },
     {
-      "id": "DM-095",
+      "id": "DM-114",
       "category": "其他文本不可见",
       "kind": "text",
       "level": "advisory",
@@ -2392,7 +2568,7 @@
       "page": "ai",
       "route": "/ai",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(1) > span.truncate:nth-of-type(2)",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(1) > span.truncate:nth-of-type(2)",
       "text": "看板",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -2404,11 +2580,11 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(1) > span.truncate:nth-of-type(2)"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(1) > span.truncate:nth-of-type(2)"
       ]
     },
     {
-      "id": "DM-096",
+      "id": "DM-115",
       "category": "其他文本不可见",
       "kind": "text",
       "level": "advisory",
@@ -2416,7 +2592,7 @@
       "page": "ai",
       "route": "/ai",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(2) > span.truncate:nth-of-type(2)",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(2) > span.truncate:nth-of-type(2)",
       "text": "账户",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -2428,11 +2604,11 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(2) > span.truncate:nth-of-type(2)"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(2) > span.truncate:nth-of-type(2)"
       ]
     },
     {
-      "id": "DM-097",
+      "id": "DM-116",
       "category": "其他文本不可见",
       "kind": "text",
       "level": "advisory",
@@ -2440,7 +2616,7 @@
       "page": "ai",
       "route": "/ai",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(3) > span.truncate:nth-of-type(2)",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(3) > span.truncate:nth-of-type(2)",
       "text": "交易",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -2452,11 +2628,11 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(3) > span.truncate:nth-of-type(2)"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(3) > span.truncate:nth-of-type(2)"
       ]
     },
     {
-      "id": "DM-098",
+      "id": "DM-117",
       "category": "其他文本不可见",
       "kind": "text",
       "level": "advisory",
@@ -2464,7 +2640,7 @@
       "page": "ai",
       "route": "/ai",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(4) > span.truncate:nth-of-type(2)",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(4) > span.truncate:nth-of-type(2)",
       "text": "预算",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -2476,11 +2652,11 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(4) > span.truncate:nth-of-type(2)"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(4) > span.truncate:nth-of-type(2)"
       ]
     },
     {
-      "id": "DM-099",
+      "id": "DM-118",
       "category": "其他文本不可见",
       "kind": "text",
       "level": "advisory",
@@ -2488,7 +2664,7 @@
       "page": "ai",
       "route": "/ai",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(5) > span.truncate:nth-of-type(2)",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(5) > span.truncate:nth-of-type(2)",
       "text": "目标",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -2500,11 +2676,11 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(5) > span.truncate:nth-of-type(2)"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(5) > span.truncate:nth-of-type(2)"
       ]
     },
     {
-      "id": "DM-100",
+      "id": "DM-119",
       "category": "其他文本不可见",
       "kind": "text",
       "level": "advisory",
@@ -2512,7 +2688,7 @@
       "page": "ai",
       "route": "/ai",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(6) > span.truncate:nth-of-type(2)",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(6) > span.truncate:nth-of-type(2)",
       "text": "报表",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -2524,11 +2700,11 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(6) > span.truncate:nth-of-type(2)"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(6) > span.truncate:nth-of-type(2)"
       ]
     },
     {
-      "id": "DM-101",
+      "id": "DM-120",
       "category": "其他文本不可见",
       "kind": "text",
       "level": "advisory",
@@ -2536,7 +2712,7 @@
       "page": "ai",
       "route": "/ai",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(7) > span.truncate:nth-of-type(2)",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(7) > span.truncate:nth-of-type(2)",
       "text": "发现",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -2548,11 +2724,11 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(7) > span.truncate:nth-of-type(2)"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > nav.flex-1.px-2.space-y-0\\.5 > a.flex.items-center.gap-2\\.5:nth-of-type(7) > span.truncate:nth-of-type(2)"
       ]
     },
     {
-      "id": "DM-102",
+      "id": "DM-121",
       "category": "其他文本不可见",
       "kind": "text",
       "level": "advisory",
@@ -2560,7 +2736,7 @@
       "page": "ai",
       "route": "/ai",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > button.w-full.flex.items-center > span",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > button.w-full.flex.items-center > span",
       "text": "设置",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -2572,11 +2748,11 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > button.w-full.flex.items-center > span"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > button.w-full.flex.items-center > span"
       ]
     },
     {
-      "id": "DM-103",
+      "id": "DM-122",
       "category": "辅助文字不可见",
       "kind": "text",
       "level": "advisory",
@@ -2584,7 +2760,7 @@
       "page": "ai",
       "route": "/ai",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > div.flex.items-center.gap-2 > div.text-xs.text-text-muted.truncate:nth-of-type(2)",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > div.flex.items-center.gap-2 > div.text-xs.text-text-muted.truncate:nth-of-type(2)",
       "text": "默认空间",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -2596,11 +2772,11 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > div.flex.items-center.gap-2 > div.text-xs.text-text-muted.truncate:nth-of-type(2)"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-2.pb-3:nth-of-type(3) > div.flex.items-center.gap-2 > div.text-xs.text-text-muted.truncate:nth-of-type(2)"
       ]
     },
     {
-      "id": "DM-106",
+      "id": "DM-128",
       "category": "其他文本不可见",
       "kind": "text",
       "level": "advisory",
@@ -2608,7 +2784,7 @@
       "page": "account-create-step2",
       "route": "/account/list?create=1",
       "scope": "modal",
-      "selector": "div.space-y-5 > div.space-y-2:nth-of-type(3) > div.flex.items-center.gap-2:nth-of-type(2) > span.text-text-muted > span",
+      "selector": "div.space-y-5 > div:nth-of-type(3) > div.flex.items-center.gap-2:nth-of-type(2) > span.text-text-muted > span",
       "text": "¥",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -2618,13 +2794,14 @@
       "largeText": false,
       "fontSize": 16,
       "disabled": false,
-      "occurrences": 1,
+      "occurrences": 2,
       "sampleSelectors": [
-        "div.space-y-5 > div.space-y-2:nth-of-type(3) > div.flex.items-center.gap-2:nth-of-type(2) > span.text-text-muted > span"
+        "div.space-y-5 > div:nth-of-type(3) > div.flex.items-center.gap-2:nth-of-type(2) > span.text-text-muted > span",
+        "div.space-y-5 > div:nth-of-type(4) > div.flex.items-center.gap-2:nth-of-type(2) > span.text-text-muted > span"
       ]
     },
     {
-      "id": "DM-107",
+      "id": "DM-129",
       "category": "辅助文字不可见",
       "kind": "text",
       "level": "advisory",
@@ -2648,7 +2825,7 @@
       ]
     },
     {
-      "id": "DM-109",
+      "id": "DM-131",
       "category": "placeholder不可见",
       "kind": "placeholder",
       "level": "advisory",
@@ -2656,7 +2833,7 @@
       "page": "account-create-step2",
       "route": "/account/list?create=1",
       "scope": "modal",
-      "selector": "div.px-6.pb-5.overflow-auto:nth-of-type(2) > div.space-y-5 > div.space-y-2:nth-of-type(2) > div.flex.items-center.gap-2:nth-of-type(2) > input.flex-1.bg-transparent.outline-none",
+      "selector": "#acc-name",
       "text": "请输入资金账户名称",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -2668,11 +2845,11 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.px-6.pb-5.overflow-auto:nth-of-type(2) > div.space-y-5 > div.space-y-2:nth-of-type(2) > div.flex.items-center.gap-2:nth-of-type(2) > input.flex-1.bg-transparent.outline-none"
+        "#acc-name"
       ]
     },
     {
-      "id": "DM-110",
+      "id": "DM-132",
       "category": "placeholder不可见",
       "kind": "placeholder",
       "level": "advisory",
@@ -2680,7 +2857,7 @@
       "page": "account-create-step2",
       "route": "/account/list?create=1",
       "scope": "modal",
-      "selector": "div.px-6.pb-5.overflow-auto:nth-of-type(2) > div.space-y-5 > div.space-y-2:nth-of-type(3) > div.flex.items-center.gap-2:nth-of-type(2) > input.flex-1.bg-transparent.outline-none",
+      "selector": "#acc-balance",
       "text": "0.00",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -2692,11 +2869,11 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.px-6.pb-5.overflow-auto:nth-of-type(2) > div.space-y-5 > div.space-y-2:nth-of-type(3) > div.flex.items-center.gap-2:nth-of-type(2) > input.flex-1.bg-transparent.outline-none"
+        "#acc-balance"
       ]
     },
     {
-      "id": "DM-111",
+      "id": "DM-133",
       "category": "placeholder不可见",
       "kind": "placeholder",
       "level": "advisory",
@@ -2704,7 +2881,31 @@
       "page": "account-create-step2",
       "route": "/account/list?create=1",
       "scope": "modal",
-      "selector": "div.relative.card.max-h-\\[85vh\\]:nth-of-type(2) > div.px-6.pb-5.overflow-auto:nth-of-type(2) > div.space-y-5 > div.space-y-2:nth-of-type(4) > textarea.w-full.min-h-\\[80px\\].p-3",
+      "selector": "[data-testid=\"yield-percent-input\"]",
+      "text": "如 350，留空表示不统计",
+      "color": "rgb(107, 114, 128)",
+      "colorRaw": "rgb(107, 114, 128)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 3.6,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "[data-testid=\"yield-percent-input\"]"
+      ]
+    },
+    {
+      "id": "DM-134",
+      "category": "placeholder不可见",
+      "kind": "placeholder",
+      "level": "advisory",
+      "severity": "low",
+      "page": "account-create-step2",
+      "route": "/account/list?create=1",
+      "scope": "modal",
+      "selector": "#acc-remark",
       "text": "备注（选填）",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -2716,11 +2917,11 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.relative.card.max-h-\\[85vh\\]:nth-of-type(2) > div.px-6.pb-5.overflow-auto:nth-of-type(2) > div.space-y-5 > div.space-y-2:nth-of-type(4) > textarea.w-full.min-h-\\[80px\\].p-3"
+        "#acc-remark"
       ]
     },
     {
-      "id": "DM-113",
+      "id": "DM-137",
       "category": "其他文本不可见",
       "kind": "text",
       "level": "advisory",
@@ -2744,7 +2945,7 @@
       ]
     },
     {
-      "id": "DM-114",
+      "id": "DM-138",
       "category": "辅助文字不可见",
       "kind": "text",
       "level": "advisory",
@@ -2768,7 +2969,7 @@
       ]
     },
     {
-      "id": "DM-116",
+      "id": "DM-140",
       "category": "placeholder不可见",
       "kind": "placeholder",
       "level": "advisory",
@@ -2776,7 +2977,7 @@
       "page": "budget-create",
       "route": "/budget?create=1",
       "scope": "modal",
-      "selector": "div.px-6.pb-5.overflow-auto:nth-of-type(2) > div.space-y-5 > div:nth-of-type(1) > div.flex.items-center.gap-2:nth-of-type(2) > input.flex-1.bg-transparent.outline-none",
+      "selector": "#bud-name",
       "text": "例如：日常餐饮 / 全月总支出",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -2788,11 +2989,11 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.px-6.pb-5.overflow-auto:nth-of-type(2) > div.space-y-5 > div:nth-of-type(1) > div.flex.items-center.gap-2:nth-of-type(2) > input.flex-1.bg-transparent.outline-none"
+        "#bud-name"
       ]
     },
     {
-      "id": "DM-117",
+      "id": "DM-141",
       "category": "placeholder不可见",
       "kind": "placeholder",
       "level": "advisory",
@@ -2800,7 +3001,7 @@
       "page": "budget-create",
       "route": "/budget?create=1",
       "scope": "modal",
-      "selector": "div.space-y-5 > div.grid.grid-cols-2.gap-3:nth-of-type(3) > div:nth-of-type(1) > div.flex.items-center.gap-2:nth-of-type(2) > input.flex-1.bg-transparent.outline-none",
+      "selector": "#bud-amount",
       "text": "0.00",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -2812,11 +3013,11 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.space-y-5 > div.grid.grid-cols-2.gap-3:nth-of-type(3) > div:nth-of-type(1) > div.flex.items-center.gap-2:nth-of-type(2) > input.flex-1.bg-transparent.outline-none"
+        "#bud-amount"
       ]
     },
     {
-      "id": "DM-121",
+      "id": "DM-145",
       "category": "辅助文字不可见",
       "kind": "text",
       "level": "advisory",
@@ -2840,7 +3041,7 @@
       ]
     },
     {
-      "id": "DM-127",
+      "id": "DM-151",
       "category": "placeholder不可见",
       "kind": "placeholder",
       "level": "advisory",
@@ -2864,7 +3065,59 @@
       ]
     },
     {
-      "id": "DM-118",
+      "id": "DM-044",
+      "category": "其他文本不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "transaction",
+      "route": "/transaction",
+      "scope": "page",
+      "selector": "div.card.\\!p-0.divide-y:nth-of-type(2) > div.flex.items-center.gap-3 > div.flex-1.min-w-0:nth-of-type(2) > div.flex.items-center.gap-1\\.5:nth-of-type(2) > span:nth-of-type(1)",
+      "text": "美妆护肤",
+      "color": "rgb(192, 38, 211)",
+      "colorRaw": "rgb(192, 38, 211)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 3.7,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 12,
+      "disabled": false,
+      "occurrences": 9,
+      "sampleSelectors": [
+        "div.card.\\!p-0.divide-y:nth-of-type(2) > div.flex.items-center.gap-3 > div.flex-1.min-w-0:nth-of-type(2) > div.flex.items-center.gap-1\\.5:nth-of-type(2) > span:nth-of-type(1)",
+        "div.card.\\!p-0.divide-y:nth-of-type(2) > div.flex.items-center.gap-3:nth-of-type(1) > div.flex-1.min-w-0:nth-of-type(2) > div.flex.items-center.gap-1\\.5:nth-of-type(2) > span:nth-of-type(1)",
+        "div.card.\\!p-0.divide-y:nth-of-type(2) > div.flex.items-center.gap-3:nth-of-type(3) > div.flex-1.min-w-0:nth-of-type(2) > div.flex.items-center.gap-1\\.5:nth-of-type(2) > span:nth-of-type(1)"
+      ]
+    },
+    {
+      "id": "DM-043",
+      "category": "其他文本不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "transaction",
+      "route": "/transaction",
+      "scope": "page",
+      "selector": "div.card.\\!p-0.divide-y:nth-of-type(2) > div.flex.items-center.gap-3:nth-of-type(5) > div.flex-1.min-w-0:nth-of-type(2) > div.flex.items-center.gap-1\\.5:nth-of-type(2) > span:nth-of-type(1)",
+      "text": "旅行",
+      "color": "rgb(225, 29, 72)",
+      "colorRaw": "rgb(225, 29, 72)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 3.71,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 12,
+      "disabled": false,
+      "occurrences": 13,
+      "sampleSelectors": [
+        "div.card.\\!p-0.divide-y:nth-of-type(2) > div.flex.items-center.gap-3:nth-of-type(5) > div.flex-1.min-w-0:nth-of-type(2) > div.flex.items-center.gap-1\\.5:nth-of-type(2) > span:nth-of-type(1)",
+        "div.card.\\!p-0.divide-y:nth-of-type(2) > div.flex.items-center.gap-3:nth-of-type(7) > div.flex-1.min-w-0:nth-of-type(2) > div.flex.items-center.gap-1\\.5:nth-of-type(2) > span:nth-of-type(1)",
+        "div.card.\\!p-0.divide-y:nth-of-type(2) > div.flex.items-center.gap-3:nth-of-type(3) > div.flex-1.min-w-0:nth-of-type(2) > div.flex.items-center.gap-1\\.5:nth-of-type(2) > span:nth-of-type(1)"
+      ]
+    },
+    {
+      "id": "DM-142",
       "category": "其他文本不可见",
       "kind": "text",
       "level": "advisory",
@@ -2888,7 +3141,33 @@
       ]
     },
     {
-      "id": "DM-012",
+      "id": "DM-047",
+      "category": "其他文本不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "transaction",
+      "route": "/transaction",
+      "scope": "page",
+      "selector": "div.card.\\!p-0.divide-y:nth-of-type(2) > div.flex.items-center.gap-3:nth-of-type(3) > div.flex-1.min-w-0:nth-of-type(2) > div.flex.items-center.gap-1\\.5:nth-of-type(2) > span:nth-of-type(1)",
+      "text": "游戏",
+      "color": "rgb(219, 39, 119)",
+      "colorRaw": "rgb(219, 39, 119)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 3.79,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 12,
+      "disabled": false,
+      "occurrences": 4,
+      "sampleSelectors": [
+        "div.card.\\!p-0.divide-y:nth-of-type(2) > div.flex.items-center.gap-3:nth-of-type(3) > div.flex-1.min-w-0:nth-of-type(2) > div.flex.items-center.gap-1\\.5:nth-of-type(2) > span:nth-of-type(1)",
+        "div.card.\\!p-0.divide-y:nth-of-type(2) > div.flex.items-center.gap-3:nth-of-type(5) > div.flex-1.min-w-0:nth-of-type(2) > div.flex.items-center.gap-1\\.5:nth-of-type(2) > span:nth-of-type(1)",
+        "div.card.\\!p-0.divide-y:nth-of-type(2) > div.flex.items-center.gap-3 > div.flex-1.min-w-0:nth-of-type(2) > div.flex.items-center.gap-1\\.5:nth-of-type(2) > span:nth-of-type(1)"
+      ]
+    },
+    {
+      "id": "DM-011",
       "category": "其他文本不可见",
       "kind": "text",
       "level": "advisory",
@@ -2944,7 +3223,7 @@
       "page": "home",
       "route": "/home",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-1.pb-3:nth-of-type(2) > button.w-full.flex.items-center > span.flex.items-center.gap-1:nth-of-type(2)",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-1.pb-3:nth-of-type(2) > button.w-full.flex.items-center > span.flex.items-center.gap-1:nth-of-type(2)",
       "text": "K",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -2956,7 +3235,31 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-1.pb-3:nth-of-type(2) > button.w-full.flex.items-center > span.flex.items-center.gap-1:nth-of-type(2)"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-1.pb-3:nth-of-type(2) > button.w-full.flex.items-center > span.flex.items-center.gap-1:nth-of-type(2)"
+      ]
+    },
+    {
+      "id": "DM-014",
+      "category": "其他文本不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "account-list",
+      "route": "/account/list",
+      "scope": "page",
+      "selector": "aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-1.pb-3:nth-of-type(2) > button.w-full.flex.items-center > span.flex.items-center.gap-2:nth-of-type(1) > span.text-sm",
+      "text": "搜索",
+      "color": "rgb(107, 114, 128)",
+      "colorRaw": "rgb(107, 114, 128)",
+      "background": "rgb(15, 17, 21)",
+      "contrast": 3.91,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-1.pb-3:nth-of-type(2) > button.w-full.flex.items-center > span.flex.items-center.gap-2:nth-of-type(1) > span.text-sm"
       ]
     },
     {
@@ -2968,31 +3271,7 @@
       "page": "account-list",
       "route": "/account/list",
       "scope": "page",
-      "selector": "aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-1.pb-3:nth-of-type(2) > button.w-full.flex.items-center > span.flex.items-center.gap-2:nth-of-type(1) > span.text-sm",
-      "text": "搜索",
-      "color": "rgb(107, 114, 128)",
-      "colorRaw": "rgb(107, 114, 128)",
-      "background": "rgb(15, 17, 21)",
-      "contrast": 3.91,
-      "threshold": 3,
-      "largeText": false,
-      "fontSize": 14,
-      "disabled": false,
-      "occurrences": 1,
-      "sampleSelectors": [
-        "aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-1.pb-3:nth-of-type(2) > button.w-full.flex.items-center > span.flex.items-center.gap-2:nth-of-type(1) > span.text-sm"
-      ]
-    },
-    {
-      "id": "DM-016",
-      "category": "其他文本不可见",
-      "kind": "text",
-      "level": "advisory",
-      "severity": "low",
-      "page": "account-list",
-      "route": "/account/list",
-      "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-1.pb-3:nth-of-type(2) > button.w-full.flex.items-center > span.flex.items-center.gap-1:nth-of-type(2)",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-1.pb-3:nth-of-type(2) > button.w-full.flex.items-center > span.flex.items-center.gap-1:nth-of-type(2)",
       "text": "K",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -3004,31 +3283,7 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-1.pb-3:nth-of-type(2) > button.w-full.flex.items-center > span.flex.items-center.gap-1:nth-of-type(2)"
-      ]
-    },
-    {
-      "id": "DM-025",
-      "category": "其他文本不可见",
-      "kind": "text",
-      "level": "advisory",
-      "severity": "low",
-      "page": "transaction",
-      "route": "/transaction",
-      "scope": "page",
-      "selector": "aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-1.pb-3:nth-of-type(2) > button.w-full.flex.items-center > span.flex.items-center.gap-2:nth-of-type(1) > span.text-sm",
-      "text": "搜索",
-      "color": "rgb(107, 114, 128)",
-      "colorRaw": "rgb(107, 114, 128)",
-      "background": "rgb(15, 17, 21)",
-      "contrast": 3.91,
-      "threshold": 3,
-      "largeText": false,
-      "fontSize": 14,
-      "disabled": false,
-      "occurrences": 1,
-      "sampleSelectors": [
-        "aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-1.pb-3:nth-of-type(2) > button.w-full.flex.items-center > span.flex.items-center.gap-2:nth-of-type(1) > span.text-sm"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-1.pb-3:nth-of-type(2) > button.w-full.flex.items-center > span.flex.items-center.gap-1:nth-of-type(2)"
       ]
     },
     {
@@ -3040,7 +3295,31 @@
       "page": "transaction",
       "route": "/transaction",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-1.pb-3:nth-of-type(2) > button.w-full.flex.items-center > span.flex.items-center.gap-1:nth-of-type(2)",
+      "selector": "aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-1.pb-3:nth-of-type(2) > button.w-full.flex.items-center > span.flex.items-center.gap-2:nth-of-type(1) > span.text-sm",
+      "text": "搜索",
+      "color": "rgb(107, 114, 128)",
+      "colorRaw": "rgb(107, 114, 128)",
+      "background": "rgb(15, 17, 21)",
+      "contrast": 3.91,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-1.pb-3:nth-of-type(2) > button.w-full.flex.items-center > span.flex.items-center.gap-2:nth-of-type(1) > span.text-sm"
+      ]
+    },
+    {
+      "id": "DM-027",
+      "category": "其他文本不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "transaction",
+      "route": "/transaction",
+      "scope": "page",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-1.pb-3:nth-of-type(2) > button.w-full.flex.items-center > span.flex.items-center.gap-1:nth-of-type(2)",
       "text": "K",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -3052,11 +3331,11 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-1.pb-3:nth-of-type(2) > button.w-full.flex.items-center > span.flex.items-center.gap-1:nth-of-type(2)"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-1.pb-3:nth-of-type(2) > button.w-full.flex.items-center > span.flex.items-center.gap-1:nth-of-type(2)"
       ]
     },
     {
-      "id": "DM-035",
+      "id": "DM-037",
       "category": "辅助文字不可见",
       "kind": "text",
       "level": "advisory",
@@ -3065,7 +3344,7 @@
       "route": "/transaction",
       "scope": "page",
       "selector": "div.p-4.lg\\:p-8.space-y-5 > div.flex.items-center.justify-between:nth-of-type(1) > div.flex.items-center.gap-1 > div.flex.items-center.gap-1 > button.h-8.px-3.text-sm:nth-of-type(2)",
-      "text": "账单导入",
+      "text": "统计",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
       "background": "rgb(15, 17, 21)",
@@ -3080,7 +3359,31 @@
       ]
     },
     {
-      "id": "DM-036",
+      "id": "DM-038",
+      "category": "辅助文字不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "transaction",
+      "route": "/transaction",
+      "scope": "page",
+      "selector": "div.p-4.lg\\:p-8.space-y-5 > div.flex.items-center.justify-between:nth-of-type(1) > div.flex.items-center.gap-1 > div.flex.items-center.gap-1 > button.h-8.px-3.text-sm:nth-of-type(3)",
+      "text": "账单导入",
+      "color": "rgb(107, 114, 128)",
+      "colorRaw": "rgb(107, 114, 128)",
+      "background": "rgb(15, 17, 21)",
+      "contrast": 3.91,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "div.p-4.lg\\:p-8.space-y-5 > div.flex.items-center.justify-between:nth-of-type(1) > div.flex.items-center.gap-1 > div.flex.items-center.gap-1 > button.h-8.px-3.text-sm:nth-of-type(3)"
+      ]
+    },
+    {
+      "id": "DM-052",
       "category": "其他文本不可见",
       "kind": "text",
       "level": "advisory",
@@ -3104,7 +3407,7 @@
       ]
     },
     {
-      "id": "DM-037",
+      "id": "DM-053",
       "category": "其他文本不可见",
       "kind": "text",
       "level": "advisory",
@@ -3112,7 +3415,7 @@
       "page": "goal-list",
       "route": "/goal/list",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-1.pb-3:nth-of-type(2) > button.w-full.flex.items-center > span.flex.items-center.gap-1:nth-of-type(2)",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-1.pb-3:nth-of-type(2) > button.w-full.flex.items-center > span.flex.items-center.gap-1:nth-of-type(2)",
       "text": "K",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -3124,11 +3427,11 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-1.pb-3:nth-of-type(2) > button.w-full.flex.items-center > span.flex.items-center.gap-1:nth-of-type(2)"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-1.pb-3:nth-of-type(2) > button.w-full.flex.items-center > span.flex.items-center.gap-1:nth-of-type(2)"
       ]
     },
     {
-      "id": "DM-046",
+      "id": "DM-063",
       "category": "其他文本不可见",
       "kind": "text",
       "level": "advisory",
@@ -3152,7 +3455,7 @@
       ]
     },
     {
-      "id": "DM-047",
+      "id": "DM-064",
       "category": "其他文本不可见",
       "kind": "text",
       "level": "advisory",
@@ -3160,7 +3463,7 @@
       "page": "report-list",
       "route": "/report/list",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-1.pb-3:nth-of-type(2) > button.w-full.flex.items-center > span.flex.items-center.gap-1:nth-of-type(2)",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-1.pb-3:nth-of-type(2) > button.w-full.flex.items-center > span.flex.items-center.gap-1:nth-of-type(2)",
       "text": "K",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -3172,11 +3475,11 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-1.pb-3:nth-of-type(2) > button.w-full.flex.items-center > span.flex.items-center.gap-1:nth-of-type(2)"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-1.pb-3:nth-of-type(2) > button.w-full.flex.items-center > span.flex.items-center.gap-1:nth-of-type(2)"
       ]
     },
     {
-      "id": "DM-056",
+      "id": "DM-074",
       "category": "其他文本不可见",
       "kind": "text",
       "level": "advisory",
@@ -3200,7 +3503,7 @@
       ]
     },
     {
-      "id": "DM-057",
+      "id": "DM-075",
       "category": "其他文本不可见",
       "kind": "text",
       "level": "advisory",
@@ -3208,7 +3511,7 @@
       "page": "budget",
       "route": "/budget",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-1.pb-3:nth-of-type(2) > button.w-full.flex.items-center > span.flex.items-center.gap-1:nth-of-type(2)",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-1.pb-3:nth-of-type(2) > button.w-full.flex.items-center > span.flex.items-center.gap-1:nth-of-type(2)",
       "text": "K",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -3220,11 +3523,11 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-1.pb-3:nth-of-type(2) > button.w-full.flex.items-center > span.flex.items-center.gap-1:nth-of-type(2)"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-1.pb-3:nth-of-type(2) > button.w-full.flex.items-center > span.flex.items-center.gap-1:nth-of-type(2)"
       ]
     },
     {
-      "id": "DM-066",
+      "id": "DM-084",
       "category": "辅助文字不可见",
       "kind": "text",
       "level": "advisory",
@@ -3232,7 +3535,7 @@
       "page": "budget",
       "route": "/budget",
       "scope": "page",
-      "selector": "div.min-h-full.bg-bg.dark\\:bg-bg-dark > header.flex.items-center.justify-between > div.flex.items-center.gap-3:nth-of-type(1) > div.min-w-0:nth-of-type(2) > div.text-xs.text-text-muted.truncate:nth-of-type(2)",
+      "selector": "div.min-h-full.bg-bg.dark\\:bg-bg-dark > header.flex.items-center.justify-between > div.flex.items-center.gap-3:nth-of-type(1) > div.min-w-0:nth-of-type(2) > div.text-xs.text-text-muted.truncate",
       "text": "为分类或整体支出设定月度 / 年度上限",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -3244,11 +3547,11 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.min-h-full.bg-bg.dark\\:bg-bg-dark > header.flex.items-center.justify-between > div.flex.items-center.gap-3:nth-of-type(1) > div.min-w-0:nth-of-type(2) > div.text-xs.text-text-muted.truncate:nth-of-type(2)"
+        "div.min-h-full.bg-bg.dark\\:bg-bg-dark > header.flex.items-center.justify-between > div.flex.items-center.gap-3:nth-of-type(1) > div.min-w-0:nth-of-type(2) > div.text-xs.text-text-muted.truncate"
       ]
     },
     {
-      "id": "DM-067",
+      "id": "DM-086",
       "category": "其他文本不可见",
       "kind": "text",
       "level": "advisory",
@@ -3272,7 +3575,7 @@
       ]
     },
     {
-      "id": "DM-068",
+      "id": "DM-087",
       "category": "其他文本不可见",
       "kind": "text",
       "level": "advisory",
@@ -3280,7 +3583,7 @@
       "page": "discover",
       "route": "/discover",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-1.pb-3:nth-of-type(2) > button.w-full.flex.items-center > span.flex.items-center.gap-1:nth-of-type(2)",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-1.pb-3:nth-of-type(2) > button.w-full.flex.items-center > span.flex.items-center.gap-1:nth-of-type(2)",
       "text": "K",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -3292,11 +3595,11 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-1.pb-3:nth-of-type(2) > button.w-full.flex.items-center > span.flex.items-center.gap-1:nth-of-type(2)"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-1.pb-3:nth-of-type(2) > button.w-full.flex.items-center > span.flex.items-center.gap-1:nth-of-type(2)"
       ]
     },
     {
-      "id": "DM-077",
+      "id": "DM-096",
       "category": "辅助文字不可见",
       "kind": "text",
       "level": "advisory",
@@ -3304,7 +3607,7 @@
       "page": "discover",
       "route": "/discover",
       "scope": "page",
-      "selector": "div.min-h-full.bg-bg.dark\\:bg-bg-dark > header.flex.items-center.justify-between > div.flex.items-center.gap-3:nth-of-type(1) > div.min-w-0:nth-of-type(2) > div.text-xs.text-text-muted.truncate:nth-of-type(2)",
+      "selector": "div.min-h-full.bg-bg.dark\\:bg-bg-dark > header.flex.items-center.justify-between > div.flex.items-center.gap-3:nth-of-type(1) > div.min-w-0:nth-of-type(2) > div.text-xs.text-text-muted.truncate",
       "text": "基于你的数据生成的财务洞察",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -3316,11 +3619,11 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.min-h-full.bg-bg.dark\\:bg-bg-dark > header.flex.items-center.justify-between > div.flex.items-center.gap-3:nth-of-type(1) > div.min-w-0:nth-of-type(2) > div.text-xs.text-text-muted.truncate:nth-of-type(2)"
+        "div.min-h-full.bg-bg.dark\\:bg-bg-dark > header.flex.items-center.justify-between > div.flex.items-center.gap-3:nth-of-type(1) > div.min-w-0:nth-of-type(2) > div.text-xs.text-text-muted.truncate"
       ]
     },
     {
-      "id": "DM-078",
+      "id": "DM-097",
       "category": "其他文本不可见",
       "kind": "text",
       "level": "advisory",
@@ -3344,7 +3647,7 @@
       ]
     },
     {
-      "id": "DM-079",
+      "id": "DM-098",
       "category": "其他文本不可见",
       "kind": "text",
       "level": "advisory",
@@ -3352,7 +3655,7 @@
       "page": "settings",
       "route": "/settings",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-1.pb-3:nth-of-type(2) > button.w-full.flex.items-center > span.flex.items-center.gap-1:nth-of-type(2)",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-1.pb-3:nth-of-type(2) > button.w-full.flex.items-center > span.flex.items-center.gap-1:nth-of-type(2)",
       "text": "K",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -3364,11 +3667,11 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-1.pb-3:nth-of-type(2) > button.w-full.flex.items-center > span.flex.items-center.gap-1:nth-of-type(2)"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-1.pb-3:nth-of-type(2) > button.w-full.flex.items-center > span.flex.items-center.gap-1:nth-of-type(2)"
       ]
     },
     {
-      "id": "DM-089",
+      "id": "DM-108",
       "category": "辅助文字不可见",
       "kind": "text",
       "level": "advisory",
@@ -3376,7 +3679,7 @@
       "page": "settings",
       "route": "/settings",
       "scope": "page",
-      "selector": "div.min-h-full.bg-bg.dark\\:bg-bg-dark > header.flex.items-center.justify-between > div.flex.items-center.gap-3:nth-of-type(1) > div.min-w-0:nth-of-type(2) > div.text-xs.text-text-muted.truncate:nth-of-type(2)",
+      "selector": "div.min-h-full.bg-bg.dark\\:bg-bg-dark > header.flex.items-center.justify-between > div.flex.items-center.gap-3:nth-of-type(1) > div.min-w-0:nth-of-type(2) > div.text-xs.text-text-muted.truncate",
       "text": "个性化、数据与本地空间相关配置",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -3388,11 +3691,11 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.min-h-full.bg-bg.dark\\:bg-bg-dark > header.flex.items-center.justify-between > div.flex.items-center.gap-3:nth-of-type(1) > div.min-w-0:nth-of-type(2) > div.text-xs.text-text-muted.truncate:nth-of-type(2)"
+        "div.min-h-full.bg-bg.dark\\:bg-bg-dark > header.flex.items-center.justify-between > div.flex.items-center.gap-3:nth-of-type(1) > div.min-w-0:nth-of-type(2) > div.text-xs.text-text-muted.truncate"
       ]
     },
     {
-      "id": "DM-093",
+      "id": "DM-112",
       "category": "其他文本不可见",
       "kind": "text",
       "level": "advisory",
@@ -3416,7 +3719,7 @@
       ]
     },
     {
-      "id": "DM-094",
+      "id": "DM-113",
       "category": "其他文本不可见",
       "kind": "text",
       "level": "advisory",
@@ -3424,7 +3727,7 @@
       "page": "ai",
       "route": "/ai",
       "scope": "page",
-      "selector": "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-1.pb-3:nth-of-type(2) > button.w-full.flex.items-center > span.flex.items-center.gap-1:nth-of-type(2)",
+      "selector": "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-1.pb-3:nth-of-type(2) > button.w-full.flex.items-center > span.flex.items-center.gap-1:nth-of-type(2)",
       "text": "K",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -3436,11 +3739,11 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.flex.h-screen.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-1.pb-3:nth-of-type(2) > button.w-full.flex.items-center > span.flex.items-center.gap-1:nth-of-type(2)"
+        "div.flex.h-dvh.w-screen > aside.hidden.lg\\:flex.w-\\[200px\\] > div.px-3.pt-1.pb-3:nth-of-type(2) > button.w-full.flex.items-center > span.flex.items-center.gap-1:nth-of-type(2)"
       ]
     },
     {
-      "id": "DM-104",
+      "id": "DM-123",
       "category": "辅助文字不可见",
       "kind": "text",
       "level": "advisory",
@@ -3448,7 +3751,7 @@
       "page": "ai",
       "route": "/ai",
       "scope": "page",
-      "selector": "div.min-h-full.bg-bg.dark\\:bg-bg-dark > header.flex.items-center.justify-between > div.flex.items-center.gap-3:nth-of-type(1) > div.min-w-0:nth-of-type(2) > div.text-xs.text-text-muted.truncate:nth-of-type(2)",
+      "selector": "div.min-h-full.bg-bg.dark\\:bg-bg-dark > header.flex.items-center.justify-between > div.flex.items-center.gap-3:nth-of-type(1) > div.min-w-0:nth-of-type(2) > div.text-xs.text-text-muted.truncate",
       "text": "本地默认关闭，需手动配置模型后启用",
       "color": "rgb(107, 114, 128)",
       "colorRaw": "rgb(107, 114, 128)",
@@ -3460,11 +3763,61 @@
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.min-h-full.bg-bg.dark\\:bg-bg-dark > header.flex.items-center.justify-between > div.flex.items-center.gap-3:nth-of-type(1) > div.min-w-0:nth-of-type(2) > div.text-xs.text-text-muted.truncate:nth-of-type(2)"
+        "div.min-h-full.bg-bg.dark\\:bg-bg-dark > header.flex.items-center.justify-between > div.flex.items-center.gap-3:nth-of-type(1) > div.min-w-0:nth-of-type(2) > div.text-xs.text-text-muted.truncate"
       ]
     },
     {
-      "id": "DM-119",
+      "id": "DM-025",
+      "category": "其他文本不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "account-list",
+      "route": "/account/list",
+      "scope": "page",
+      "selector": "[data-testid=\"debt-badge\"]",
+      "text": "负债",
+      "color": "rgb(239, 68, 68)",
+      "colorRaw": "rgb(239, 68, 68)",
+      "background": "rgb(45, 30, 37)",
+      "contrast": 4.21,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 12,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "[data-testid=\"debt-badge\"]"
+      ]
+    },
+    {
+      "id": "DM-042",
+      "category": "其他文本不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "transaction",
+      "route": "/transaction",
+      "scope": "page",
+      "selector": "div.card.\\!p-0.divide-y:nth-of-type(2) > div.flex.items-center.gap-3:nth-of-type(3) > div.flex-1.min-w-0:nth-of-type(2) > div.flex.items-center.gap-1\\.5:nth-of-type(2) > span:nth-of-type(1)",
+      "text": "打车",
+      "color": "rgb(2, 132, 199)",
+      "colorRaw": "rgb(2, 132, 199)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 4.25,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 12,
+      "disabled": false,
+      "occurrences": 6,
+      "sampleSelectors": [
+        "div.card.\\!p-0.divide-y:nth-of-type(2) > div.flex.items-center.gap-3:nth-of-type(3) > div.flex-1.min-w-0:nth-of-type(2) > div.flex.items-center.gap-1\\.5:nth-of-type(2) > span:nth-of-type(1)",
+        "div.card.\\!p-0.divide-y:nth-of-type(2) > div.flex.items-center.gap-3:nth-of-type(2) > div.flex-1.min-w-0:nth-of-type(2) > div.flex.items-center.gap-1\\.5:nth-of-type(2) > span:nth-of-type(1)",
+        "div.card.\\!p-0.divide-y:nth-of-type(2) > div.flex.items-center.gap-3:nth-of-type(4) > div.flex-1.min-w-0:nth-of-type(2) > div.flex.items-center.gap-1\\.5:nth-of-type(2) > span:nth-of-type(1)"
+      ]
+    },
+    {
+      "id": "DM-143",
       "category": "其他文本不可见",
       "kind": "text",
       "level": "advisory",
@@ -3485,6 +3838,248 @@
       "occurrences": 1,
       "sampleSelectors": [
         "div:nth-of-type(4) > div.grid.grid-cols-2.gap-2:nth-of-type(2) > button.flex.flex-col.items-start:nth-of-type(4) > div.flex.items-center.gap-2:nth-of-type(1) > span.w-7.h-7.rounded-lg:nth-of-type(1)"
+      ]
+    },
+    {
+      "id": "DM-039",
+      "category": "其他文本不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "transaction",
+      "route": "/transaction",
+      "scope": "page",
+      "selector": "div.card.\\!p-0.divide-y:nth-of-type(2) > div.flex.items-center.gap-3 > div.flex-1.min-w-0:nth-of-type(2) > div.flex.items-center.gap-1\\.5:nth-of-type(2) > span:nth-of-type(1)",
+      "text": "日用百货",
+      "color": "rgb(168, 85, 247)",
+      "colorRaw": "rgb(168, 85, 247)",
+      "background": "rgb(23, 26, 33)",
+      "contrast": 4.4,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 12,
+      "disabled": false,
+      "occurrences": 132,
+      "sampleSelectors": [
+        "div.card.\\!p-0.divide-y:nth-of-type(2) > div.flex.items-center.gap-3 > div.flex-1.min-w-0:nth-of-type(2) > div.flex.items-center.gap-1\\.5:nth-of-type(2) > span:nth-of-type(1)",
+        "div.card.\\!p-0.divide-y:nth-of-type(2) > div.flex.items-center.gap-3:nth-of-type(1) > div.flex-1.min-w-0:nth-of-type(2) > div.flex.items-center.gap-1\\.5:nth-of-type(2) > span:nth-of-type(1)",
+        "div.card.\\!p-0.divide-y:nth-of-type(2) > div.flex.items-center.gap-3:nth-of-type(3) > div.flex-1.min-w-0:nth-of-type(2) > div.flex.items-center.gap-1\\.5:nth-of-type(2) > span:nth-of-type(1)"
+      ]
+    },
+    {
+      "id": "DM-024",
+      "category": "按钮文字不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "account-list",
+      "route": "/account/list",
+      "scope": "page",
+      "selector": "main.flex-1.overflow-auto > div.min-h-full.bg-bg.dark\\:bg-bg-dark > header.flex.items-center.justify-between > div.flex.items-center.gap-2:nth-of-type(2) > button.inline-flex.items-center.justify-center",
+      "text": "新建账户",
+      "color": "rgb(255, 255, 255)",
+      "colorRaw": "rgb(255, 255, 255)",
+      "background": "rgb(99, 102, 241)",
+      "contrast": 4.47,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "main.flex-1.overflow-auto > div.min-h-full.bg-bg.dark\\:bg-bg-dark > header.flex.items-center.justify-between > div.flex.items-center.gap-2:nth-of-type(2) > button.inline-flex.items-center.justify-center"
+      ]
+    },
+    {
+      "id": "DM-036",
+      "category": "按钮文字不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "transaction",
+      "route": "/transaction",
+      "scope": "page",
+      "selector": "main.flex-1.overflow-auto > div.min-h-full.bg-bg.dark\\:bg-bg-dark > header.flex.items-center.justify-between > div.flex.items-center.gap-2:nth-of-type(2) > button.inline-flex.items-center.justify-center",
+      "text": "新建流水",
+      "color": "rgb(255, 255, 255)",
+      "colorRaw": "rgb(255, 255, 255)",
+      "background": "rgb(99, 102, 241)",
+      "contrast": 4.47,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "main.flex-1.overflow-auto > div.min-h-full.bg-bg.dark\\:bg-bg-dark > header.flex.items-center.justify-between > div.flex.items-center.gap-2:nth-of-type(2) > button.inline-flex.items-center.justify-center"
+      ]
+    },
+    {
+      "id": "DM-062",
+      "category": "按钮文字不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "goal-list",
+      "route": "/goal/list",
+      "scope": "page",
+      "selector": "main.flex-1.overflow-auto > div.min-h-full.bg-bg.dark\\:bg-bg-dark > header.flex.items-center.justify-between > div.flex.items-center.gap-2:nth-of-type(2) > button.inline-flex.items-center.justify-center",
+      "text": "新建目标",
+      "color": "rgb(255, 255, 255)",
+      "colorRaw": "rgb(255, 255, 255)",
+      "background": "rgb(99, 102, 241)",
+      "contrast": 4.47,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "main.flex-1.overflow-auto > div.min-h-full.bg-bg.dark\\:bg-bg-dark > header.flex.items-center.justify-between > div.flex.items-center.gap-2:nth-of-type(2) > button.inline-flex.items-center.justify-center"
+      ]
+    },
+    {
+      "id": "DM-073",
+      "category": "按钮文字不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "report-list",
+      "route": "/report/list",
+      "scope": "page",
+      "selector": "main.flex-1.overflow-auto > div.min-h-full.bg-bg.dark\\:bg-bg-dark > header.flex.items-center.justify-between > div.flex.items-center.gap-2:nth-of-type(2) > button.inline-flex.items-center.justify-center",
+      "text": "新建报表",
+      "color": "rgb(255, 255, 255)",
+      "colorRaw": "rgb(255, 255, 255)",
+      "background": "rgb(99, 102, 241)",
+      "contrast": 4.47,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "main.flex-1.overflow-auto > div.min-h-full.bg-bg.dark\\:bg-bg-dark > header.flex.items-center.justify-between > div.flex.items-center.gap-2:nth-of-type(2) > button.inline-flex.items-center.justify-center"
+      ]
+    },
+    {
+      "id": "DM-085",
+      "category": "按钮文字不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "budget",
+      "route": "/budget",
+      "scope": "page",
+      "selector": "main.flex-1.overflow-auto > div.min-h-full.bg-bg.dark\\:bg-bg-dark > header.flex.items-center.justify-between > div.flex.items-center.gap-2:nth-of-type(2) > button.inline-flex.items-center.justify-center",
+      "text": "新建预算",
+      "color": "rgb(255, 255, 255)",
+      "colorRaw": "rgb(255, 255, 255)",
+      "background": "rgb(99, 102, 241)",
+      "contrast": 4.47,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "main.flex-1.overflow-auto > div.min-h-full.bg-bg.dark\\:bg-bg-dark > header.flex.items-center.justify-between > div.flex.items-center.gap-2:nth-of-type(2) > button.inline-flex.items-center.justify-center"
+      ]
+    },
+    {
+      "id": "DM-124",
+      "category": "按钮文字不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "ai",
+      "route": "/ai",
+      "scope": "page",
+      "selector": "div.p-6.lg\\:p-8.max-w-\\[960px\\] > div.card.p-6 > div.flex.flex-col.items-center > div.mt-6:nth-of-type(4) > button.inline-flex.items-center.justify-center",
+      "text": "前往配置",
+      "color": "rgb(255, 255, 255)",
+      "colorRaw": "rgb(255, 255, 255)",
+      "background": "rgb(99, 102, 241)",
+      "contrast": 4.47,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "div.p-6.lg\\:p-8.max-w-\\[960px\\] > div.card.p-6 > div.flex.flex-col.items-center > div.mt-6:nth-of-type(4) > button.inline-flex.items-center.justify-center"
+      ]
+    },
+    {
+      "id": "DM-125",
+      "category": "按钮文字不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "transaction-create",
+      "route": "/transaction?create=1",
+      "scope": "modal",
+      "selector": "body.bg-bg.text-text.dark\\:bg-bg-dark > div.fixed.inset-0.z-50:nth-of-type(2) > div.relative.card.max-h-\\[85vh\\]:nth-of-type(2) > div.px-6.py-4.border-t:nth-of-type(3) > button.inline-flex.items-center.justify-center:nth-of-type(2)",
+      "text": "确认",
+      "color": "rgb(255, 255, 255)",
+      "colorRaw": "rgb(255, 255, 255)",
+      "background": "rgb(99, 102, 241)",
+      "contrast": 4.47,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "body.bg-bg.text-text.dark\\:bg-bg-dark > div.fixed.inset-0.z-50:nth-of-type(2) > div.relative.card.max-h-\\[85vh\\]:nth-of-type(2) > div.px-6.py-4.border-t:nth-of-type(3) > button.inline-flex.items-center.justify-center:nth-of-type(2)"
+      ]
+    },
+    {
+      "id": "DM-126",
+      "category": "按钮文字不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "transaction-edit",
+      "route": "/transaction",
+      "scope": "modal",
+      "selector": "body.bg-bg.text-text.dark\\:bg-bg-dark > div.fixed.inset-0.z-50:nth-of-type(2) > div.relative.card.max-h-\\[85vh\\]:nth-of-type(2) > div.px-6.py-4.border-t:nth-of-type(3) > button.inline-flex.items-center.justify-center:nth-of-type(2)",
+      "text": "确认",
+      "color": "rgb(255, 255, 255)",
+      "colorRaw": "rgb(255, 255, 255)",
+      "background": "rgb(99, 102, 241)",
+      "contrast": 4.47,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "body.bg-bg.text-text.dark\\:bg-bg-dark > div.fixed.inset-0.z-50:nth-of-type(2) > div.relative.card.max-h-\\[85vh\\]:nth-of-type(2) > div.px-6.py-4.border-t:nth-of-type(3) > button.inline-flex.items-center.justify-center:nth-of-type(2)"
+      ]
+    },
+    {
+      "id": "DM-136",
+      "category": "按钮文字不可见",
+      "kind": "text",
+      "level": "advisory",
+      "severity": "low",
+      "page": "goal-create",
+      "route": "/goal/list?create=1",
+      "scope": "modal",
+      "selector": "body.bg-bg.text-text.dark\\:bg-bg-dark > div.fixed.inset-0.z-50:nth-of-type(2) > div.relative.card.max-h-\\[85vh\\]:nth-of-type(2) > div.px-6.py-4.border-t:nth-of-type(3) > button.inline-flex.items-center.justify-center",
+      "text": "下一步",
+      "color": "rgb(255, 255, 255)",
+      "colorRaw": "rgb(255, 255, 255)",
+      "background": "rgb(99, 102, 241)",
+      "contrast": 4.47,
+      "threshold": 3,
+      "largeText": false,
+      "fontSize": 14,
+      "disabled": false,
+      "occurrences": 1,
+      "sampleSelectors": [
+        "body.bg-bg.text-text.dark\\:bg-bg-dark > div.fixed.inset-0.z-50:nth-of-type(2) > div.relative.card.max-h-\\[85vh\\]:nth-of-type(2) > div.px-6.py-4.border-t:nth-of-type(3) > button.inline-flex.items-center.justify-center"
       ]
     }
   ],
