@@ -17,6 +17,9 @@
  * 已知取舍（同样写进 meta，便于解释为什么某些元素没进 issues）：
  *   - computed opacity === 0 的元素记入 hiddenByOpacity（hover 才显形的操作按钮），
  *     不算 issue——那是交互设计，不是配色缺陷。
+ *   - disabled 控件的文字降级为 advisory（不算 issue）：WCAG 1.4.3 / 1.4.11 明确豁免
+ *     「inactive user interface component」。「保存/下一步/确认」5 条即属此类，
+ *     实测值与推理见 classifyTextRecord 上方注释。
  *   - 扫描整个 DOM（不限首屏视口），对比度与滚动位置无关；截图才用 fullPage:false。
  */
 
@@ -512,9 +515,27 @@ function borderSeverity(c) {
 
 let issueSeq = 0;
 
+/* 豁免：disabled 控件的文字。
+ *
+ * 依据：WCAG 2.x SC 1.4.3（Contrast Minimum）与 SC 1.4.11（Non-text Contrast）都把
+ *       「inactive user interface component」列为例外条款——禁用态控件不适用对比度下限。
+ *
+ * 实测（T5 定性，Playwright 复刻本脚本同口径，vite:5185 + core:8787，已核 html.dark=true）：
+ *   「保存/下一步/确认」5 条告警同源同值，全部是 Button variant="primary"
+ *   （bg-brand + text-white + disabled:opacity-40，app/src/components/ui/Button.tsx:17）
+ *   进入 disabled 态后，按 40% opacity 合成出来的观感色：
+ *     · 启用态固有色：rgb(255,255,255) on rgb(99,102,241)            = 4.47:1 → advisory（本就一直正常入表）
+ *     · 禁用态合成色：rgb(161,163,247) on rgb(99,102,241)            = 1.94:1 ← 原 5 条 issue 的来源
+ *   1.94:1 是「白字压到 40% 不透明度」的必然结果，属于交互语言而非配色缺陷：按钮本就不接受
+ *   点击，变暗正是提示「现在别点」。同批按钮启用态的 4.47:1 仍留在 advisories 里持续受监控，
+ *   所以这条豁免不会掩盖品牌色本身退化。
+ *
+ * 处置：降级为 advisory 而非直接丢弃——既让 issue 归零，又把实测值留在报告里可追溯。
+ */
 function classifyTextRecord(r, page, scopeKind) {
   const warnLimit = r.largeText ? 3.0 : TH.textWarn; // 大字号 AA 门槛就是 3:1
   if (r.contrast < TH.textIssue) {
+    if (r.disabled) return { level: 'advisory', severity: 'low' }; // WCAG 禁用态例外
     return { level: 'issue', severity: textSeverity(r.contrast) };
   }
   if (r.contrast < warnLimit) {
@@ -780,6 +801,7 @@ async function main() {
       knownTradeoffs: [
         'computed opacity === 0 的 hover 才显形元素记入 hiddenByOpacity，不计入 issues',
         'color alpha === 0（text-transparent 占位）记入 intentionallyTransparent，不计入 issues',
+        'disabled 控件文字降级为 advisory：WCAG 1.4.3/1.4.11 豁免 inactive component（「保存/下一步/确认」实测启用态 4.47:1、禁用态合成 1.94:1，1.94:1 来自 disabled:opacity-40 的交互语义）',
         '扫描覆盖整个 DOM（不限于首屏视口），截图才使用 fullPage:false',
         'advisories 为 3:1 ≤ contrast < 4.5（文字/图标）或 1.5 ≤ contrast < 3（边框），非硬性问题',
       ],
