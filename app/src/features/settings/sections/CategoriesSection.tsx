@@ -342,7 +342,7 @@ function CategoryTable({
                     disabled={!mutable}
                     className={clsx(
                       'p-1.5 rounded-lg text-text-muted dark:text-text-muted-dark',
-                      mutable && 'hover:bg-expense-soft dark:hover:bg-expense-soft-dark hover:text-expense',
+                      mutable && 'hover:bg-expense-soft dark:hover:bg-expense-soft-dark hover:text-danger',
                       !mutable && 'opacity-40 cursor-not-allowed',
                     )}
                     title={mutable ? '删除' : '服务端暂未提供分类删除接口'}
@@ -547,7 +547,7 @@ function CategoryFormModal({
           </div>
         </Row>
         {error && (
-          <div className="text-xs text-expense bg-expense-soft dark:bg-expense-soft-dark px-3 py-2 rounded-lg">
+          <div className="text-xs text-danger dark:text-danger-dark bg-danger-soft dark:bg-danger-soft-dark px-3 py-2 rounded-lg">
             {error}
           </div>
         )}
@@ -569,7 +569,7 @@ function Row({
     <div>
       <label className="block text-xs text-text-muted dark:text-text-muted-dark mb-1.5">
         {label}
-        {required && <span className="text-expense ml-0.5">*</span>}
+        {required && <span className="text-danger dark:text-danger-dark ml-0.5">*</span>}
       </label>
       {children}
     </div>
@@ -606,7 +606,7 @@ function DeleteCategoryModal({
         <div className="text-xs text-text-muted dark:text-text-muted-dark">
           该分类下的已有流水仍会保留，但「分类」字段将变为空。
         </div>
-        <div className="text-xs text-expense">
+        <div className="text-xs text-danger dark:text-danger-dark">
           当前服务端（core）尚未提供分类删除接口，此操作暂不可用。
         </div>
       </div>

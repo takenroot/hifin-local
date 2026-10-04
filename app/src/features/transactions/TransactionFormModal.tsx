@@ -11,7 +11,7 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
-import { Modal, Input, Textarea, Select, Switch, Button, Badge } from '@/components/ui';
+import { Modal, Input, Textarea, Select, Switch, Button, Badge, Field } from '@/components/ui';
 import {
   IconWallet,
   IconArrowsLeftRight,
@@ -336,15 +336,20 @@ export function TransactionFormModal({ open, onClose, editing, version = 0, onSa
         </div>
 
         {error && (
-          <div className="text-sm text-expense bg-expense-soft dark:bg-expense-soft-dark rounded-xl px-3 py-2">
+          <div className="text-sm text-danger dark:text-danger-dark bg-danger-soft dark:bg-danger-soft-dark rounded-xl px-3 py-2">
             {error}
           </div>
         )}
 
         {/* 名称 + 日期 */}
         {type !== 'transfer' && (
-          <Field label={`${type === 'excluded' ? '说明' : '名称'}${type !== 'excluded' ? ' *' : ''}`}>
+          <Field
+            label={`${type === 'excluded' ? '说明' : '名称'}${type !== 'excluded' ? ' *' : ''}`}
+            htmlFor="tx-name"
+            labelClassName="text-sm text-text-muted dark:text-text-muted-dark"
+          >
             <Input
+              id="tx-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               onBlur={recomputeSuggestion}
@@ -355,8 +360,13 @@ export function TransactionFormModal({ open, onClose, editing, version = 0, onSa
             />
           </Field>
         )}
-        <Field label="交易日期 *">
+        <Field
+          label="交易日期 *"
+          htmlFor="tx-date"
+          labelClassName="text-sm text-text-muted dark:text-text-muted-dark"
+        >
           <Input
+            id="tx-date"
             type="datetime-local"
             value={dateStr}
             onChange={(e) => setDateStr(e.target.value)}
@@ -367,8 +377,13 @@ export function TransactionFormModal({ open, onClose, editing, version = 0, onSa
         </Field>
 
         {/* 金额 */}
-        <Field label="金额 *">
+        <Field
+          label="金额 *"
+          htmlFor="tx-amount"
+          labelClassName="text-sm text-text-muted dark:text-text-muted-dark"
+        >
           <Input
+            id="tx-amount"
             type="number"
             step="0.01"
             min="0"
@@ -383,8 +398,13 @@ export function TransactionFormModal({ open, onClose, editing, version = 0, onSa
 
         {/* 分类 */}
         {(type === 'expense' || type === 'income') && (
-          <Field label="分类 *">
+          <Field
+            label="分类 *"
+            htmlFor="tx-category"
+            labelClassName="text-sm text-text-muted dark:text-text-muted-dark"
+          >
             <Select
+              id="tx-category"
               placeholder="请选择分类"
               value={categoryId === undefined ? '' : String(categoryId)}
               onChange={(e) => {
@@ -398,7 +418,7 @@ export function TransactionFormModal({ open, onClose, editing, version = 0, onSa
               // brand-soft 是浅色调色板色，暗黑下会变成一块刺眼亮斑；
               // 改用 brand 15% 透明度叠加 + 提亮的 brand 文字色。
               <div className="mt-2 flex items-center justify-between gap-2 rounded-xl bg-brand-soft dark:bg-brand/15 px-3 py-2 text-xs">
-                <div className="flex items-center gap-1.5 text-brand dark:text-[#a5b4fc]">
+                <div className="flex items-center gap-1.5 text-brand dark:text-brand-dark">
                   <IconWand size={12} />
                   <span>
                     根据规则建议使用分类：
@@ -411,7 +431,7 @@ export function TransactionFormModal({ open, onClose, editing, version = 0, onSa
                 <button
                   type="button"
                   onClick={applySuggestion}
-                  className="rounded-lg border border-brand text-brand dark:border-[#a5b4fc] dark:text-[#a5b4fc] px-2 h-7 hover:bg-brand hover:text-white transition"
+                  className="rounded-lg border border-brand text-brand dark:border-brand-dark dark:text-brand-dark px-2 h-7 hover:bg-brand hover:text-white transition"
                 >
                   应用
                 </button>
@@ -421,8 +441,13 @@ export function TransactionFormModal({ open, onClose, editing, version = 0, onSa
         )}
 
         {/* 账户 */}
-        <Field label={type === 'transfer' ? '转出账户 *' : '账户 *'}>
+        <Field
+          label={type === 'transfer' ? '转出账户 *' : '账户 *'}
+          htmlFor="tx-account"
+          labelClassName="text-sm text-text-muted dark:text-text-muted-dark"
+        >
           <Select
+            id="tx-account"
             placeholder="请选择账户"
             value={accountId === undefined ? '' : String(accountId)}
             onChange={(e) => setAccountId(e.target.value === '' ? undefined : Number(e.target.value))}
@@ -433,8 +458,13 @@ export function TransactionFormModal({ open, onClose, editing, version = 0, onSa
 
         {/* 转入账户 */}
         {type === 'transfer' && (
-          <Field label="转入账户 *">
+          <Field
+            label="转入账户 *"
+            htmlFor="tx-account-in"
+            labelClassName="text-sm text-text-muted dark:text-text-muted-dark"
+          >
             <Select
+              id="tx-account-in"
               placeholder="请选择账户"
               value={toAccountId === undefined ? '' : String(toAccountId)}
               onChange={(e) =>
@@ -447,9 +477,14 @@ export function TransactionFormModal({ open, onClose, editing, version = 0, onSa
         )}
 
         {/* 备注 */}
-        <Field label="备注">
+        <Field
+          label="备注"
+          htmlFor="tx-remark"
+          labelClassName="text-sm text-text-muted dark:text-text-muted-dark"
+        >
           <div className="relative">
             <Textarea
+              id="tx-remark"
               value={remark}
               onChange={(e) => setRemark(e.target.value.slice(0, 200))}
               maxLength={200}
@@ -464,7 +499,7 @@ export function TransactionFormModal({ open, onClose, editing, version = 0, onSa
 
         {/* 标签多选 */}
         {(tags?.length ?? 0) > 0 && (
-          <Field label="标签">
+          <Field label="标签" labelClassName="text-sm text-text-muted dark:text-text-muted-dark">
             <div className="flex flex-wrap gap-1.5">
               {(tags ?? []).map((t) => {
                 const active = tagIds.includes(t.id as number);
@@ -506,10 +541,15 @@ export function TransactionFormModal({ open, onClose, editing, version = 0, onSa
 
         {/* 商户 */}
         {(merchants?.length ?? 0) > 0 && (
-          <Field label="商户">
+          <Field
+            label="商户"
+            htmlFor="tx-merchant"
+            labelClassName="text-sm text-text-muted dark:text-text-muted-dark"
+          >
             <div className="flex items-center gap-2">
               <IconBuildingStore size={16} className="text-text-muted dark:text-text-muted-dark" />
               <Select
+                id="tx-merchant"
                 placeholder="选择商户（可选）"
                 value={merchantId === undefined ? '' : String(merchantId)}
                 onChange={(e) =>
@@ -533,22 +573,17 @@ export function TransactionFormModal({ open, onClose, editing, version = 0, onSa
               关闭后将不计入净资产统计
             </div>
           </div>
-          <Switch checked={includeInAsset} onChange={setIncludeInAsset} />
+          <Switch
+            checked={includeInAsset}
+            onChange={setIncludeInAsset}
+            aria-label="计入资产"
+          />
         </div>
 
         {/* 当前选择预览 */}
         {selectedAccountBadge(accountId, accounts)}
       </div>
     </Modal>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <div className="text-sm text-text-muted dark:text-text-muted-dark mb-1.5">{label}</div>
-      {children}
-    </div>
   );
 }
 

@@ -234,7 +234,7 @@ export function SecuritySection() {
 
       <Card title="清空数据库">
         <div className="space-y-3 max-w-[560px]">
-          <div className="flex items-start gap-2 p-3 rounded-xl bg-expense-soft dark:bg-expense-soft-dark text-expense text-sm">
+          <div className="flex items-start gap-2 p-3 rounded-xl bg-danger-soft dark:bg-danger-soft-dark text-danger dark:text-danger-dark text-sm">
             <IconAlertTriangle size={16} className="flex-none mt-0.5" />
             <div>
               该操作将<strong>永久删除</strong>本地服务上的全部数据，包括账户、流水、目标、标签、商户、报表、规则、预算与 AI

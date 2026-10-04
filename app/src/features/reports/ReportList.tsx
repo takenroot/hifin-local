@@ -22,7 +22,7 @@ import type { Report } from '@/db';
 import { useApi } from '@/hooks/useApi';
 import { deleteReport, REPORTS_API, toReport, type RestReportRow } from './api';
 import { ReportFormModal } from './ReportFormModal';
-import { DeleteConfirmModal } from './DeleteConfirmModal';
+import { DeleteConfirmModal } from '@/features/shared/DeleteConfirmModal';
 import { getTemplateKey, templateMeta } from './metadata';
 import dayjs from 'dayjs';
 
@@ -68,7 +68,7 @@ export default function ReportList() {
         {loading ? (
           <div className="text-sm text-text-muted dark:text-text-muted-dark">加载中…</div>
         ) : error ? (
-          <div className="text-sm text-expense">加载失败：{error}</div>
+          <div className="text-sm text-danger dark:text-danger-dark">加载失败：{error}</div>
         ) : isEmpty ? (
           <EmptyStateCard
             title="创建报表"
@@ -137,7 +137,7 @@ function ReportCard({
 }) {
   const meta = templateMeta(getTemplateKey(report));
   return (
-    <div className="card !p-5 flex flex-col gap-3 transition group">
+    <div className="card !p-5 flex flex-col gap-3 group">
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-3 min-w-0">
           <div
@@ -161,7 +161,7 @@ function ReportCard({
             e.stopPropagation();
             onDelete();
           }}
-          className="p-1.5 rounded-lg text-text-muted dark:text-text-muted-dark hover:text-expense hover:bg-bg dark:hover:bg-bg-card-dark"
+          className="p-1.5 rounded-lg text-text-muted dark:text-text-muted-dark hover:text-danger dark:text-danger-dark hover:bg-bg dark:hover:bg-bg-card-dark"
           aria-label="删除"
         >
           <IconTrash size={14} />

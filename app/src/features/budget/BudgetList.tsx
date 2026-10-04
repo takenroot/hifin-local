@@ -27,7 +27,7 @@ import { type Budget, type Category, useSpaceId } from '@/db';
 import { filterBySpace, type SpaceAware } from '@/space';
 import { useApi } from '@/hooks/useApi';
 import { BudgetFormModal } from './BudgetFormModal';
-import { DeleteConfirmModal } from './DeleteConfirmModal';
+import { DeleteConfirmModal } from '@/features/shared/DeleteConfirmModal';
 import { formatMoney, periodLabel, periodRange } from './format';
 
 /** 已花聚合只需要这几个字段；categoryId 在 SQLite 里可空。 */
@@ -224,7 +224,7 @@ export default function BudgetList() {
         onSaved={bumpVersion}
       />
       {error && (
-        <div className="mx-4 lg:mx-8 mb-4 text-sm text-expense bg-expense-soft dark:bg-expense-soft-dark rounded-xl px-3 py-2">
+        <div className="mx-4 lg:mx-8 mb-4 text-sm text-danger dark:text-danger-dark bg-danger-soft dark:bg-danger-soft-dark rounded-xl px-3 py-2">
           {error}
         </div>
       )}
@@ -298,7 +298,7 @@ function BudgetCard({ budget, category, spent, onEdit, onDelete }: BudgetCardPro
           <button
             type="button"
             onClick={onDelete}
-            className="p-1.5 rounded-lg text-text-muted dark:text-text-muted-dark hover:text-expense hover:bg-bg dark:hover:bg-bg-card-dark"
+            className="p-1.5 rounded-lg text-text-muted dark:text-text-muted-dark hover:text-danger dark:text-danger-dark hover:bg-bg dark:hover:bg-bg-card-dark"
             aria-label="删除"
           >
             <IconTrash size={14} />

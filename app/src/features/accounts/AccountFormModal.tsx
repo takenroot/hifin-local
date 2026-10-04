@@ -17,6 +17,7 @@ import {
 } from '@tabler/icons-react';
 import {
   Button,
+  Field,
   Input,
   Modal,
   Switch,
@@ -440,8 +441,9 @@ function FormStep({
       </div>
 
       {/* 名称 */}
-      <Field label="账户名称" required>
+      <Field label="账户名称" required htmlFor="acc-name" className="mb-2">
         <Input
+          id="acc-name"
           placeholder={`请输入${meta.label}账户名称`}
           value={form.name}
           maxLength={NAME_LIMIT}
@@ -457,8 +459,9 @@ function FormStep({
       </Field>
 
       {/* 余额 */}
-      <Field label="账户余额" hint="支持正负数；负数表示欠款">
+      <Field label="账户余额" hint="支持正负数；负数表示欠款" htmlFor="acc-balance" className="mb-2">
         <Input
+          id="acc-balance"
           prefix={<span>¥</span>}
           placeholder="0.00"
           inputMode="decimal"
@@ -468,8 +471,14 @@ function FormStep({
       </Field>
 
       {/* 年度收益金额 */}
-      <Field label="年度收益（元）" hint="选填，该账户今年实际产生的收益">
+      <Field
+        label="年度收益（元）"
+        hint="选填，该账户今年实际产生的收益"
+        htmlFor="acc-annual"
+        className="mb-2"
+      >
         <Input
+          id="acc-annual"
           placeholder="如 350，留空表示不统计"
           inputMode="decimal"
           value={form.annualIncome}
@@ -479,15 +488,16 @@ function FormStep({
           onChange={(e) => setForm({ ...form, annualIncome: e.target.value })}
         />
         {yieldInvalid && yieldError && (
-          <div className="text-xs text-expense" data-testid="yield-error">
+          <div className="text-xs text-danger dark:text-danger-dark" data-testid="yield-error">
             {yieldError}
           </div>
         )}
       </Field>
 
       {/* 备注 */}
-      <Field label="备注">
+      <Field label="备注" htmlFor="acc-remark" className="mb-2">
         <Textarea
+          id="acc-remark"
           placeholder="备注（选填）"
           maxLength={REMARK_LIMIT}
           invalid={remarkTooLong}
@@ -498,7 +508,7 @@ function FormStep({
       </Field>
 
       {/* 标签 */}
-      <Field label="标签" hint="可选择多个标签">
+      <Field label="标签" hint="可选择多个标签" className="mb-2">
         <TagMultiSelect
           options={tagOptions}
           value={form.tagIds}
@@ -517,11 +527,12 @@ function FormStep({
         <Switch
           checked={form.includeInNetAsset}
           onChange={(v) => setForm({ ...form, includeInNetAsset: v })}
+          aria-label="计入资产"
         />
       </div>
 
       {submitted && (nameInvalid || nameTooLong || remarkTooLong) && (
-        <div className="text-xs text-expense">
+        <div className="text-xs text-danger dark:text-danger-dark">
           {nameInvalid && '账户名称不能为空；'}
           {nameTooLong && `账户名称不能超过 ${NAME_LIMIT} 字；`}
           {remarkTooLong && `备注不能超过 ${REMARK_LIMIT} 字；`}
@@ -530,8 +541,7 @@ function FormStep({
 
       {/*
        * 账户已存成功、只有收益率失败：这不是错误，用 brand 蓝提示即可，
-       * 让用户分清"整个保存失败"（红/绿 text-expense）和"附加信息没存上"。
-       * tailwind.config.js 不在本次授权范围内，不新增语义 token。
+       * 让用户分清"整个保存失败"（danger 红）和"附加信息没存上"。
        */}
       {yieldWarning && (
         <div className="text-xs text-brand" data-testid="yield-warning">
@@ -540,35 +550,8 @@ function FormStep({
       )}
 
       {saveError && (
-        <div className="text-xs text-expense">保存失败：{saveError}</div>
+        <div className="text-xs text-danger dark:text-danger-dark">保存失败：{saveError}</div>
       )}
-    </div>
-  );
-}
-
-function Field({
-  label,
-  hint,
-  required,
-  children,
-}: {
-  label: string;
-  hint?: string;
-  required?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        {/* Modal 通过 portal 挂到 body，脱离 AppLayout 的 text-text 根色，
-            因此模态内所有文字都必须显式声明颜色，否则在暗黑模式下会退回纯黑而不可见 */}
-        <label className="text-sm text-text dark:text-text-dark">
-          {label}
-          {required && <span className="text-expense ml-0.5">*</span>}
-        </label>
-        {hint && <span className="text-xs text-text-muted dark:text-text-muted-dark">{hint}</span>}
-      </div>
-      {children}
     </div>
   );
 }
@@ -586,10 +569,10 @@ function Counter({
 }) {
   return (
     <div className="flex justify-between text-xs">
-      <span className={invalid ? 'text-expense' : 'text-text-muted dark:text-text-muted-dark'}>
+      <span className={invalid ? 'text-danger dark:text-danger-dark' : 'text-text-muted dark:text-text-muted-dark'}>
         {errorHint ?? ''}
       </span>
-      <span className={invalid ? 'text-expense tabular-nums' : 'text-text-muted dark:text-text-muted-dark tabular-nums'}>
+      <span className={invalid ? 'text-danger dark:text-danger-dark tabular-nums' : 'text-text-muted dark:text-text-muted-dark tabular-nums'}>
         {current}/{max}
       </span>
     </div>

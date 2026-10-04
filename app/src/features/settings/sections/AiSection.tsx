@@ -26,6 +26,7 @@ import {
   Button,
   Card,
   EmptyState,
+  Field,
   Input,
   Modal,
 } from '@/components/ui';
@@ -45,6 +46,8 @@ import {
 // Input 的 placeholder 色写死在 ui 组件里（无 dark 变体），这里用任意变体补暗黑态
 const FIELD_INPUT_CLS =
   '[&_input]:placeholder:text-text-muted dark:[&_input]:placeholder:text-text-muted-dark';
+// 共享 Field 的默认 label 是 text-sm + 主文字色；模型配置这组字段原本是更弱的 xs + muted
+const AI_FIELD_LABEL = 'text-xs text-text-muted dark:text-text-muted-dark';
 
 /**
  * hideApiKey=0：编辑模态需要回填 apiKey，默认列表会把 apiKey 脱敏成 null。
@@ -246,7 +249,7 @@ function ModelsTable({
                     <IconRobot size={14} className="text-text-muted dark:text-text-muted-dark" />
                     <span className="font-medium">{m.name || '—'}</span>
                     {isDefault && (
-                      <Badge tone="brand" className="ml-1 dark:bg-brand/15 dark:text-[#a5b4fc]">
+                      <Badge tone="brand" className="ml-1 dark:bg-brand/15 dark:text-brand-dark">
                         <span className="inline-flex items-center gap-1">
                           <IconCheck size={10} /> 默认
                         </span>
@@ -272,7 +275,7 @@ function ModelsTable({
                       className={clsx(
                         'inline-flex items-center gap-1 px-2 h-8 rounded-lg text-xs',
                         isDefault
-                          ? 'bg-brand-soft dark:bg-brand/15 text-brand dark:text-[#a5b4fc] cursor-default'
+                          ? 'bg-brand-soft dark:bg-brand/15 text-brand dark:text-brand-dark cursor-default'
                           : 'border border-border dark:border-border-dark text-text-muted dark:text-text-muted-dark hover:bg-bg dark:hover:bg-bg-card-dark hover:text-text dark:hover:text-text-dark',
                       )}
                       title={isDefault ? '当前默认模型' : '设为默认'}
@@ -305,7 +308,7 @@ function ModelsTable({
                     <button
                       type="button"
                       onClick={() => onDelete(m)}
-                      className="p-1.5 rounded-lg text-text-muted dark:text-text-muted-dark hover:bg-expense-soft dark:hover:bg-expense-soft-dark hover:text-expense"
+                      className="p-1.5 rounded-lg text-text-muted dark:text-text-muted-dark hover:bg-expense-soft dark:hover:bg-expense-soft-dark hover:text-danger"
                       title="删除"
                     >
                       <IconTrash size={14} />
@@ -343,7 +346,7 @@ function TestBadge({ state }: { state?: TestState }) {
   }
   return (
     <span
-      className="inline-flex items-center gap-1 text-xs text-expense max-w-[200px]"
+      className="inline-flex items-center gap-1 text-xs text-danger dark:text-danger-dark max-w-[200px]"
       title={state.message}
     >
       <IconAlertTriangle size={12} />
@@ -453,8 +456,9 @@ function AiModelFormModal({
     >
       {/* 根节点自带前景色：Modal 走 portal，脱离 AppLayout 的 text-text 根节点 */}
       <div className="space-y-3 text-text dark:text-text-dark">
-        <Field label="名称" required>
+        <Field label="名称" required htmlFor="ai-name" labelClassName={AI_FIELD_LABEL}>
           <Input
+            id="ai-name"
             className={FIELD_INPUT_CLS}
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -462,8 +466,9 @@ function AiModelFormModal({
             maxLength={20}
           />
         </Field>
-        <Field label="模型" required>
+        <Field label="模型" required htmlFor="ai-model" labelClassName={AI_FIELD_LABEL}>
           <Input
+            id="ai-model"
             className={FIELD_INPUT_CLS}
             value={modelName}
             onChange={(e) => setModelName(e.target.value)}
@@ -471,16 +476,18 @@ function AiModelFormModal({
             maxLength={40}
           />
         </Field>
-        <Field label="地址" required>
+        <Field label="地址" required htmlFor="ai-endpoint" labelClassName={AI_FIELD_LABEL}>
           <Input
+            id="ai-endpoint"
             className={FIELD_INPUT_CLS}
             value={endpoint}
             onChange={(e) => setEndpoint(e.target.value)}
             placeholder="https://open.bigmodel.cn/api/paas/v4/chat/completions"
           />
         </Field>
-        <Field label="API Key（可选）">
+        <Field label="API Key（可选）" htmlFor="ai-key" labelClassName={AI_FIELD_LABEL}>
           <Input
+            id="ai-key"
             className={FIELD_INPUT_CLS}
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
@@ -489,36 +496,16 @@ function AiModelFormModal({
           />
         </Field>
         {error && (
-          <div className="text-xs text-expense bg-expense-soft dark:bg-expense-soft-dark px-3 py-2 rounded-lg">
+          <div className="text-xs text-danger dark:text-danger-dark bg-danger-soft dark:bg-danger-soft-dark px-3 py-2 rounded-lg">
             {error}
           </div>
         )}
         <div className="text-xs text-text-muted dark:text-text-muted-dark">
           所有字段仅保存在本地服务（core / SQLite），不会上传到任何远端。提示：
-          <Badge tone="brand" className="ml-1 align-middle dark:bg-brand/15 dark:text-[#a5b4fc]">本地</Badge>
+          <Badge tone="brand" className="ml-1 align-middle dark:bg-brand/15 dark:text-brand-dark">本地</Badge>
         </div>
       </div>
     </Modal>
-  );
-}
-
-function Field({
-  label,
-  required,
-  children,
-}: {
-  label: string;
-  required?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <label className="block text-xs text-text-muted dark:text-text-muted-dark mb-1.5">
-        {label}
-        {required && <span className="text-expense ml-0.5">*</span>}
-      </label>
-      {children}
-    </div>
   );
 }
 

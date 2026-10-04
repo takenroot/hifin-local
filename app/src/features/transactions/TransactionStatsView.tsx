@@ -21,6 +21,7 @@ import { EmptyStateCard, SegmentedControl } from '@/components/ui';
 import { ChartTooltip } from '@/features/reports/chartTheme';
 import { txStatsMonthAtom } from '@/store/atoms';
 import { formatMoney } from './format';
+import { PIE_COLORS } from '@/lib/format';
 import { toTransaction, type RestTransaction } from './api';
 import {
   STATS_TYPES,
@@ -33,18 +34,6 @@ import {
   totalOf,
   type StatsType,
 } from './stats';
-
-/** 饼图配色：与 Dashboard 资产分布饼图同一套色板 */
-const PIE_COLORS = [
-  '#10b981',
-  '#6366f1',
-  '#f59e0b',
-  '#ef4444',
-  '#0ea5e9',
-  '#a855f7',
-  '#ec4899',
-  '#14b8a6',
-];
 
 interface Props {
   /** 父级写操作版本号：任一增删改后自增，驱动本视图重新拉取 */
@@ -183,6 +172,8 @@ export function TransactionStatsView({ version = 0 }: Props) {
                     innerRadius="55%"
                     outerRadius="85%"
                     paddingAngle={2}
+                    animationDuration={600}
+                    animationEasing="ease-out"
                   >
                     {pieData.map((_, i) => (
                       <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />

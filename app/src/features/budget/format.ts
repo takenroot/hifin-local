@@ -1,22 +1,12 @@
 /**
  * 预算模块内部格式化辅助
  *
- * - formatMoney：¥ + 千分位 + 2 位小数
+ * - formatMoney：已收敛到 @/lib/format，这里仅 re-export 以保持既有 import 路径不变
  * - parseAmount：宽松解析用户输入金额（去逗号 / 空格；非法归零）
  * - periodRange：根据预算周期返回 [from, to)（毫秒）
  * - periodLabel：周期中文文案
  */
-
-/** 金额格式化：¥ + 千分位 + 2 位小数 */
-export function formatMoney(value: number, withSymbol = true): string {
-  const sign = value < 0 ? '-' : '';
-  const abs = Math.abs(value);
-  const fixed = abs.toFixed(2);
-  const [intPart, decPart] = fixed.split('.');
-  const withCommas = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  const body = `${withCommas}.${decPart}`;
-  return `${withSymbol ? '¥ ' : ''}${sign}${body}`;
-}
+export { formatMoney } from '@/lib/format';
 
 /** 解析用户输入金额：允许空 / 去空格 / 不合法归零 */
 export function parseAmount(input: string): number {

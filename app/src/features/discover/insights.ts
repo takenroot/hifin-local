@@ -1,20 +1,12 @@
 /**
  * 发现页 — 数据洞察纯计算（不访问 Dexie，便于测试）
+ *
+ * formatMoney 已收敛到 @/lib/format，这里仅 re-export 以保持既有 import 路径不变。
  */
 import dayjs from 'dayjs';
 import type { Budget, Category, Goal, Transaction } from '@/db';
 
-/** 金额格式化：¥ + 千分位 + 2 位小数 */
-export function formatMoney(value: number, withSymbol = true): string {
-  const sign = value < 0 ? '-' : '';
-  const abs = Math.abs(value);
-  const fixed = abs.toFixed(2);
-  const [intPart, decPart] = fixed.split('.');
-  return `${withSymbol ? '¥ ' : ''}${sign}${withCommas(intPart)}.${decPart}`;
-}
-function withCommas(s: string): string {
-  return s.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-}
+export { formatMoney } from '@/lib/format';
 
 export function sumByType(
   txs: Transaction[],

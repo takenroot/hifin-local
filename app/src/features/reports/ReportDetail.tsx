@@ -72,6 +72,7 @@ import {
   type DistributionDatum,
 } from './calculations';
 import { formatAxis, formatMoney } from './format';
+import { PIE_COLORS } from '@/lib/format';
 import {
   BAR_CURSOR,
   ChartLegend,
@@ -89,21 +90,8 @@ import {
 } from './config';
 import { useState } from 'react';
 import { ReportFormModal } from './ReportFormModal';
-import { DeleteConfirmModal } from './DeleteConfirmModal';
+import { DeleteConfirmModal } from '@/features/shared/DeleteConfirmModal';
 import dayjs from 'dayjs';
-
-const PIE_COLORS = [
-  '#10b981',
-  '#6366f1',
-  '#f59e0b',
-  '#ef4444',
-  '#0ea5e9',
-  '#a855f7',
-  '#ec4899',
-  '#14b8a6',
-  '#a3e635',
-  '#f43f5e',
-];
 
 export default function ReportDetail() {
   const params = useParams<{ id: string }>();
@@ -394,8 +382,8 @@ function ConfigIncomeExpenseBar({
               <Legend
                 content={<ChartLegend formatter={(v) => (v === 'income' ? '收入' : '支出')} />}
               />
-              <Bar dataKey="income" fill="#ef4444" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="expense" fill="#10b981" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="income" fill="#ef4444" radius={[4, 4, 0, 0]} animationDuration={600} animationEasing="ease-out" />
+              <Bar dataKey="expense" fill="#10b981" radius={[4, 4, 0, 0]} animationDuration={600} animationEasing="ease-out" />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -467,6 +455,8 @@ function ConfigAssetPie({
                   innerRadius="55%"
                   outerRadius="85%"
                   paddingAngle={2}
+                  animationDuration={600}
+                  animationEasing="ease-out"
                 >
                   {data.map((_, i) => (
                     <Cell
@@ -564,6 +554,8 @@ function ConfigTrendArea({
                 stroke="#6366f1"
                 strokeWidth={2}
                 fill="url(#trendNet)"
+                animationDuration={600}
+                animationEasing="ease-out"
               />
             </AreaChart>
           </ResponsiveContainer>
@@ -718,8 +710,8 @@ function MonthlyTemplate() {
               <Legend
                 content={<ChartLegend formatter={(v) => (v === 'income' ? '收入' : '支出')} />}
               />
-              <Bar dataKey="income" fill="#ef4444" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="expense" fill="#10b981" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="income" fill="#ef4444" radius={[4, 4, 0, 0]} animationDuration={600} animationEasing="ease-out" />
+              <Bar dataKey="expense" fill="#10b981" radius={[4, 4, 0, 0]} animationDuration={600} animationEasing="ease-out" />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -841,6 +833,8 @@ function YearlyTemplate() {
                 strokeWidth={2}
                 dot={{ r: 3 }}
                 activeDot={{ r: 5 }}
+                animationDuration={600}
+                animationEasing="ease-out"
               />
               <Line
                 type="monotone"
@@ -849,6 +843,8 @@ function YearlyTemplate() {
                 strokeWidth={2}
                 dot={{ r: 3 }}
                 activeDot={{ r: 5 }}
+                animationDuration={600}
+                animationEasing="ease-out"
               />
               <Line
                 type="monotone"
@@ -857,6 +853,8 @@ function YearlyTemplate() {
                 strokeWidth={2}
                 strokeDasharray="4 4"
                 dot={{ r: 3 }}
+                animationDuration={600}
+                animationEasing="ease-out"
               />
             </LineChart>
           </ResponsiveContainer>
@@ -961,6 +959,8 @@ function DistributionTemplate() {
                     innerRadius="55%"
                     outerRadius="85%"
                     paddingAngle={2}
+                    animationDuration={600}
+                    animationEasing="ease-out"
                   >
                     {data.map((_, i) => (
                       <Cell
@@ -1213,8 +1213,8 @@ function BudgetTemplate() {
               <Legend
                 content={<ChartLegend formatter={(v) => (v === '预算' ? '预算' : '实际')} />}
               />
-              <Bar dataKey="预算" fill="#6366f1" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="实际" fill="#ef4444" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="预算" fill="#6366f1" radius={[4, 4, 0, 0]} animationDuration={600} animationEasing="ease-out" />
+              <Bar dataKey="实际" fill="#ef4444" radius={[4, 4, 0, 0]} animationDuration={600} animationEasing="ease-out" />
             </BarChart>
           </ResponsiveContainer>
         </div>

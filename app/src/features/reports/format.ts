@@ -1,16 +1,9 @@
 /**
  * 报表模块内部格式化辅助
+ *
+ * formatMoney 已收敛到 @/lib/format，这里仅 re-export 以保持既有 import 路径不变。
  */
-
-/** ¥ + 千分位 + 2 位小数 */
-export function formatMoney(value: number, withSymbol = true): string {
-  const sign = value < 0 ? '-' : '';
-  const abs = Math.abs(value);
-  const fixed = abs.toFixed(2);
-  const [intPart, decPart] = fixed.split('.');
-  const withCommas = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  return `${withSymbol ? '¥ ' : ''}${sign}${withCommas}.${decPart}`;
-}
+export { formatMoney } from '@/lib/format';
 
 /** 紧凑金额（用于图表 tooltip）：1234.5 -> 1,234.5 */
 export function formatAxis(value: number): string {

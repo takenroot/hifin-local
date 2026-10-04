@@ -1,17 +1,9 @@
 /**
  * 目标模块内部格式化辅助
+ *
+ * formatMoney 已收敛到 @/lib/format，这里仅 re-export 以保持既有 import 路径不变。
  */
-
-/** 金额格式化：¥ + 千分位 + 2 位小数 */
-export function formatMoney(value: number, withSymbol = true): string {
-  const sign = value < 0 ? '-' : '';
-  const abs = Math.abs(value);
-  const fixed = abs.toFixed(2);
-  const [intPart, decPart] = fixed.split('.');
-  const withCommas = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  const body = `${withCommas}.${decPart}`;
-  return `${withSymbol ? '¥ ' : ''}${sign}${body}`;
-}
+export { formatMoney } from '@/lib/format';
 
 /** 解析用户输入金额：允许空 / 去空格 / 不合法归零 */
 export function parseAmount(input: string): number {

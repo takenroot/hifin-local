@@ -106,14 +106,14 @@ export const CMD_ITEMS: CmdItem[] = [
     id: 'go-budget',
     label: '预算',
     group: '打开目录',
-    to: '/home',
+    to: '/budget',
     icon: <IconCirclePlus size={14} />,
   },
   {
     id: 'go-discover',
     label: '发现',
     group: '打开目录',
-    to: '/home',
+    to: '/discover',
     icon: <IconSparkles size={14} />,
   },
   // ── 操作 ──

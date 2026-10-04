@@ -437,7 +437,7 @@ export default function AssistantPage() {
           </div>
 
           {error && (
-            <div className="mx-4 mb-2 text-xs text-expense bg-expense-soft dark:bg-expense-soft-dark px-3 py-2 rounded-lg flex items-start gap-2">
+            <div className="mx-4 mb-2 text-xs text-danger dark:text-danger-dark bg-danger-soft dark:bg-danger-soft-dark px-3 py-2 rounded-lg flex items-start gap-2">
               <IconAlertTriangle size={14} className="flex-none mt-0.5" />
               <div className="flex-1 break-words">{error}</div>
               <button
@@ -520,7 +520,7 @@ function Bubble({
           'w-7 h-7 rounded-lg flex-none flex items-center justify-center',
           isUser
             ? 'bg-bg-card dark:bg-bg-card-dark text-text dark:text-text-dark border border-border dark:border-border-dark'
-            : 'bg-brand-soft dark:bg-brand/15 text-brand dark:text-[#a5b4fc]',
+            : 'bg-brand-soft dark:bg-brand/15 text-brand dark:text-brand-dark',
         )}
         title={isUser ? '你' : 'AI'}
       >
@@ -544,7 +544,7 @@ function Bubble({
           <span>{content}</span>
         )}
         {!pending && (
-          <div className="mt-1 text-[10px] text-text-muted dark:text-text-muted-dark">
+          <div className="mt-1 text-[0.625rem] text-text-muted dark:text-text-muted-dark">
             {dayjs().format('HH:mm')}
           </div>
         )}

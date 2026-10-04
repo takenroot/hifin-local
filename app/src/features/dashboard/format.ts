@@ -1,19 +1,13 @@
 /**
- * 格式化辅助函数（仅供 dashboard 模块内部使用）
+ * 格式化辅助函数（dashboard 模块）
+ *
+ * formatMoney / balanceToneClass 已收敛到 @/lib/format，这里仅 re-export
+ * 以保持既有 import 路径不变；模块特有的格式化函数仍留在本文件。
  */
 import dayjs, { type Dayjs } from 'dayjs';
 import type { Transaction } from '@/db';
 
-/** 金额格式化：保留 2 位小数 + 千分位；负数前加 "-" */
-export function formatMoney(value: number, withSymbol = true): string {
-  const sign = value < 0 ? '-' : '';
-  const abs = Math.abs(value);
-  const fixed = abs.toFixed(2);
-  const [intPart, decPart] = fixed.split('.');
-  const withCommas = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  const body = `${withCommas}.${decPart}`;
-  return `${withSymbol ? '¥ ' : ''}${sign}${body}`;
-}
+export { formatMoney, balanceToneClass } from '@/lib/format';
 
 /** 百分比格式化：保留 2 位小数 + %；无穷/NaN 归零 */
 export function formatPercent(value: number): string {
@@ -36,15 +30,6 @@ export function trendToneClass(delta: number, expenseMode = false): string {
   // 支出场景下"减少"算好事（绿色），收入场景下"增加"算好事
   const positive = expenseMode ? delta < 0 : delta > 0;
   return positive ? 'text-income' : 'text-expense';
-}
-
-/**
- * 账户余额配色：负数走绿色（expense），正数走红色（income）。
- * 与色板约定一致（收入=红、支出=绿）：账户净值为负代表欠款，按"支出"着色。
- * 两个色都是固定色板值，深浅背景下都可读，不需要 dark: 变体。
- */
-export function balanceToneClass(balance: number): string {
-  return balance < 0 ? 'text-expense' : 'text-income';
 }
 
 /** 按时段返回问候语 */

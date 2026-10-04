@@ -1,18 +1,11 @@
 /**
  * 账户模块内部格式化辅助函数
- */
-
-/**
- * 账户余额 / 合计的配色类。
  *
- * 沿用全局财务约定：红=好事（有钱），绿=坏事（欠钱）。
- * 因此余额为负（透支 / 欠款）用绿色 text-expense，为正（有钱）用红色 text-income。
+ * formatMoney / balanceToneClass 已收敛到 @/lib/format，这里仅 re-export
+ * 以保持既有 import 路径不变；模块特有的辅助函数仍留在本文件。
  */
-export function balanceToneClass(balance: number): string {
-  if (balance < 0) return 'text-expense';
-  if (balance > 0) return 'text-income';
-  return 'text-text-muted dark:text-text-muted-dark';
-}
+export { formatMoney, balanceToneClass } from '@/lib/format';
+import { formatMoney, balanceToneClass } from '@/lib/format';
 
 /** 负债类账户（花呗 / 白条 / 房贷…）在账户类型里的取值 */
 export function isDebtType(type: string): boolean {
@@ -52,17 +45,6 @@ export function accountBalanceDisplay(
     toneClass: debt ? debtBalanceToneClass() : balanceToneClass(balance),
     isDebt: debt,
   };
-}
-
-/** 金额格式化：保留 2 位小数 + 千分位；负数前加 "-" */
-export function formatMoney(value: number, withSymbol = true): string {
-  const sign = value < 0 ? '-' : '';
-  const abs = Math.abs(value);
-  const fixed = abs.toFixed(2);
-  const [intPart, decPart] = fixed.split('.');
-  const withCommas = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  const body = `${withCommas}.${decPart}`;
-  return `${withSymbol ? '¥ ' : ''}${sign}${body}`;
 }
 
 /** 解析用户输入金额：允许空 / 自动去空格 / 不合法则返回 0 */

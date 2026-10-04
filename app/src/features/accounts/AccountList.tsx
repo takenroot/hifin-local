@@ -233,7 +233,7 @@ function AccountCard({ account, tags }: { account: Account; tags: Tag[] }) {
     <button
       type="button"
       onClick={() => navigate(`/account/detail/${account.id}`)}
-      className="card !p-5 text-left transition group"
+      className="card !p-5 text-left group"
       data-testid="account-card"
     >
       <div className="flex items-start justify-between gap-2">

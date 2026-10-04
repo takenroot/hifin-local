@@ -113,7 +113,7 @@ export function MerchantsSection() {
                       <button
                         type="button"
                         onClick={() => setDeleting(m)}
-                        className="p-1.5 rounded-lg text-text-muted dark:text-text-muted-dark hover:bg-expense-soft dark:hover:bg-expense-soft-dark hover:text-expense"
+                        className="p-1.5 rounded-lg text-text-muted dark:text-text-muted-dark hover:bg-expense-soft dark:hover:bg-expense-soft-dark hover:text-danger"
                         title="删除"
                       >
                         <IconTrash size={14} />
@@ -220,7 +220,7 @@ function MerchantFormModal({
       <div className="space-y-3 text-text dark:text-text-dark">
         <div>
           <label className="block text-xs text-text-muted dark:text-text-muted-dark mb-1.5">
-            名称<span className="text-expense ml-0.5">*</span>
+            名称<span className="text-danger dark:text-danger-dark ml-0.5">*</span>
           </label>
           <Input
             className={FIELD_INPUT_CLS}
@@ -244,7 +244,7 @@ function MerchantFormModal({
           </div>
         </div>
         {error && (
-          <div className="text-xs text-expense bg-expense-soft dark:bg-expense-soft-dark px-3 py-2 rounded-lg">
+          <div className="text-xs text-danger dark:text-danger-dark bg-danger-soft dark:bg-danger-soft-dark px-3 py-2 rounded-lg">
             {error}
           </div>
         )}
@@ -319,7 +319,7 @@ function DeleteMerchantModal({
           该商户从引用它的流水中解除；流水仍保留。
         </div>
         {error && (
-          <div className="text-xs text-expense bg-expense-soft dark:bg-expense-soft-dark px-3 py-2 rounded-lg">
+          <div className="text-xs text-danger dark:text-danger-dark bg-danger-soft dark:bg-danger-soft-dark px-3 py-2 rounded-lg">
             {error}
           </div>
         )}

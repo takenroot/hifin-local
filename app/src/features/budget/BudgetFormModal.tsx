@@ -5,7 +5,7 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { IconCheck } from '@tabler/icons-react';
-import { Button, Input, Modal, Select } from '@/components/ui';
+import { Button, Field, Input, Modal, Select } from '@/components/ui';
 import { type Budget, type Category, type BudgetPeriod, useSpaceId } from '@/db';
 import { useApi, apiFetch } from '@/hooks/useApi';
 import { parseAmount } from './format';
@@ -148,8 +148,9 @@ export function BudgetFormModal({ open, onClose, budget, version = 0, onSaved }:
     >
       <div className="space-y-5">
         {/* 名称 */}
-        <Field label="预算名称" required>
+        <Field label="预算名称" required htmlFor="bud-name">
           <Input
+            id="bud-name"
             placeholder="例如：日常餐饮 / 全月总支出"
             value={form.name}
             maxLength={NAME_LIMIT}
@@ -169,8 +170,9 @@ export function BudgetFormModal({ open, onClose, budget, version = 0, onSaved }:
         </Field>
 
         {/* 关联分类 */}
-        <Field label="关联分类" hint="不选则为覆盖全部支出的总预算">
+        <Field label="关联分类" hint="不选则为覆盖全部支出的总预算" htmlFor="bud-category">
           <Select
+            id="bud-category"
             options={categoryOptions}
             value={form.categoryId === undefined ? '' : String(form.categoryId)}
             onChange={(e) =>
@@ -185,8 +187,9 @@ export function BudgetFormModal({ open, onClose, budget, version = 0, onSaved }:
 
         {/* 金额 + 周期 */}
         <div className="grid grid-cols-2 gap-3">
-          <Field label="预算金额" required>
+          <Field label="预算金额" required htmlFor="bud-amount">
             <Input
+              id="bud-amount"
               prefix={<span>¥</span>}
               placeholder="0.00"
               value={form.amount}
@@ -205,8 +208,9 @@ export function BudgetFormModal({ open, onClose, budget, version = 0, onSaved }:
               }
             />
           </Field>
-          <Field label="周期" required>
+          <Field label="周期" required htmlFor="bud-period">
             <Select
+              id="bud-period"
               options={periodOptions}
               value={form.period}
               onChange={(e) =>
@@ -217,13 +221,13 @@ export function BudgetFormModal({ open, onClose, budget, version = 0, onSaved }:
         </div>
 
         {error && (
-          <div className="text-sm text-expense bg-expense-soft dark:bg-expense-soft-dark rounded-xl px-3 py-2">
+          <div className="text-sm text-danger dark:text-danger-dark bg-danger-soft dark:bg-danger-soft-dark rounded-xl px-3 py-2">
             {error}
           </div>
         )}
 
         {submitted && (nameInvalid || amountInvalid) && (
-          <div className="text-xs text-expense">
+          <div className="text-xs text-danger dark:text-danger-dark">
             {nameInvalid && '请填写预算名称；'}
             {amountInvalid && '金额必须大于 0；'}
           </div>
@@ -233,38 +237,10 @@ export function BudgetFormModal({ open, onClose, budget, version = 0, onSaved }:
   );
 }
 
-function Field({
-  label,
-  hint,
-  required,
-  children,
-}: {
-  label: string;
-  hint?: string;
-  required?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-1.5">
-        {/* Modal 通过 portal 挂到 body，脱离 AppLayout 的 text-text 根色。
-            未显式声明颜色的文字在暗黑模式下会退回浏览器默认纯黑，压在深色卡片上不可见，
-            于是只剩下带 text-expense 的红色星号可见——必须显式给 label 上色。 */}
-        <label className="text-sm text-text dark:text-text-dark">
-          {label}
-          {required && <span className="text-expense ml-0.5">*</span>}
-        </label>
-        {hint && <span className="text-xs text-text-muted dark:text-text-muted-dark">{hint}</span>}
-      </div>
-      {children}
-    </div>
-  );
-}
-
 function FieldHint({ hint, error }: { hint: string; error: string }) {
   return (
     <div className="mt-1 flex justify-between text-xs">
-      <span className={error ? 'text-expense' : 'text-transparent'}>
+      <span className={error ? 'text-danger dark:text-danger-dark' : 'text-transparent'}>
         {error || '·'}
       </span>
       <span className="text-text-muted dark:text-text-muted-dark tabular-nums">{hint}</span>

@@ -60,15 +60,59 @@ export function CommandPaletteView({
   const inputRef = useRef<HTMLInputElement | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
 
-  // 打开时清空状态 + 聚焦
+  // 打开时清空状态 + 聚焦；关闭时归还焦点给触发元素
+  const triggerRef = useRef<Element | null>(null);
   useEffect(() => {
     if (open) {
+      triggerRef.current = document.activeElement;
       setQuery('');
       setActive(0);
       // 等待 portal 完成
       requestAnimationFrame(() => inputRef.current?.focus());
+    } else {
+      requestAnimationFrame(() => {
+        (triggerRef.current as HTMLElement | null)?.focus?.();
+        triggerRef.current = null;
+      });
     }
   }, [open]);
+
+  // Esc 关闭（自管理模态，无 Modal 组件）
+  useEffect(() => {
+    if (!open) return;
+    function onEsc(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose();
+    }
+    window.addEventListener('keydown', onEsc);
+    return () => window.removeEventListener('keydown', onEsc);
+  }, [open, onClose]);
+
+  // 全局单键快捷键：t/n/c/a/s 执行对应命令（输入框聚焦时豁免；面板打开时让位给面板）
+  useEffect(() => {
+    if (open) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable)
+      )
+        return;
+      const item = list.find((it) => it.shortcut === e.key.toLowerCase());
+      if (!item) return;
+      e.preventDefault();
+      if (item.to === '__help__') {
+        setHelpOpen(true);
+      } else {
+        navFn(item.to);
+        onClose();
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [list, navFn, onClose]);
 
   // 过滤后的列表（按 group 排序）
   const filtered = useMemo(() => {

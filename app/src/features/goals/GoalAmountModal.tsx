@@ -126,11 +126,11 @@ export function GoalAmountModal({ open, onClose, goal, mode, account, onChanged 
             {/* Modal 通过 portal 挂到 body，脱离 AppLayout 的 text-text 根色，
                 label 未显式上色时在暗黑模式下会退回纯黑，只剩红色的 * 可见 */}
             <label className="text-sm text-text dark:text-text-dark">
-              金额 <span className="text-expense">*</span>
+              金额 <span className="text-danger dark:text-danger-dark">*</span>
             </label>
             <span
               className={`text-xs tabular-nums ${
-                tooLong ? 'text-expense' : 'text-text-muted dark:text-text-muted-dark'
+                tooLong ? 'text-danger dark:text-danger-dark' : 'text-text-muted dark:text-text-muted-dark'
               }`}
             >
               {amount.length}/{AMOUNT_LIMIT}
@@ -158,7 +158,7 @@ export function GoalAmountModal({ open, onClose, goal, mode, account, onChanged 
         )}
 
         {error && (
-          <div className="text-sm text-expense bg-expense-soft dark:bg-expense-soft-dark rounded-xl px-3 py-2">
+          <div className="text-sm text-danger dark:text-danger-dark bg-danger-soft dark:bg-danger-soft-dark rounded-xl px-3 py-2">
             {error}
           </div>
         )}

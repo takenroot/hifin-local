@@ -166,6 +166,7 @@ export function RulesSection() {
                         size="sm"
                         checked={r.enabled}
                         onChange={(v) => toggleEnabled(r, v, refetch)}
+                        aria-label={`启用规则「${r.keyword}」`}
                       />
                     </td>
                     <td className="py-3 pr-4">
@@ -181,7 +182,7 @@ export function RulesSection() {
                         <button
                           type="button"
                           onClick={() => setDeleting(r)}
-                          className="p-1.5 rounded-lg text-text-muted dark:text-text-muted-dark hover:bg-expense-soft dark:hover:bg-expense-soft-dark hover:text-expense"
+                          className="p-1.5 rounded-lg text-text-muted dark:text-text-muted-dark hover:bg-expense-soft dark:hover:bg-expense-soft-dark hover:text-danger"
                           title="删除"
                         >
                           <IconTrash size={14} />
@@ -379,14 +380,19 @@ function RuleFormModal({
         </Row>
         <Row label="启用">
           <div className="flex items-center gap-2 h-10">
-            <Switch checked={enabled} onChange={setEnabled} size="sm" />
+            <Switch
+              checked={enabled}
+              onChange={setEnabled}
+              size="sm"
+              aria-label="启用该规则"
+            />
             <span className="text-sm text-text-muted dark:text-text-muted-dark">
               {enabled ? '启用' : '停用'}
             </span>
           </div>
         </Row>
         {error && (
-          <div className="text-xs text-expense bg-expense-soft dark:bg-expense-soft-dark px-3 py-2 rounded-lg">
+          <div className="text-xs text-danger dark:text-danger-dark bg-danger-soft dark:bg-danger-soft-dark px-3 py-2 rounded-lg">
             {error}
           </div>
         )}
@@ -463,7 +469,7 @@ function DeleteRuleModal({
           删除后，已应用该规则的流水不会自动还原。
         </div>
         {error && (
-          <div className="text-xs text-expense bg-expense-soft dark:bg-expense-soft-dark px-3 py-2 rounded-lg">
+          <div className="text-xs text-danger dark:text-danger-dark bg-danger-soft dark:bg-danger-soft-dark px-3 py-2 rounded-lg">
             {error}
           </div>
         )}
@@ -485,7 +491,7 @@ function Row({
     <div>
       <label className="block text-xs text-text-muted dark:text-text-muted-dark mb-1.5">
         {label}
-        {required && <span className="text-expense ml-0.5">*</span>}
+        {required && <span className="text-danger dark:text-danger-dark ml-0.5">*</span>}
       </label>
       {children}
     </div>

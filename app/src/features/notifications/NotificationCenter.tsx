@@ -396,7 +396,7 @@ export function NotificationCenter() {
 
               {localError && !exhausted && (
                 <p
-                  className="mt-3 flex items-start gap-1.5 text-xs leading-relaxed text-expense"
+                  className="mt-3 flex items-start gap-1.5 text-xs leading-relaxed text-danger dark:text-danger-dark"
                   role="alert"
                 >
                   <IconAlertCircle size={14} className="mt-0.5 flex-none" />
@@ -470,10 +470,16 @@ function ToastStack({ toasts, onClose }: { toasts: Toast[]; onClose: (key: numbe
           key={t.key}
           className="card !rounded-xl flex items-start gap-2.5 px-4 py-3 shadow-soft dark:shadow-soft-dark"
         >
+          {/*
+           * 2026-10-05 设计审查决策：toast 成功=success 绿 / 错误=danger 红。
+           * 这条轴与金额语义正交——income 红 / expense 绿只表示"赚到钱/钱出去"，
+           * 拿来表示"操作成功/失败"会让用户把系统反馈误读成金额变动，
+           * 因此这里必须走 UI 状态令牌，不能借 income/expense。
+           */}
           <span
             className={clsx(
               'mt-0.5 flex-none',
-              t.tone === 'success' ? 'text-income' : 'text-expense',
+              t.tone === 'success' ? 'text-success' : 'text-danger dark:text-danger-dark',
             )}
           >
             {t.tone === 'success' ? <IconCircleCheck size={18} /> : <IconAlertCircle size={18} />}
@@ -483,7 +489,7 @@ function ToastStack({ toasts, onClose }: { toasts: Toast[]; onClose: (key: numbe
               'flex-1 text-sm leading-relaxed',
               t.tone === 'success'
                 ? 'text-text dark:text-text-dark'
-                : 'text-expense',
+                : 'text-danger dark:text-danger-dark',
             )}
           >
             {t.text}

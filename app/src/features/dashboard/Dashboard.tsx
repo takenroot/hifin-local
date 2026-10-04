@@ -103,18 +103,7 @@ import {
   monthLabelCn,
   earliestTransactionMonth,
 } from './format';
-
-// 饼图配色（与设计系统色板一致）
-const PIE_COLORS = [
-  '#10b981',
-  '#6366f1',
-  '#f59e0b',
-  '#ef4444',
-  '#0ea5e9',
-  '#a855f7',
-  '#ec4899',
-  '#14b8a6',
-];
+import { PIE_COLORS } from '@/lib/format';
 
 /* 隐藏金额时显示的占位字符（与币种符号宽度接近） */
 const AMOUNT_HIDDEN_PREFIX = '¥ ';
@@ -565,7 +554,7 @@ export default function Dashboard() {
                           stroke="#6366f1"
                           strokeWidth={2}
                           fill="url(#dashNetGradient)"
-                          animationDuration={800}
+                          animationDuration={600}
                           animationEasing="ease-out"
                         />
                       </AreaChart>
@@ -607,6 +596,8 @@ export default function Dashboard() {
                             innerRadius="55%"
                             outerRadius="85%"
                             paddingAngle={2}
+                            animationDuration={600}
+                            animationEasing="ease-out"
                           >
                             {distData.map((_, i) => (
                               <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
@@ -1246,12 +1237,12 @@ function MonthCalendar({ month, days, onSelect }: MonthCalendarProps) {
               </div>
               <div className="flex flex-col gap-0.5 leading-tight">
                 {c.income > 0 && (
-                  <div className="text-[10px] text-income tabular-nums truncate">
+                  <div className="text-[0.625rem] text-income tabular-nums truncate">
                     +{formatMoney(c.income, false)}
                   </div>
                 )}
                 {c.expense > 0 && (
-                  <div className="text-[10px] text-expense tabular-nums truncate">
+                  <div className="text-[0.625rem] text-expense tabular-nums truncate">
                     -{formatMoney(c.expense, false)}
                   </div>
                 )}

@@ -1,17 +1,9 @@
 /**
  * 设置模块内部格式化辅助函数
+ *
+ * formatMoney 已收敛到 @/lib/format，这里仅 re-export 以保持既有 import 路径不变。
  */
-
-/** 金额格式化（保留 2 位 + 千分位）——设置页用不到金额，但保留以备将来 */
-export function formatMoney(value: number, withSymbol = true): string {
-  const sign = value < 0 ? '-' : '';
-  const abs = Math.abs(value);
-  const fixed = abs.toFixed(2);
-  const [intPart, decPart] = fixed.split('.');
-  const withCommas = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  const body = `${withCommas}.${decPart}`;
-  return `${withSymbol ? '¥ ' : ''}${sign}${body}`;
-}
+export { formatMoney } from '@/lib/format';
 
 /**
  * 生成 16 位本地用户 ID（首次访问写一次到 kv:userId）。

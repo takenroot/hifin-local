@@ -441,7 +441,7 @@ function TxRow({
                 <span
                   key={id}
                   className={clsx(
-                    'px-1.5 h-4 rounded text-[10px] inline-flex items-center',
+                    'px-1.5 h-4 rounded text-[0.625rem] inline-flex items-center',
                     // 无色时不要给底色（与卡片同色等于没画），只留 muted 文字
                     !color && 'text-text-muted dark:text-text-muted-dark',
                   )}
@@ -469,13 +469,14 @@ function TxRow({
         {formatMoney(tx.amount, false)}
       </div>
 
-      {/* 操作 */}
-      <div className="flex-none flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
+      {/* 操作：触摸常显，桌面悬停 / 键盘 focus-within 才显示 */}
+      <div className="flex-none flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 transition">
         <button
           type="button"
           onClick={onEdit}
           className="p-1.5 rounded-lg hover:bg-bg dark:hover:bg-bg-card-dark text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark"
           title="编辑"
+          aria-label="编辑"
         >
           <IconPencil size={14} />
         </button>
@@ -484,6 +485,7 @@ function TxRow({
           onClick={onDelete}
           className="p-1.5 rounded-lg hover:bg-expense-soft dark:hover:bg-expense-soft-dark hover:text-expense text-text-muted dark:text-text-muted-dark"
           title="删除"
+          aria-label="删除"
         >
           <IconTrash size={14} />
         </button>

@@ -30,7 +30,7 @@ import {
   renderTypeIcon,
 } from './metadata';
 import { AccountFormModal } from './AccountFormModal';
-import { DeleteConfirmModal } from './DeleteConfirmModal';
+import { DeleteConfirmModal } from '@/features/shared/DeleteConfirmModal';
 
 const TYPE_LABEL: Record<TransactionType, string> = {
   expense: '支出',
@@ -109,7 +109,7 @@ export default function AccountDetail() {
           icon={<IconWallet size={18} />}
           actions={headerActions}
         />
-        <div className="p-4 lg:p-8 text-sm text-expense">加载失败：{accountError}</div>
+        <div className="p-4 lg:p-8 text-sm text-danger dark:text-danger-dark">加载失败：{accountError}</div>
       </div>
     );
   }
@@ -276,14 +276,29 @@ export default function AccountDetail() {
       />
       <DeleteConfirmModal
         open={deleteOpen}
+        title="删除账户"
+        message={
+          <>
+            确定要删除账户「
+            <span className="font-medium">{account.name}</span>
+            」吗？此操作不可撤销。
+          </>
+        }
+        warning={
+          transactions.length > 0 ? (
+            <>
+              该账户下有{' '}
+              <span className="font-medium tabular-nums">{transactions.length}</span>{' '}
+              条关联流水，删除后这些流水将失去账户归属。
+            </>
+          ) : undefined
+        }
+        errorMessage={deleteError}
         onClose={() => {
           setDeleteError(null);
           setDeleteOpen(false);
         }}
         onConfirm={handleDelete}
-        accountName={account.name}
-        relatedCount={transactions.length}
-        errorMessage={deleteError}
       />
     </div>
   );

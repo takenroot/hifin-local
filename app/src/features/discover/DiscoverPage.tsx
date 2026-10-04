@@ -227,9 +227,9 @@ export function DiscoverPage() {
                   {dueSoon.map((g) => (
                     <Card key={g.id}>
                       <div className="flex items-center gap-2 text-sm">
-                        <IconTargetArrow size={16} className="text-brand dark:text-[#a5b4fc]" />
+                        <IconTargetArrow size={16} className="text-brand dark:text-brand-dark" />
                         <span className="font-medium">{g.name}</span>
-                        <Badge tone="brand" className="dark:bg-brand/15 dark:text-[#a5b4fc]">
+                        <Badge tone="brand" className="dark:bg-brand/15 dark:text-brand-dark">
                           还剩 {Math.max(0, dayjs(g.deadline).diff(today, 'day'))} 天
                         </Badge>
                       </div>

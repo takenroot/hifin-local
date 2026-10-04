@@ -26,7 +26,7 @@ import { filterBySpace } from '@/space';
 import { useApi } from '@/hooks/useApi';
 import { GoalFormModal } from './GoalFormModal';
 import { GoalAmountModal } from './GoalAmountModal';
-import { DeleteConfirmModal } from './DeleteConfirmModal';
+import { DeleteConfirmModal } from '@/features/shared/DeleteConfirmModal';
 import { deadlineText, formatMoney } from './format';
 import { kindLabel } from './metadata';
 
@@ -189,7 +189,7 @@ export default function GoalList() {
         onChanged={bumpVersion}
       />
       {error && (
-        <div className="mx-4 lg:mx-8 mb-4 text-sm text-expense bg-expense-soft dark:bg-expense-soft-dark rounded-xl px-3 py-2">
+        <div className="mx-4 lg:mx-8 mb-4 text-sm text-danger dark:text-danger-dark bg-danger-soft dark:bg-danger-soft-dark rounded-xl px-3 py-2">
           {error}
         </div>
       )}
@@ -238,7 +238,7 @@ function GoalCard({
   const overdue = goal.deadline != null && goal.deadline < Date.now() && !reached;
 
   return (
-    <div className="card !p-5 flex flex-col gap-4 transition">
+    <div className="card !p-5 flex flex-col gap-4">
       {/* 标题行 */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
@@ -272,7 +272,7 @@ function GoalCard({
           <button
             type="button"
             onClick={onDelete}
-            className="p-1.5 rounded-lg text-text-muted dark:text-text-muted-dark hover:text-expense hover:bg-bg dark:hover:bg-bg-card-dark"
+            className="p-1.5 rounded-lg text-text-muted dark:text-text-muted-dark hover:text-danger dark:text-danger-dark hover:bg-bg dark:hover:bg-bg-card-dark"
             aria-label="删除"
           >
             <IconTrash size={14} />

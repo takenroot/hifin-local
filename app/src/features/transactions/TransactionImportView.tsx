@@ -336,12 +336,14 @@ function ImportPanel({ onImported }: { onImported?: () => void }) {
       </Card>
 
       {parseError && (
-        <div className="text-sm text-expense bg-expense-soft dark:bg-expense-soft-dark rounded-xl px-3 py-2 flex items-start gap-2">
+        <div className="text-sm text-danger dark:text-danger-dark bg-danger-soft dark:bg-danger-soft-dark rounded-xl px-3 py-2 flex items-start gap-2">
           <IconAlertCircle size={14} className="mt-0.5 flex-none" /> {parseError}
         </div>
       )}
+      {/* 2026-10-05 决策：成功=success 绿 / 错误=danger 红。income 红只表示"赚到钱"，
+          导入成功是 UI 状态，不能借用金额令牌。 */}
       {importResult && (
-        <div className="text-sm text-income bg-income-soft dark:bg-income-soft-dark rounded-xl px-3 py-2 flex items-start gap-2">
+        <div className="text-sm text-success bg-success-soft dark:bg-success-soft-dark rounded-xl px-3 py-2 flex items-start gap-2">
           <IconCircleCheck size={14} className="mt-0.5 flex-none" />
           成功导入 {importResult.imported} 条流水
           {importResult.skipped > 0 && `，跳过 ${importResult.skipped} 条无效行`}
@@ -394,7 +396,7 @@ function ImportPanel({ onImported }: { onImported?: () => void }) {
         >
           <div className="px-4 py-2 border-b border-border dark:border-border-dark flex items-center justify-between text-xs text-text-muted dark:text-text-muted-dark">
             <div className="flex items-center gap-2">
-              <IconBolt size={12} className="text-brand dark:text-[#a5b4fc]" />
+              <IconBolt size={12} className="text-brand dark:text-brand-dark" />
               {Object.keys(suggestions).length > 0
                 ? `规则已为 ${Object.keys(suggestions).length} 条流水建议分类`
                 : '未匹配到任何规则建议'}
@@ -469,7 +471,7 @@ function ImportPanel({ onImported }: { onImported?: () => void }) {
                           effectiveCat ? (
                             <div className="flex items-center gap-1.5 flex-wrap">
                               {/* brand-soft 是浅色板色，暗黑下改为 brand 低透明度底 + 提亮文字 */}
-                              <span className="inline-flex items-center gap-1 rounded-full bg-brand-soft dark:bg-brand/15 text-brand dark:text-[#a5b4fc] px-2 py-0.5 text-xs">
+                              <span className="inline-flex items-center gap-1 rounded-full bg-brand-soft dark:bg-brand/15 text-brand dark:text-brand-dark px-2 py-0.5 text-xs">
                                 {effectiveCat.icon && <span>{effectiveCat.icon}</span>}
                                 <span>{effectiveCat.name}</span>
                               </span>

@@ -17,6 +17,7 @@ import {
 } from '@tabler/icons-react';
 import {
   Button,
+  Field,
   Input,
   Modal,
   Select,
@@ -228,7 +229,7 @@ export function GoalFormModal({ open, onClose, goal, version = 0, onSaved }: Pro
       }
     >
       {error && (
-        <div className="mb-4 text-sm text-expense bg-expense-soft dark:bg-expense-soft-dark rounded-xl px-3 py-2">
+        <div className="mb-4 text-sm text-danger dark:text-danger-dark bg-danger-soft dark:bg-danger-soft-dark rounded-xl px-3 py-2">
           {error}
         </div>
       )}
@@ -429,8 +430,9 @@ function FormStep({
       <div className="text-sm text-text-muted dark:text-text-muted-dark">填写目标详情</div>
 
       {/* 名称 */}
-      <Field label="目标名称" required>
+      <Field label="目标名称" required htmlFor="goal-name">
         <Input
+          id="goal-name"
           placeholder={`如：${form.subtype}储蓄`}
           value={form.name}
           maxLength={NAME_LIMIT}
@@ -445,8 +447,9 @@ function FormStep({
 
       {/* 金额 */}
       <div className="grid grid-cols-2 gap-3">
-        <Field label="目标金额" required>
+        <Field label="目标金额" required htmlFor="goal-target">
           <Input
+            id="goal-target"
             prefix={<span>¥</span>}
             placeholder="0.00"
             value={form.targetAmount}
@@ -467,8 +470,10 @@ function FormStep({
         </Field>
         <Field
           label={form.kind === 'saving' ? '当前已存金额' : '当前已还金额'}
+          htmlFor="goal-current"
         >
           <Input
+            id="goal-current"
             prefix={<span>¥</span>}
             placeholder="0.00"
             value={form.currentAmount}
@@ -486,8 +491,9 @@ function FormStep({
       </div>
 
       {/* 截止日期 */}
-      <Field label="截止日期" hint="可选；用于倒计时提醒">
+      <Field label="截止日期" hint="可选；用于倒计时提醒" htmlFor="goal-deadline">
         <Input
+          id="goal-deadline"
           type="date"
           value={form.deadline}
           onChange={(e) => setForm({ ...form, deadline: e.target.value })}
@@ -495,8 +501,9 @@ function FormStep({
       </Field>
 
       {/* 关联账户 */}
-      <Field label="关联账户" hint="可选；存入/取出时可联动该账户">
+      <Field label="关联账户" hint="可选；存入/取出时可联动该账户" htmlFor="goal-account">
         <Select
+          id="goal-account"
           options={accountOptions}
           value={form.accountId === undefined ? '' : String(form.accountId)}
           onChange={(e) =>
@@ -532,7 +539,7 @@ function FormStep({
         </div>
       </Field>
 
-      <Field label="图标">
+      <Field label="图标" htmlFor="goal-icon">
         <div className="flex items-center gap-3">
           <div
             className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
@@ -541,6 +548,7 @@ function FormStep({
             {form.icon}
           </div>
           <Input
+            id="goal-icon"
             placeholder="输入 emoji 或字符"
             maxLength={4}
             value={form.icon}
@@ -550,7 +558,7 @@ function FormStep({
       </Field>
 
       {submitted && (nameInvalid || nameTooLong || targetInvalid) && (
-        <div className="text-xs text-expense">
+        <div className="text-xs text-danger dark:text-danger-dark">
           {nameInvalid && '请填写目标名称；'}
           {nameTooLong && `名称不能超过 ${NAME_LIMIT} 字；`}
           {targetInvalid && '目标金额必须大于 0；'}
@@ -560,37 +568,10 @@ function FormStep({
   );
 }
 
-function Field({
-  label,
-  hint,
-  required,
-  children,
-}: {
-  label: string;
-  hint?: string;
-  required?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-1.5">
-        {/* Modal 通过 portal 挂到 body，脱离 AppLayout 的 text-text 根色，
-            模态内文字必须显式声明颜色，否则暗黑模式下退回纯黑不可见 */}
-        <label className="text-sm text-text dark:text-text-dark">
-          {label}
-          {required && <span className="text-expense ml-0.5">*</span>}
-        </label>
-        {hint && <span className="text-xs text-text-muted dark:text-text-muted-dark">{hint}</span>}
-      </div>
-      {children}
-    </div>
-  );
-}
-
 function FieldHint({ hint, error }: { hint: string; error: string }) {
   return (
     <div className="mt-1 flex justify-between text-xs">
-      <span className={error ? 'text-expense' : 'text-transparent'}>
+      <span className={error ? 'text-danger dark:text-danger-dark' : 'text-transparent'}>
         {error || '·'}
       </span>
       <span className="text-text-muted dark:text-text-muted-dark tabular-nums">{hint}</span>

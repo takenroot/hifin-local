@@ -61,23 +61,24 @@ export default function SettingsPage() {
         title="设置"
         description="个性化、数据与本地空间相关配置"
         icon={<IconSettings size={18} />}
+        titleLevel="h1"
       />
       <SettingsLayout active={section} onSelect={changeSection}>
         <div className="max-w-[920px]">
-          {/* 标题 + 描述 */}
+          {/* 标题 + 描述：分节名是"设置"(h1) 下的子标题，层级必须比 PageHeader 低一级 */}
           <div className="mb-6 flex items-center gap-3">
             <div
               className={clsx(
                 'w-9 h-9 rounded-xl flex items-center justify-center',
-                'bg-brand-soft dark:bg-brand/15 text-brand dark:text-[#a5b4fc]',
+                'bg-brand-soft dark:bg-brand/15 text-brand dark:text-brand-dark',
               )}
             >
               {currentMeta.icon}
             </div>
             <div className="min-w-0">
-              <h1 className="text-xl font-medium text-text dark:text-text-dark truncate">
+              <h2 className="text-xl font-medium text-text dark:text-text-dark truncate">
                 {currentMeta.label}
-              </h1>
+              </h2>
               <div className="text-xs text-text-muted dark:text-text-muted-dark mt-0.5">
                 {currentMeta.groupLabel}
               </div>

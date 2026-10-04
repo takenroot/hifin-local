@@ -136,7 +136,8 @@ async function auditPage(p, state, theme) {
     }
   } else {
     const cls = (await headerBtn.getAttribute('class')) ?? '';
-    const isPrimary = /(^|\s)bg-text(\s|$)/.test(cls) && !/(^|\s)border(\s|$)/.test(cls);
+    // 2026-10-05 设计决策：primary 从近黑 bg-text 改为品牌靛蓝 bg-brand
+    const isPrimary = /(^|\s)bg-brand(\s|$)/.test(cls) && !/(^|\s)border(\s|$)/.test(cls);
     const text = (await headerBtn.textContent())?.trim() ?? '';
     record(p, state, theme, 'header-primary-button', isPrimary,
       `"${text}" ${isPrimary ? 'primary ✓' : '非 primary ✗ class=' + cls}`);

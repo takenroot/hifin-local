@@ -201,6 +201,7 @@ function MenuRow({
         checked={checked}
         onChange={(v) => onChange?.(v)}
         disabled={disabled}
+        aria-label={label}
       />
     </div>
   );

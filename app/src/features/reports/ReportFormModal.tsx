@@ -196,12 +196,12 @@ export function ReportFormModal({ open, onClose, report, onSaved }: Props) {
         <div>
           <div className="flex items-center justify-between mb-1.5">
             <label className="text-sm text-text dark:text-text-dark">
-              名称 <span className="text-expense">*</span>
+              名称 <span className="text-danger dark:text-danger-dark">*</span>
             </label>
             <span
               className={clsx(
                 'text-xs tabular-nums',
-                nameTooLong ? 'text-expense' : 'text-text-muted dark:text-text-muted-dark',
+                nameTooLong ? 'text-danger dark:text-danger-dark' : 'text-text-muted dark:text-text-muted-dark',
               )}
             >
               {form.name.length}/{NAME_LIMIT}
@@ -216,7 +216,7 @@ export function ReportFormModal({ open, onClose, report, onSaved }: Props) {
             onChange={(e) => setForm({ ...form, name: e.target.value })}
           />
           {nameInvalid && (
-            <div className="mt-1 text-xs text-expense">名称不能为空</div>
+            <div className="mt-1 text-xs text-danger dark:text-danger-dark">名称不能为空</div>
           )}
         </div>
 
@@ -227,7 +227,7 @@ export function ReportFormModal({ open, onClose, report, onSaved }: Props) {
             <span
               className={clsx(
                 'text-xs tabular-nums',
-                descTooLong ? 'text-expense' : 'text-text-muted dark:text-text-muted-dark',
+                descTooLong ? 'text-danger dark:text-danger-dark' : 'text-text-muted dark:text-text-muted-dark',
               )}
             >
               {form.description.length}/{DESC_LIMIT}
@@ -310,7 +310,7 @@ export function ReportFormModal({ open, onClose, report, onSaved }: Props) {
         <div>
           <div className="flex items-center justify-between mb-1.5">
             <label className="text-sm text-text dark:text-text-dark">
-              展示组件 <span className="text-expense">*</span>
+              展示组件 <span className="text-danger dark:text-danger-dark">*</span>
             </label>
             <span className="text-xs text-text-muted dark:text-text-muted-dark">
               已选 {form.config.components.length} 项
@@ -353,7 +353,7 @@ export function ReportFormModal({ open, onClose, report, onSaved }: Props) {
             })}
           </div>
           {configInvalid && (
-            <div className="mt-1 text-xs text-expense">请至少勾选一个展示组件</div>
+            <div className="mt-1 text-xs text-danger dark:text-danger-dark">请至少勾选一个展示组件</div>
           )}
         </div>
 
@@ -427,7 +427,7 @@ export function ReportFormModal({ open, onClose, report, onSaved }: Props) {
         </div>
 
         {saveError && (
-          <div className="text-xs text-expense bg-expense-soft dark:bg-expense-soft-dark px-3 py-2 rounded-lg">
+          <div className="text-xs text-danger dark:text-danger-dark bg-danger-soft dark:bg-danger-soft-dark px-3 py-2 rounded-lg">
             {saveError}
           </div>
         )}
