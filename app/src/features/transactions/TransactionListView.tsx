@@ -350,7 +350,8 @@ function SumCell({
   );
 }
 
-function TxRow({
+/** 导出供渲染契约测试断言（行内分类 chip 的取色约定） */
+export function TxRow({
   tx,
   categories,
   accounts,
@@ -397,7 +398,13 @@ function TxRow({
         </div>
         <div className="flex items-center gap-1.5 mt-0.5 text-xs text-text-muted dark:text-text-muted-dark truncate">
           {cat ? (
-            <span style={{ color: cat.color }}>{cat.name}</span>
+            // 分类色不再用于文字：34 色里最暗的几档（紫 #7e22ce / 蓝 #1d4ed8 / 天蓝 #0369a1）
+            // 在暗色卡片底 #171a21 上只有 2.5~2.9:1，读不清。文字走中性 token，
+            // 分类色退成前置 8px 圆点——图形按 1.4.11 只需 3:1，且面积小不碍读。
+            <span className="inline-flex items-center gap-1 text-text dark:text-text-dark">
+              <span className="w-2 h-2 rounded-full flex-none" style={{ background: cat.color }} />
+              {cat.name}
+            </span>
           ) : tx.type === 'transfer' ? (
             <span>转账</span>
           ) : (
