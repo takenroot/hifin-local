@@ -221,12 +221,11 @@ function AccountCard({ account, tags }: { account: Account; tags: Tag[] }) {
   }, [account.tagIds, tags]);
 
   /*
-   * 年收益率一行：`年收益率 2.1% · 预计年收益 ¥ 210.00`
+   * 年度收益一行：`2025 年收益 ¥350.00`
    * 口径（见 features/accounts/yield.ts）：负债账户不展示、没填过不展示、
-   * 余额 <= 0 时只显示百分比不给"预计"。
+   * 这里只显示"当年实际赚了多少"，不再有"余额 × 收益率"的预计推算。
    *
-   * 用 muted 色而非红色：余额那行已经用红绿表达了财务颜色，
-   * 这一行是补充信息，再上一遍彩色只会把余额的视觉重心抢走。
+   * 配色跟着项目约定走：红=好事（赚到了）→ text-income，绿=坏事（当年亏损）→ text-expense。
    */
   const yieldDisplay = accountYieldDisplay(account);
 
@@ -276,7 +275,10 @@ function AccountCard({ account, tags }: { account: Account; tags: Tag[] }) {
 
       {yieldDisplay && (
         <div
-          className="mt-2 text-xs text-text-muted dark:text-text-muted-dark"
+          className={clsx(
+            'mt-2 text-xs',
+            yieldDisplay.positive ? 'text-income' : 'text-expense',
+          )}
           data-testid="account-yield"
         >
           {yieldDisplay.fullText}

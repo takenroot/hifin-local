@@ -44,7 +44,7 @@ function makeAccount(
 
 function fillYield(db: Database.Database, accountId: number, year: number, yp = 1.5): void {
   db.prepare(
-    'INSERT INTO accountYields (accountId, year, yieldPercent, note, createdAt) VALUES (?, ?, ?, NULL, 1)',
+    'INSERT INTO accountYields (accountId, year, annualIncome, note, createdAt) VALUES (?, ?, ?, NULL, 1)',
   ).run(accountId, year, yp);
 }
 

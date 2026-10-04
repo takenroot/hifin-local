@@ -34,7 +34,7 @@ import {
   renderTypeIcon,
 } from './metadata';
 import { parseAmount } from './format';
-import { validateYieldInput, yieldInputValue, YIELD_MIN, YIELD_MAX } from './yield';
+import { validateAnnualIncome, yieldInputValue } from './yield';
 
 interface AccountFormModalProps {
   open: boolean;
@@ -47,7 +47,7 @@ interface AccountFormModalProps {
 
 type Step = 'pick-type' | 'fill-form';
 
-/** 年收益率按自然年归档：提交时写到"当前年"，编辑时也只回填当前年 */
+/** 年度收益按自然年归档：提交时写到"当前年"，编辑时也只回填当前年 */
 function currentYear(): number {
   return new Date().getFullYear();
 }
@@ -58,8 +58,8 @@ interface FormState {
   remark: string;
   tagIds: number[];
   includeInNetAsset: boolean;
-  /** 年收益率（%）原始输入；空串 = 不填 */
-  yieldPercent: string;
+  /** 年度收益（元）原始输入；空串 = 不填 */
+  annualIncome: string;
 }
 
 const NAME_LIMIT = 20;
@@ -70,7 +70,7 @@ const DEFAULT_FORM: FormState = {
   remark: '',
   tagIds: [],
   includeInNetAsset: true,
-  yieldPercent: '',
+  annualIncome: '',
 };
 
 export function AccountFormModal({ open, onClose, account, onSaved }: AccountFormModalProps) {
@@ -84,7 +84,7 @@ export function AccountFormModal({ open, onClose, account, onSaved }: AccountFor
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   /**
-   * 账户已保存、但年收益率没存上时的提示。
+   * 账户已保存、但年度收益没存上时的提示。
    * 单独一个 state：这类失败不该占 saveError（账户其实是存成功的），
    * 而且要把模态留住，用户才看得见"哪个字段没存上"。
    */
@@ -104,9 +104,9 @@ export function AccountFormModal({ open, onClose, account, onSaved }: AccountFor
             remark: account.remark ?? '',
             tagIds: account.tagIds ?? [],
             includeInNetAsset: account.includeInNetAsset,
-            // 只回填当前年的收益率：latestYield 是"最近一次"的记录，
-            // 去年填的 2.1 不该出现在今年（可能是另一年）的输入框里
-            yieldPercent: yieldInputValue(account.latestYield, currentYear()),
+            // 只回填当前年的收益：latestYield 是"最近一次"的记录，
+            // 去年填的 350 不该出现在今年（可能是另一年）的输入框里
+            annualIncome: yieldInputValue(account.latestYield, currentYear()),
           }
         : DEFAULT_FORM,
     );
@@ -127,9 +127,9 @@ export function AccountFormModal({ open, onClose, account, onSaved }: AccountFor
   const nameInvalid = submitted && trimmedName.length === 0;
   const nameTooLong = form.name.length > NAME_LIMIT;
   const remarkTooLong = form.remark.length > REMARK_LIMIT;
-  const yieldCheck = validateYieldInput(form.yieldPercent);
+  const yieldCheck = validateAnnualIncome(form.annualIncome);
   /*
-   * 收益率的红框/红字**立即**反馈，不等提交：
+   * 年度收益的红框/红字**立即**反馈，不等提交：
    * 越界时「确认」是 disabled 的，用户按不下去，
    * 若沿用账户名"提交后才提示"的写法，这个错误提示永远出不来 ——
    * 用户只会看到一个点不亮的按钮，不知道哪里错了。
@@ -177,32 +177,32 @@ export function AccountFormModal({ open, onClose, account, onSaved }: AccountFor
       if (accountId != null) {
         await apiFetch(`/api/accounts/${accountId}`, 'PUT', payload);
       } else {
-        // 新建：必须拿到后端返回的 id，才能接着写该账户的年收益率
+        // 新建：必须拿到后端返回的 id，才能接着写该账户的年度收益
         const created = await apiFetch<{ id?: number }>('/api/accounts', 'POST', payload);
         accountId = created?.id ?? null;
       }
 
-      // ── 2. 再写年收益率（可选字段：留空就完全不调这个接口）
+      // ── 2. 再写年度收益（可选字段：留空就完全不调这个接口）
       //
-      // 这里刻意不和外层 catch 共用：账户已经存成功了，收益率失败只是
+      // 这里刻意不和外层 catch 共用：账户已经存成功了，收益失败只是
       // "附加信息没存上"，不能反过来把整次保存报成失败、更不能让用户白填一遍账户。
-      const yieldValue = validateYieldInput(form.yieldPercent).value;
+      const yieldValue = validateAnnualIncome(form.annualIncome).value;
       let yieldFailed = false;
       if (accountId != null && yieldValue != null) {
         try {
           await apiFetch(`/api/accounts/${accountId}/yields/${currentYear()}`, 'PUT', {
-            yieldPercent: yieldValue,
+            annualIncome: yieldValue,
           });
         } catch (e) {
           yieldFailed = true;
           setYieldWarning(
-            `账户已保存，但年收益率没存上：${e instanceof Error ? e.message : String(e)}`,
+            `账户已保存，但年度收益没存上：${e instanceof Error ? e.message : String(e)}`,
           );
         }
       }
 
       onSaved?.();
-      // 收益率没存上时把模态留着，用户才能看见提示并手动关闭
+      // 年度收益没存上时把模态留着，用户才能看见提示并手动关闭
       if (!yieldFailed) handleClose();
     } catch (e) {
       setSaveError(e instanceof Error ? e.message : String(e));
@@ -391,11 +391,11 @@ interface FormStepProps {
   nameInvalid: boolean;
   nameTooLong: boolean;
   remarkTooLong: boolean;
-  /** 年收益率输入非法（且已提交过一次，用于抑制首次打开就飘红） */
+  /** 年度收益输入非法（且已提交过一次，用于抑制首次打开就飘红） */
   yieldInvalid: boolean;
-  /** 年收益率非法原因 */
+  /** 年度收益非法原因 */
   yieldError: string | null;
-  /** 账户已保存、年收益率没存上的提示 */
+  /** 账户已保存、年度收益没存上的提示 */
   yieldWarning?: string | null;
   /** 保存失败时的服务端错误 */
   saveError?: string | null;
@@ -467,16 +467,16 @@ function FormStep({
         />
       </Field>
 
-      {/* 年收益率 */}
-      <Field label="年收益率（%）" hint={`选填，${YIELD_MIN}~${YIELD_MAX}，亏损可填负值`}>
+      {/* 年度收益金额 */}
+      <Field label="年度收益（元）" hint="选填，该账户今年实际产生的收益">
         <Input
-          placeholder="如 2.1，留空表示不统计"
+          placeholder="如 350，留空表示不统计"
           inputMode="decimal"
-          value={form.yieldPercent}
+          value={form.annualIncome}
           invalid={yieldInvalid}
-          suffix={<span>%</span>}
+          prefix={<span>¥</span>}
           data-testid="yield-percent-input"
-          onChange={(e) => setForm({ ...form, yieldPercent: e.target.value })}
+          onChange={(e) => setForm({ ...form, annualIncome: e.target.value })}
         />
         {yieldInvalid && yieldError && (
           <div className="text-xs text-expense" data-testid="yield-error">

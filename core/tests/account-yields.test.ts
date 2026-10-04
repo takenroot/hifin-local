@@ -1,5 +1,5 @@
 /**
- * 账户年收益率 REST 端点测试。
+ * 账户年度收益金额 REST 端点测试（annualIncome，单位元）。
  *
  * 策略与 tests/api.test.ts 一致：
  *  - createApp({ skipBootstrap: true }) + app.listen(0) 拉真实 HTTP，原生 fetch
@@ -64,7 +64,7 @@ afterAll(async () => {
 });
 
 describe('REST /api/accounts 的 latestYield', () => {
-  it('没填过收益率的账户 latestYield 为 null，账户字段一个不少', async () => {
+  it('没填过收益的账户 latestYield 为 null，账户字段一个不少', async () => {
     const id = makeAccount('y: 空账户', 'invest');
     const { status, data } = await http('/api/accounts');
     expect(status).toBe(200);
@@ -77,40 +77,40 @@ describe('REST /api/accounts 的 latestYield', () => {
     }
     // 内部辅助列不能漏进 JSON
     expect(Object.keys(row as object)).not.toContain('latestYieldYear');
-    expect(Object.keys(row as object)).not.toContain('latestYieldPercent');
+    expect(Object.keys(row as object)).not.toContain('latestYieldIncome');
   });
 
   it('latestYield 取年份最大的一条（不是最后写入的那条）', async () => {
     const id = makeAccount('y: 多年度', 'fund');
     // 故意乱序写入：2024 最后写
-    for (const [year, yp] of [[2023, 1.1], [2024, 2.2], [2025, 3.3]] as const) {
+    for (const [year, income] of [[2023, 110], [2024, 220], [2025, 330]] as const) {
       const r = await http(`/api/accounts/${id}/yields/${year}`, {
         method: 'PUT',
-        body: { yieldPercent: yp },
+        body: { annualIncome: income },
       });
       expect(r.status).toBe(200);
     }
     const { data } = await http('/api/accounts');
     const row = (data as Array<Record<string, unknown>>).find((r) => r.id === id);
-    expect(row?.latestYield).toEqual({ year: 2025, yieldPercent: 3.3 });
+    expect(row?.latestYield).toEqual({ year: 2025, annualIncome: 330 });
   });
 
   it('spaceId 过滤时 latestYield 同样附带', async () => {
     const id = makeAccount('y: 空间1', 'other');
-    await http(`/api/accounts/${id}/yields/2025`, { method: 'PUT', body: { yieldPercent: -0.42 } });
+    await http(`/api/accounts/${id}/yields/2025`, { method: 'PUT', body: { annualIncome: -42 } });
     const { data } = await http('/api/accounts?spaceId=1');
     const row = (data as Array<Record<string, unknown>>).find((r) => r.id === id);
-    expect(row?.latestYield).toEqual({ year: 2025, yieldPercent: -0.42 });
+    expect(row?.latestYield).toEqual({ year: 2025, annualIncome: -42 });
   });
 });
 
 describe('REST /api/accounts/:id/yields', () => {
-  it('PUT 写入后 GET 按年份倒序返回 [{year, yieldPercent, note}]', async () => {
+  it('PUT 写入后 GET 按年份倒序返回 [{year, annualIncome, note}]', async () => {
     const id = makeAccount('y: 历史', 'invest');
-    for (const [year, yp, note] of [[2022, 1.5, 'a'], [2023, 1.6, null], [2024, 1.7, 'c']] as const) {
+    for (const [year, income, note] of [[2022, 150, 'a'], [2023, 160, null], [2024, 170, 'c']] as const) {
       const r = await http(`/api/accounts/${id}/yields/${year}`, {
         method: 'PUT',
-        body: { yieldPercent: yp, ...(note === null ? {} : { note }) },
+        body: { annualIncome: income, ...(note === null ? {} : { note }) },
       });
       expect(r.status).toBe(200);
     }
@@ -118,21 +118,21 @@ describe('REST /api/accounts/:id/yields', () => {
     const { status, data } = await http(`/api/accounts/${id}/yields`);
     expect(status).toBe(200);
     expect(data).toEqual([
-      { year: 2024, yieldPercent: 1.7, note: 'c' },
-      { year: 2023, yieldPercent: 1.6, note: null },
-      { year: 2022, yieldPercent: 1.5, note: 'a' },
+      { year: 2024, annualIncome: 170, note: 'c' },
+      { year: 2023, annualIncome: 160, note: null },
+      { year: 2022, annualIncome: 150, note: 'a' },
     ]);
   });
 
-  it('PUT 同一年是 upsert：只改数字，不新增行', async () => {
+  it('PUT 同一年是 upsert：只改金额，不新增行', async () => {
     const id = makeAccount('y: upsert', 'fund');
-    await http(`/api/accounts/${id}/yields/2025`, { method: 'PUT', body: { yieldPercent: 1.0, note: '第一版' } });
+    await http(`/api/accounts/${id}/yields/2025`, { method: 'PUT', body: { annualIncome: 100, note: '第一版' } });
     const second = await http(`/api/accounts/${id}/yields/2025`, {
       method: 'PUT',
-      body: { yieldPercent: 1.9 },
+      body: { annualIncome: 190 },
     });
     expect(second.status).toBe(200);
-    expect(second.data).toEqual({ year: 2025, yieldPercent: 1.9, note: null });
+    expect(second.data).toEqual({ year: 2025, annualIncome: 190, note: null });
 
     const { data } = await http(`/api/accounts/${id}/yields`);
     expect(data).toHaveLength(1);
@@ -140,20 +140,20 @@ describe('REST /api/accounts/:id/yields', () => {
 
   it('负收益（亏钱了）也能正常存', async () => {
     const id = makeAccount('y: 负收益', 'invest');
-    const r = await http(`/api/accounts/${id}/yields/2025`, { method: 'PUT', body: { yieldPercent: -3.21 } });
+    const r = await http(`/api/accounts/${id}/yields/2025`, { method: 'PUT', body: { annualIncome: -321 } });
     expect(r.status).toBe(200);
     const { data } = await http(`/api/accounts/${id}/yields`);
-    expect(data).toEqual([{ year: 2025, yieldPercent: -3.21, note: null }]);
+    expect(data).toEqual([{ year: 2025, annualIncome: -321, note: null }]);
   });
 
   it('note 省略 / 空白串都落成 null', async () => {
     const id = makeAccount('y: note', 'fund');
-    await http(`/api/accounts/${id}/yields/2025`, { method: 'PUT', body: { yieldPercent: 1 } });
-    await http(`/api/accounts/${id}/yields/2024`, { method: 'PUT', body: { yieldPercent: 1, note: '   ' } });
+    await http(`/api/accounts/${id}/yields/2025`, { method: 'PUT', body: { annualIncome: 100 } });
+    await http(`/api/accounts/${id}/yields/2024`, { method: 'PUT', body: { annualIncome: 100, note: '   ' } });
     const { data } = await http(`/api/accounts/${id}/yields`);
     expect(data).toEqual([
-      { year: 2025, yieldPercent: 1, note: null },
-      { year: 2024, yieldPercent: 1, note: null },
+      { year: 2025, annualIncome: 100, note: null },
+      { year: 2024, annualIncome: 100, note: null },
     ]);
   });
 
@@ -167,7 +167,7 @@ describe('REST /api/accounts/:id/yields', () => {
   it('账户不存在 → 404', async () => {
     expect((await http('/api/accounts/999999/yields')).status).toBe(404);
     expect(
-      (await http('/api/accounts/999999/yields/2025', { method: 'PUT', body: { yieldPercent: 1 } })).status,
+      (await http('/api/accounts/999999/yields/2025', { method: 'PUT', body: { annualIncome: 100 } })).status,
     ).toBe(404);
   });
 
@@ -178,24 +178,46 @@ describe('REST /api/accounts/:id/yields', () => {
     for (const bad of ['abc', '0', '-1', '20250', '1969']) {
       const r = await http(`/api/accounts/${id}/yields/${bad}`, {
         method: 'PUT',
-        body: { yieldPercent: 1 },
+        body: { annualIncome: 100 },
       });
       expect(r.status, `year=${bad}`).toBe(400);
     }
   });
 
-  it('yieldPercent 缺失 / 非数字 → 400，且不落库', async () => {
-    const id = makeAccount('y: 非法收益率', 'fund');
+  it('annualIncome 缺失 / 非数字 → 400，且不落库', async () => {
+    const id = makeAccount('y: 非法收益', 'fund');
     expect(
       (await http(`/api/accounts/${id}/yields/2025`, { method: 'PUT', body: {} })).status,
     ).toBe(400);
     expect(
-      (await http(`/api/accounts/${id}/yields/2025`, { method: 'PUT', body: { yieldPercent: 'abc' } })).status,
+      (await http(`/api/accounts/${id}/yields/2025`, { method: 'PUT', body: { annualIncome: 'abc' } })).status,
     ).toBe(400);
     expect(
-      (await http(`/api/accounts/${id}/yields/2025`, { method: 'PUT', body: { yieldPercent: null } })).status,
+      (await http(`/api/accounts/${id}/yields/2025`, { method: 'PUT', body: { annualIncome: null } })).status,
     ).toBe(400);
     const { data } = await http(`/api/accounts/${id}/yields`);
     expect(data).toEqual([]);
+  });
+
+  it('annualIncome 金额范围：±999999999 两端合法，越界 400', async () => {
+    const id = makeAccount('y: 金额范围', 'invest');
+    // 两端都是合法值：负值容纳极端亏损
+    for (const [year, amount] of [[2024, -999999999], [2025, 999999999]] as const) {
+      const r = await http(`/api/accounts/${id}/yields/${year}`, {
+        method: 'PUT',
+        body: { annualIncome: amount },
+      });
+      expect(r.status, `annualIncome=${amount}`).toBe(200);
+    }
+    // 越界一律 400，且不落库
+    for (const bad of [-1000000000, 1000000000, 1e12]) {
+      const r = await http(`/api/accounts/${id}/yields/2023`, {
+        method: 'PUT',
+        body: { annualIncome: bad },
+      });
+      expect(r.status, `annualIncome=${bad}`).toBe(400);
+    }
+    const { data } = await http(`/api/accounts/${id}/yields`);
+    expect(data).toHaveLength(2);
   });
 });

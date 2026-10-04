@@ -83,10 +83,10 @@ describe('端到端：调度器 ↔ REST 补填', () => {
     expect(pendingReminders()).toHaveLength(1);
     expect(JSON.parse(pendingReminders()[0].payload)).toEqual({ accountId, year: 2025 });
 
-    // 2）用户在前端填了 2025 年的收益率
+    // 2）用户在前端填了 2025 年的实际收益金额
     const put = await http(`/api/accounts/${accountId}/yields/2025`, {
       method: 'PUT',
-      body: { yieldPercent: 1.83, note: '零钱通年报' },
+      body: { annualIncome: 350, note: '零钱通年报' },
     });
     expect(put.status).toBe(200);
 
@@ -100,7 +100,7 @@ describe('端到端：调度器 ↔ REST 补填', () => {
     // 4）账户列表带上 latestYield
     const list = await http('/api/accounts');
     const acc = (list.data as Array<Record<string, unknown>>).find((x) => x.id === accountId);
-    expect(acc?.latestYield).toEqual({ year: 2025, yieldPercent: 1.83 });
+    expect(acc?.latestYield).toEqual({ year: 2025, annualIncome: 350 });
 
     // 5）补填之后再跑调度，也不会被重新拉回 pending
     expect(ensureYieldReminders(memDb, new Date(2026, 0, 20)).resolved).toBe(0);

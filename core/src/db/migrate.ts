@@ -7,9 +7,10 @@
  *         所以它管不到"给老表加列"，也管不到"改老表上已经写死的 CHECK 约束"。
  *   2. 显式的列级迁移（ensureColumns）—— 按 PRAGMA table_info 查缺哪列补哪列，
  *      再补上依赖新列的索引。
- *   3. 显式的表重建（ensureNotificationsShape）—— CHECK 约束是**建表时写死**的，
- *      SQLite 没有 ALTER TABLE ... DROP CONSTRAINT，老库要新增合法取值
- *      只能"建新表 → 拷数据 → 删旧表 → 改名"。
+ *   3. 显式的表重建（ensureNotificationsShape / ensureAccountYieldsShape）
+ *      —— CHECK 约束和"改列名"都是**建表时写死**的，SQLite 没有
+ *         ALTER TABLE ... DROP CONSTRAINT / RENAME COLUMN，老库要改只能
+ *         "建新表 → 拷数据 → 删旧表 → 改名"。
  *
  * 顺序是硬要求：SCHEMA_SQL → 重建 → 补列 → 建索引。
  *  - 重建必须先于补列：payload 是新列，重建时按"老表的 10 列"拷贝更稳，
@@ -24,7 +25,7 @@
 import type { DatabaseType } from './connection.js';
 import { SCHEMA_SQL } from './schema.js';
 
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 
 /**
  * 列级迁移：table + 需要补上的列 + 该列的 DDL 片段。
@@ -151,6 +152,102 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_tx_source_external
   WHERE externalId IS NOT NULL
 `;
 
+/**
+ * v4 新版 accountYields 的建表语句（与 schema.ts 的 SCHEMA_SQL 保持一致）。
+ *
+ * 语义在 v4 变过一次：yieldPercent（年收益率 %）→ annualIncome（年度收益金额 元）。
+ * SQLite 同样没有 ALTER TABLE ... RENAME COLUMN（列改名），老库只能整表重建。
+ */
+export const ACCOUNT_YIELDS_V4_SQL = `
+CREATE TABLE IF NOT EXISTS accountYields (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  accountId INTEGER NOT NULL,
+  year INTEGER NOT NULL,
+  annualIncome REAL NOT NULL,
+  note TEXT,
+  createdAt INTEGER NOT NULL,
+  UNIQUE(accountId, year)
+)
+`;
+
+/**
+ * v4 表的每一列 ← 老表里对应的来源列。
+ *
+ * 只有 annualIncome 的来源与列名不同（老列 yieldPercent → 新列 annualIncome），
+ * 其余一一对应。这个映射表同时决定了 INSERT 的列序与 SELECT 的投影，
+ * 少写一列就会撞 NOT NULL，多写一列就会撞 no such column。
+ */
+const ACCOUNT_YIELDS_V4_SOURCES: ReadonlyArray<{ col: string; from: string }> = [
+  { col: 'id', from: 'id' },
+  { col: 'accountId', from: 'accountId' },
+  { col: 'year', from: 'year' },
+  { col: 'annualIncome', from: 'yieldPercent' },
+  { col: 'note', from: 'note' },
+  { col: 'createdAt', from: 'createdAt' },
+];
+
+/** 重建期间的临时表名。选一个正常流程里不可能出现的名字，避免撞车。 */
+const ACCOUNT_YIELDS_LEGACY_TABLE = 'accountYields_legacy_v3';
+
+/** accountYields 上的年份索引（SCHEMA_SQL 里建过，重建后要补回同名索引） */
+const YIELD_YEAR_INDEX_SQL = 'CREATE INDEX IF NOT EXISTS idx_yield_year ON accountYields(year);';
+
+/**
+ * 把 accountYields 从 v3（yieldPercent）重建成 v4（annualIncome）。
+ *
+ * 为什么要重建而不是改名：列改名属于 SQLite 不支持的 ALTER 家族，
+ * 和 notifications 的 CHECK 约束一样，只能"建新表 → 拷数据 → 删旧表 → 改名"。
+ *
+ * 幂等性同样来自**读 sqlite_master 的建表语句**，不看 user_version：
+ * 已经有 annualIncome 列就直接返回。因此重复执行、中途崩溃留下半成品、
+ * 直接从 v2 跳到最新，都不会重复重建。
+ *
+ * 金额怎么迁：v3 存的是百分比（1.8 = 1.8%），v4 存的是金额，两者没有可换算的
+ * 关系（余额已经变了，推不出当年的实际收益）。所以这里**原值拷贝**，
+ * 让用户看到自己填过的数并自行改成金额，而不是替他猜一个可能差三个数量级的值。
+ */
+export function ensureAccountYieldsShape(db: DatabaseType): boolean {
+  const existing = getColumns(db, 'accountYields');
+  if (existing.length === 0) {
+    // 表不存在（SCHEMA_SQL 刚建出来的就是新形状，无需重建）
+    return false;
+  }
+  if (existing.includes('annualIncome') && !existing.includes('yieldPercent')) {
+    return false;
+  }
+
+  /*
+   * 来源列逐个按"老表实际有的"取，与 notifications 迁移同一套容错思路：
+   *   - 优先用同名列（万一将来老库上已经有 annualIncome，自愈时不会被覆盖回去）
+   *   - 其次用映射表里的来源列（yieldPercent → annualIncome）
+   *   - 两边都没有就退化成常量 0：目标列可能是 NOT NULL，缺列不能直接不写
+   * 列名全部来自上面的模块级常量表，不含任何外部输入。
+   */
+  const cols = new Set(existing);
+  const targets: string[] = [];
+  const sources: string[] = [];
+  for (const { col, from } of ACCOUNT_YIELDS_V4_SOURCES) {
+    targets.push(col);
+    sources.push(cols.has(col) ? col : cols.has(from) ? from : '0');
+  }
+
+  const run = db.transaction(() => {
+    // 索引名会跟着被 RENAME 的表走，必须先显式删掉，
+    // 否则后面 CREATE INDEX IF NOT EXISTS 会因"名字已存在"而空转，新表拿不到索引。
+    db.exec('DROP INDEX IF EXISTS idx_yield_year;');
+    db.exec(`ALTER TABLE accountYields RENAME TO ${ACCOUNT_YIELDS_LEGACY_TABLE};`);
+    db.exec(ACCOUNT_YIELDS_V4_SQL);
+    db.prepare(
+      `INSERT INTO accountYields (${targets.join(', ')})
+       SELECT ${sources.join(', ')} FROM ${ACCOUNT_YIELDS_LEGACY_TABLE};`,
+    ).run();
+    db.exec(`DROP TABLE ${ACCOUNT_YIELDS_LEGACY_TABLE};`);
+    db.exec(YIELD_YEAR_INDEX_SQL);
+  });
+  run();
+  return true;
+}
+
 /** 读某张表已有的列名（小写返回，与 SQLite 内部一致）。 */
 export function getColumns(db: DatabaseType, table: string): string[] {
   const rows = db.pragma(`table_info(${table})`) as Array<{ name: string }>;
@@ -181,6 +278,7 @@ export function migrate(db: DatabaseType): void {
   db.exec(SCHEMA_SQL);
   // 重建必须先于补列（见文件头注释）
   ensureNotificationsShape(db);
+  ensureAccountYieldsShape(db);
   // 补列必须先于建索引（见文件头注释）
   ensureColumns(db);
   db.exec(TX_EXTERNAL_ID_INDEX_SQL);

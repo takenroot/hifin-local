@@ -1,22 +1,24 @@
 /**
- * account-yield.mjs — 账户「年收益率」验收
+ * account-yield.mjs — 账户「年度收益金额（元）」验收
  * ---------------------------------------------------------------
+ * 记的是**当年实际产生的收益金额**（2025 年零钱通赚了 350 → 填 350），
+ * 不是年收益率：余额天天在变，"余额 × 收益率"推出来的预估数对用户没有意义。
+ *
  * 覆盖需求与验收点：
- *   1. 列表：有收益率 + 正余额 → 同行展示「年收益率 2.1% · 预计年收益 ¥ 210.00」
- *   2. 列表：负余额 → 只给百分比，不给"预计"（负收益没有参考价值）
+ *   1. 列表：有收益记录 → 展示「2025 年收益 ¥350.00」
+ *   2. 列表：负余额同样照常展示（收益与余额无关，没有"预计"推算了）
  *   3. 列表：负债账户（花呗）→ 恒不展示该字段
  *   4. 列表：core 未下发 latestYield 时容错，不渲染空行/NaN
- *   5. 表单：「年收益率（%）」字段渲染在余额之后
+ *   5. 表单：「年度收益（元）」字段渲染在余额之后，hint 讲清是"实际产生的收益"
  *   6. 表单：留空可提交 —— 且**不调用** yield 接口（而不是 PUT 0）
- *   7. 表单：填 2.1 提交 → PUT /api/accounts/:id/yields/<当前年> body { yieldPercent: 2.1 }
- *   8. 表单：范围校验 101 被拦下、给出中文原因、且不发任何写请求
+ *   7. 表单：填 350 提交 → PUT /api/accounts/:id/yields/<当前年> body { annualIncome: 350 }
+ *   8. 表单：金额范围校验（±999999999）越界被拦下、给出中文原因、且不发任何写请求
  *   9. 明暗双主题各跑一轮，全程无 console error / pageerror
  *
  * 数据与接口策略
  * ------------------------------------------------------------------
- * core 的 accountYields 接口（PUT/GET /api/accounts/:id/yields/:year）**尚未上线**
- * （当前 :8787 返回 404，GET /api/accounts 也不带 latestYield），因此本脚本
- * 用 page.route 拦截：
+ * core 的 accountYields 接口（PUT/GET /api/accounts/:id/yields/:year）由本脚本
+ * 用 page.route 全量拦截，写路径（POST /api/accounts 与 PUT yields）一律 mock：
  *   - GET  /api/accounts            → 喂固定夹具（含 latestYield），让列表展示可断言
  *   - POST /api/accounts            → 返回 { id: 9001 }，让"新建后拿 id 再 PUT"能跑通
  *   - PUT  /api/accounts/:id/yields/:year → 200，并记录请求体供断言
@@ -37,13 +39,18 @@ mkdirSync(SHOTS, { recursive: true });
 /** 与被测页面保持同一时区的"当前年"，用于断言 PUT 的路径 */
 const THIS_YEAR = new Date().getFullYear();
 
+/** 列表夹具里那条收益记录的年份：固定用 2025，断言文案才稳定 */
+const FIXTURE_YEAR = 2025;
+/** 列表夹具里那条收益记录的金额（元） */
+const FIXTURE_INCOME = 350;
+
 /* ─────────────── 固定夹具（列表展示用，不依赖真实 dev 数据） ─────────────── */
 
 /** 与 REST 原始行同形：includeInNetAsset 是 0/1、remark 可为 null */
 const FIXTURE_ACCOUNTS = [
   {
     id: 9001,
-    name: '验收-有收益率',
+    name: '验收-有收益',
     type: 'fund',
     balance: 10000,
     remark: null,
@@ -52,10 +59,10 @@ const FIXTURE_ACCOUNTS = [
     spaceId: 1,
     createdAt: Date.now(),
     updatedAt: Date.now(),
-    latestYield: { year: THIS_YEAR, yieldPercent: 2.1 },
+    latestYield: { year: FIXTURE_YEAR, annualIncome: FIXTURE_INCOME },
   },
   {
-    // 负余额：只显示百分比
+    // 负余额：收益与余额无关，照常展示（v3 时代的"预计年收益"推算已被删除）
     id: 9002,
     name: '验收-负余额',
     type: 'fund',
@@ -66,7 +73,7 @@ const FIXTURE_ACCOUNTS = [
     spaceId: 1,
     createdAt: Date.now(),
     updatedAt: Date.now(),
-    latestYield: { year: THIS_YEAR, yieldPercent: 2.1 },
+    latestYield: { year: FIXTURE_YEAR, annualIncome: -120.5 },
   },
   {
     // 负债账户：即使有 latestYield 也不得展示
@@ -80,12 +87,12 @@ const FIXTURE_ACCOUNTS = [
     spaceId: 1,
     createdAt: Date.now(),
     updatedAt: Date.now(),
-    latestYield: { year: THIS_YEAR, yieldPercent: 18 },
+    latestYield: { year: FIXTURE_YEAR, annualIncome: 900 },
   },
   {
-    // core 未下发 latestYield：容错为 null，不渲染收益率行
+    // core 未下发 latestYield：容错为 null，不渲染收益行
     id: 9004,
-    name: '验收-无收益率',
+    name: '验收-无收益',
     type: 'fund',
     balance: 5000,
     remark: null,
@@ -97,14 +104,17 @@ const FIXTURE_ACCOUNTS = [
   },
 ];
 const NEW_ACCOUNT_ID = 9001; // POST 返回的 id
-const EXPECT_POSITIVE = `年收益率 2.1% · 预计年收益 ${money(10000 * 0.021)}`;
-
-/** 与 app 侧 formatMoney 同口径（¥ + 千分位 + 2 位小数） */
-function money(v) {
+/** 与 app 侧 formatAnnualIncome 同口径（千分位 + 2 位小数，不含 ¥） */
+function amount(v) {
   const [int, dec] = Math.abs(v).toFixed(2).split('.');
   const sign = v < 0 ? '-' : '';
-  return `¥ ${sign}${int.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}.${dec}`;
+  return `${sign}${int.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}.${dec}`;
 }
+
+/** 正收益卡片行；注意 ¥ 贴着数字写，没有空格（与 formatMoney 的 "¥ 350.00" 不同） */
+const EXPECT_POSITIVE = `${FIXTURE_YEAR} 年收益 ¥${amount(FIXTURE_INCOME)}`;
+/** 负收益卡片行：带负号 */
+const EXPECT_NEGATIVE = `${FIXTURE_YEAR} 年收益 ¥${amount(-120.5)}`;
 
 /* ─────────────── 结果收集 ─────────────── */
 
@@ -147,7 +157,7 @@ async function stubApi(page, sink) {
     const method = req.method();
     const body = safeJson(req.postData());
 
-    // PUT /api/accounts/:id/yields/:year —— 年收益率 upsert
+    // PUT /api/accounts/:id/yields/:year —— 年度收益金额 upsert
     const yieldPut = path.match(/^\/api\/accounts\/(\d+)\/yields\/(\d{4})$/);
     if (method === 'PUT' && yieldPut) {
       sink.yieldCalls.push({ id: Number(yieldPut[1]), year: Number(yieldPut[2]), body });
@@ -164,12 +174,12 @@ async function stubApi(page, sink) {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify([{ year: THIS_YEAR, yieldPercent: 2.1, note: null }]),
+        body: JSON.stringify([{ year: FIXTURE_YEAR, annualIncome: FIXTURE_INCOME, note: null }]),
       });
       return;
     }
 
-    // POST /api/accounts —— 新建，返回带 id 的行（前端据此再 PUT 收益率）
+    // POST /api/accounts —— 新建，返回带 id 的行（前端据此再 PUT 收益）
     if (method === 'POST' && path === '/api/accounts') {
       sink.accountWrites.push({ method, path, body });
       await route.fulfill({
@@ -276,29 +286,34 @@ try {
     const sink = { yieldCalls: [], accountWrites: [] };
     await stubApi(page, sink);
 
-    /* ═══ 1. 正余额账户：百分比 + 预计年收益 同行 ═══ */
+    /* ═══ 1. 正余额账户：展示「2025 年收益 ¥350.00」 ═══ */
     await openList(page);
-    const positiveLine = await yieldLineOf(page, '验收-有收益率');
+    const positiveLine = await yieldLineOf(page, '验收-有收益');
     record(
-      `${theme} 正余额展示「收益率 · 预计年收益」`,
+      `${theme} 列表展示「${FIXTURE_YEAR} 年收益 ¥350.00」`,
       positiveLine === EXPECT_POSITIVE,
       `实际「${positiveLine}」`,
     );
 
-    /* ═══ 2. 负余额：只给百分比 ═══ */
+    /* ═══ 2. 负余额：收益与余额无关，照常展示；且没有"预计"推算 ═══ */
     const negativeLine = await yieldLineOf(page, '验收-负余额');
     record(
-      `${theme} 负余额只显示百分比`,
-      negativeLine === '年收益率 2.1%',
+      `${theme} 负余额照常展示且带负号`,
+      negativeLine === EXPECT_NEGATIVE,
       `实际「${negativeLine}」`,
+    );
+    record(
+      `${theme} 卡片不再出现「预计年收益」`,
+      !/预计/.test(positiveLine ?? '') && !/预计/.test(negativeLine ?? ''),
+      '正负两行均无「预计」二字',
     );
 
     /* ═══ 3. 负债账户不展示 ═══ */
     const debtLine = await yieldLineOf(page, '花呗');
-    record(`${theme} 花呗不展示年收益率`, debtLine === null, `实际「${debtLine}」`);
+    record(`${theme} 花呗不展示年度收益`, debtLine === null, `实际「${debtLine}」`);
 
     /* ═══ 4. latestYield 缺失容错 ═══ */
-    const noneLine = await yieldLineOf(page, '验收-无收益率');
+    const noneLine = await yieldLineOf(page, '验收-无收益');
     record(`${theme} 无 latestYield 时不渲染空行`, noneLine === null, `实际「${noneLine}」`);
 
     await page.screenshot({ path: `${SHOTS}/list-${theme}.png`, fullPage: false });
@@ -309,7 +324,7 @@ try {
     // label 与 hint 是兄弟节点，整体文案要从 Field 外层容器取
     const fieldText = await page.evaluate(() => {
       for (const l of document.querySelectorAll('label')) {
-        if ((l.textContent ?? '').includes('年收益率')) {
+        if ((l.textContent ?? '').includes('年度收益')) {
           return l.parentElement?.parentElement?.textContent?.trim() ?? '';
         }
       }
@@ -317,35 +332,36 @@ try {
     });
     const orderOk = await page.evaluate(() => {
       const labels = [...document.querySelectorAll('label')].map((l) => l.textContent?.trim() ?? '');
-      return labels.indexOf('账户余额') < labels.findIndex((l) => l.startsWith('年收益率'));
+      return labels.indexOf('账户余额') < labels.findIndex((l) => l.startsWith('年度收益'));
     });
     record(
-      `${theme} 表单渲染「年收益率（%）」字段`,
+      `${theme} 表单渲染「年度收益（元）」字段`,
       fieldVisible &&
-        fieldText.includes('年收益率（%）') &&
-        fieldText.includes('选填') &&
-        fieldText.includes('-100~100'),
+        fieldText.includes('年度收益（元）') &&
+        fieldText.includes('选填，该账户今年实际产生的收益'),
       `字段块文案「${fieldText}」，可见=${fieldVisible}`,
     );
-    record(`${theme} 字段排在余额之后`, orderOk, `账户余额 → 年收益率`);
+    record(`${theme} 字段排在余额之后`, orderOk, `账户余额 → 年度收益`);
 
     await page.screenshot({ path: `${SHOTS}/form-${theme}.png`, fullPage: false });
 
-    /* ═══ 6. 范围校验：101 拦下、给出中文原因、且不发任何写请求 ═══ */
+    /* ═══ 6. 金额范围校验：越界拦下、给出中文原因、且不发任何写请求 ═══ */
     await fillName(page).fill('验收-范围校验');
-    await yieldInput(page).fill('101');
+    await yieldInput(page).fill('1000000000');
     await page.waitForSelector('[data-testid="yield-error"]', { timeout: 5000 });
     const rangeError = await page.locator('[data-testid="yield-error"]').innerText();
     // 越界时「确认」必须是被拦住的（disabled），否则等于没校验
     const disabledAtInvalid = await confirmBtn(page).isDisabled();
     record(
-      `${theme} 超出 100% 拦下 + 提示原因`,
-      rangeError.includes('不能大于 100') && disabledAtInvalid && sink.accountWrites.length === 0,
+      `${theme} 金额超上限拦下 + 提示原因`,
+      rangeError.includes('不能大于 999999999') &&
+        disabledAtInvalid &&
+        sink.accountWrites.length === 0,
       `提示「${rangeError}」，确认按钮 disabled=${disabledAtInvalid}，写请求 ${sink.accountWrites.length} 条`,
     );
 
-    /* ═══ 6b. 负收益合法（投资亏损），-100 以下才拦下 ═══ */
-    await yieldInput(page).fill('-1');
+    /* ═══ 6b. 负收益合法（当年亏损），低于下限才拦下 ═══ */
+    await yieldInput(page).fill('-120.5');
     await page.waitForTimeout(150);
     const negErrCount = await page.locator('[data-testid="yield-error"]').count();
     record(
@@ -353,17 +369,29 @@ try {
       negErrCount === 0 && (await confirmBtn(page).isEnabled()),
       `错误提示数=${negErrCount}，确认按钮可点`,
     );
-    await yieldInput(page).fill('-100.1');
+    await yieldInput(page).fill('-1000000000');
     await page.waitForSelector('[data-testid="yield-error"]', { timeout: 5000 });
     const negError = await page.locator('[data-testid="yield-error"]').innerText();
     record(
-      `${theme} 低于 -100% 拦下`,
-      negError.includes('不能小于 -100') && sink.accountWrites.length === 0,
+      `${theme} 金额低于下限拦下`,
+      negError.includes('不能小于 -999999999') && sink.accountWrites.length === 0,
       `提示「${negError}」，写请求 ${sink.accountWrites.length} 条`,
     );
 
-    /* ═══ 6c. 越界值改成合法值后红框消失，按钮恢复可点 ═══ */
-    await yieldInput(page).fill('2.1');
+    /* ═══ 6c. 非数字也拦下（不会被兜底成 0） ═══ */
+    await yieldInput(page).fill('350 元');
+    await page.waitForSelector('[data-testid="yield-error"]', { timeout: 5000 });
+    const nanError = await page.locator('[data-testid="yield-error"]').innerText();
+    record(
+      `${theme} 非数字输入拦下`,
+      nanError.includes('请输入') &&
+        nanError.includes('~') &&
+        (await confirmBtn(page).isDisabled()),
+      `提示「${nanError}」`,
+    );
+
+    /* ═══ 6d. 越界值改成合法值后红框消失，按钮恢复可点 ═══ */
+    await yieldInput(page).fill('350');
     await page.waitForTimeout(150);
     const errGone = (await page.locator('[data-testid="yield-error"]').count()) === 0;
     record(`${theme} 改回合法值后提示消失`, errGone, `提示${errGone ? '已消失' : '仍存在'}`);
@@ -386,26 +414,26 @@ try {
     const closedAfterEmpty = (await page.locator('[data-testid="yield-percent-input"]').count()) === 0;
     record(`${theme} 保存成功后模态关闭`, closedAfterEmpty, `模态${closedAfterEmpty ? '已' : '未'}关闭`);
 
-    /* ═══ 8. 填 2.1 → PUT /:id/yields/<当前年> ═══ */
+    /* ═══ 8. 填 350 → PUT /:id/yields/<当前年> ═══ */
     await openCreateForm(page);
-    await fillName(page).fill('验收-填收益率');
-    await yieldInput(page).fill('2.1');
+    await fillName(page).fill('验收-填收益');
+    await yieldInput(page).fill('350');
     await confirmBtn(page).click();
     await page.waitForTimeout(700);
     const call = sink.yieldCalls[0];
     record(
-      `${theme} 填 2.1 → PUT 年收益率`,
+      `${theme} 填 350 → PUT 年度收益金额`,
       !!call &&
         call.id === NEW_ACCOUNT_ID &&
         call.year === THIS_YEAR &&
-        call.body?.yieldPercent === 2.1,
+        call.body?.annualIncome === FIXTURE_INCOME,
       call
         ? `PUT /api/accounts/${call.id}/yields/${call.year} body=${JSON.stringify(call.body)}`
         : '未发出 yield PUT',
     );
     // 顺序：必须先 POST 拿到 id，再 PUT（新建流程的关键）
     record(
-      `${theme} 先存账户再存收益率`,
+      `${theme} 先存账户再存收益`,
       sink.accountWrites.some((w) => w.method === 'POST') && sink.yieldCalls.length === 1,
       `账户写 ${sink.accountWrites.length} 次，yield 写 ${sink.yieldCalls.length} 次`,
     );
@@ -422,6 +450,7 @@ try {
       }
       // 账户创建也必须 mock——fallback 会把 POST 打进真实 :8787，污染用户数据库
       // （历史上因此产生过 6 个「验收-收益率失败」垃圾账户，已清理并立此存照）
+      // 新语义下 POST 的写路径仍然全部 mock，「验收-」前缀的账户一个都不该落库
       if (req.method() === 'POST' && path === '/api/accounts') {
         await route.fulfill({
           status: 201,
@@ -433,15 +462,15 @@ try {
       await route.fallback();
     });
     await openCreateForm(page);
-    await fillName(page).fill('验收-收益率失败');
-    await yieldInput(page).fill('3');
+    await fillName(page).fill('验收-收益失败');
+    await yieldInput(page).fill('300');
     await confirmBtn(page).click();
     await page.waitForSelector('[data-testid="yield-warning"]', { timeout: 10000 });
     const warning = await page.locator('[data-testid="yield-warning"]').innerText();
     const stillOpen = (await page.locator('[data-testid="yield-percent-input"]').count()) > 0;
     record(
-      `${theme} 收益率失败不阻断账户保存`,
-      warning.includes('账户已保存') && warning.includes('年收益率') && stillOpen,
+      `${theme} 收益写入失败不阻断账户保存`,
+      warning.includes('账户已保存') && warning.includes('年度收益') && stillOpen,
       `提示「${warning.slice(0, 40)}…」`,
     );
     await page.screenshot({ path: `${SHOTS}/yield-failed-${theme}.png`, fullPage: false });

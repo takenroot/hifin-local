@@ -1,10 +1,10 @@
 /**
- * /api/accounts 路由 — 账户 CRUD + 年收益率
- * - GET    列表，可按 spaceId 过滤；每行附带 latestYield（最近一年的收益率）
+ * /api/accounts 路由 — 账户 CRUD + 年度收益金额
+ * - GET    列表，可按 spaceId 过滤；每行附带 latestYield（最近一年的实际收益金额）
  * - POST   创建
  * - PUT    更新（name / type / balance / remark / tagIds / includeInNetAsset / spaceId）
  * - DELETE 删除
- * - GET    /:id/yields        该账户的年收益率历史（按年份倒序）
+ * - GET    /:id/yields        该账户的年度收益历史（按年份倒序）
  * - PUT    /:id/yields/:year  按年 upsert（补填即自动解决催填通知）
  *
  * 复用 src/db 模块的 getDb() 获取 better-sqlite3 实例。
@@ -20,15 +20,23 @@ const VALID_TYPES: AccountType[] = [
   'fund', 'asset', 'social', 'invest', 'other', 'credit', 'debt',
 ];
 
-/** latestYield 在 JSON 里的形状（契约固定为 { year, yieldPercent } | null） */
+/** latestYield 在 JSON 里的形状（契约固定为 { year, annualIncome } | null） */
 interface LatestYield {
   year: number;
-  yieldPercent: number;
+  annualIncome: number;
 }
 
 /** 年份的合理区间：防止 "20250" / "-1" 这类脏值把库里写花 */
 const MIN_YEAR = 1970;
 const MAX_YEAR = 2999;
+
+/**
+ * 年度收益金额（元）的合法区间。
+ * 收益一般 ≥ 0，但保留负值容纳极端亏损；上界比上一年收益大到离谱的值拦住，
+ * 免得一个手滑的 "35000"（想填 3500）把资产页显示成天文数字。
+ */
+export const MIN_ANNUAL_INCOME = -999_999_999;
+export const MAX_ANNUAL_INCOME = 999_999_999;
 
 function nowMs(): number {
   return Date.now();
@@ -56,7 +64,7 @@ function parseTagIds(input: unknown): string | undefined {
  * 相关子查询 (ORDER BY year DESC LIMIT 1) 走 UNIQUE(accountId, year) 自带的索引，
  * 账户条数是几十级别，多一次查询纯属浪费。
  *
- * 两个辅助列 latestYieldYear / latestYieldPercent 只存在于结果集里，
+ * 两个辅助列 latestYieldYear / latestYieldIncome 只存在于结果集里，
  * 映射成 latestYield 对象后会删掉，不会漏进 JSON。
  */
 function selectAccounts(where: string, params: unknown[]): Array<Record<string, unknown>> {
@@ -64,7 +72,7 @@ function selectAccounts(where: string, params: unknown[]): Array<Record<string, 
     .prepare(
       `SELECT a.*,
               y.year AS latestYieldYear,
-              y.yieldPercent AS latestYieldPercent
+              y.annualIncome AS latestYieldIncome
          FROM accounts a
          LEFT JOIN accountYields y
                 ON y.id = (SELECT id FROM accountYields
@@ -79,10 +87,10 @@ function selectAccounts(where: string, params: unknown[]): Array<Record<string, 
 /** 结果集 → 账户 JSON：附加 latestYield，剥掉两个辅助列 */
 function withLatestYield(rows: Array<Record<string, unknown>>): Array<Record<string, unknown>> {
   return rows.map((row) => {
-    const { latestYieldYear, latestYieldPercent, ...account } = row;
+    const { latestYieldYear, latestYieldIncome, ...account } = row;
     const latestYield: LatestYield | null =
-      typeof latestYieldYear === 'number' && typeof latestYieldPercent === 'number'
-        ? { year: latestYieldYear, yieldPercent: latestYieldPercent }
+      typeof latestYieldYear === 'number' && typeof latestYieldIncome === 'number'
+        ? { year: latestYieldYear, annualIncome: latestYieldIncome }
         : null;
     return { ...account, latestYield };
   });
@@ -105,7 +113,7 @@ accountsRouter.get('/', (req: Request, res: Response) => {
   res.json(withLatestYield(rows));
 });
 
-/** GET /api/accounts/:id/yields → [{ year, yieldPercent, note }]，按年份倒序 */
+/** GET /api/accounts/:id/yields → [{ year, annualIncome, note }]，按年份倒序 */
 accountsRouter.get('/:id/yields', (req: Request, res: Response) => {
   const db = getDb();
   const id = Number(req.params.id);
@@ -120,21 +128,21 @@ accountsRouter.get('/:id/yields', (req: Request, res: Response) => {
   }
   const rows = db
     .prepare(
-      `SELECT year, yieldPercent, note
+      `SELECT year, annualIncome, note
          FROM accountYields
         WHERE accountId = ?
         ORDER BY year DESC`,
     )
-    .all(id) as Array<{ year: number; yieldPercent: number; note: string | null }>;
+    .all(id) as Array<{ year: number; annualIncome: number; note: string | null }>;
   res.json(rows);
 });
 
 /**
- * PUT /api/accounts/:id/yields/:year — upsert 某年收益率。
- * body: { yieldPercent, note? }
+ * PUT /api/accounts/:id/yields/:year — upsert 某年的实际收益金额。
+ * body: { annualIncome, note? }
  *
  * 落库用 ON CONFLICT(accountId, year) DO UPDATE：UNIQUE 约束是幂等的唯一依据，
- * 同一年的第二次提交是"改数字"而不是"多一条"。
+ * 同一年的第二次提交是"改金额"而不是"多一条"。
  * 写成功后顺手解决该年的催填通知（resolveYieldReminders 内部已做去重）。
  */
 accountsRouter.put('/:id/yields/:year', (req: Request, res: Response) => {
@@ -156,36 +164,38 @@ accountsRouter.put('/:id/yields/:year', (req: Request, res: Response) => {
   }
 
   const body = req.body ?? {};
-  if (body.yieldPercent === undefined || body.yieldPercent === null || body.yieldPercent === '') {
-    res.status(400).json({ error: 'yieldPercent 必填' });
+  if (body.annualIncome === undefined || body.annualIncome === null || body.annualIncome === '') {
+    res.status(400).json({ error: 'annualIncome 必填' });
     return;
   }
-  const yieldPercent = Number(body.yieldPercent);
-  if (!Number.isFinite(yieldPercent)) {
-    res.status(400).json({ error: 'yieldPercent 必须是数字' });
+  const annualIncome = Number(body.annualIncome);
+  if (!Number.isFinite(annualIncome)) {
+    res.status(400).json({ error: 'annualIncome 必须是数字' });
     return;
   }
-  if (yieldPercent < -100 || yieldPercent > 100) {
-    res.status(400).json({ error: 'yieldPercent 须在 -100 到 100 之间' });
+  if (annualIncome < MIN_ANNUAL_INCOME || annualIncome > MAX_ANNUAL_INCOME) {
+    res
+      .status(400)
+      .json({ error: `annualIncome 须在 ${MIN_ANNUAL_INCOME} 到 ${MAX_ANNUAL_INCOME} 之间` });
     return;
   }
   const note =
     body.note === undefined || body.note === null ? null : String(body.note).trim() || null;
 
   db.prepare(
-    `INSERT INTO accountYields (accountId, year, yieldPercent, note, createdAt)
+    `INSERT INTO accountYields (accountId, year, annualIncome, note, createdAt)
      VALUES (?, ?, ?, ?, ?)
      ON CONFLICT(accountId, year) DO UPDATE SET
-       yieldPercent = excluded.yieldPercent,
+       annualIncome = excluded.annualIncome,
        note = excluded.note`,
-  ).run(id, year, yieldPercent, note, nowMs());
+  ).run(id, year, annualIncome, note, nowMs());
 
   // 补填即消提醒：这条不变量放在 yields/reminder.ts 里，路由只管调用
   resolveYieldReminders(db, id, year);
 
   const row = db
-    .prepare('SELECT year, yieldPercent, note FROM accountYields WHERE accountId = ? AND year = ?')
-    .get(id, year) as { year: number; yieldPercent: number; note: string | null };
+    .prepare('SELECT year, annualIncome, note FROM accountYields WHERE accountId = ? AND year = ?')
+    .get(id, year) as { year: number; annualIncome: number; note: string | null };
   res.json(row);
 });
 

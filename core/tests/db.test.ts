@@ -121,51 +121,51 @@ describe('db: accountYields 表', () => {
       { name: 'id', type: 'INTEGER', notnull: 0 },
       { name: 'accountId', type: 'INTEGER', notnull: 1 },
       { name: 'year', type: 'INTEGER', notnull: 1 },
-      { name: 'yieldPercent', type: 'REAL', notnull: 1 },
+      { name: 'annualIncome', type: 'REAL', notnull: 1 },
       { name: 'note', type: 'TEXT', notnull: 0 },
       { name: 'createdAt', type: 'INTEGER', notnull: 1 },
     ]);
 
     const accId = (db.prepare("SELECT id FROM accounts WHERE name = '零钱通'").get() as { id: number }).id;
     db.prepare(
-      'INSERT INTO accountYields (accountId, year, yieldPercent, note, createdAt) VALUES (?, ?, ?, ?, ?)',
-    ).run(accId, 2025, 1.83, '年末看了一眼', 1000);
+      'INSERT INTO accountYields (accountId, year, annualIncome, note, createdAt) VALUES (?, ?, ?, ?, ?)',
+    ).run(accId, 2025, 350, '年末看了一眼', 1000);
 
     // 同账户同年再插必须被 UNIQUE 挡住
     expect(() =>
       db
         .prepare(
-          'INSERT INTO accountYields (accountId, year, yieldPercent, note, createdAt) VALUES (?, ?, ?, ?, ?)',
+          'INSERT INTO accountYields (accountId, year, annualIncome, note, createdAt) VALUES (?, ?, ?, ?, ?)',
         )
-        .run(accId, 2025, 9.99, null, 2000),
+        .run(accId, 2025, 999, null, 2000),
     ).toThrow(/UNIQUE/);
 
     // 别的年份可以并存
     db.prepare(
-      'INSERT INTO accountYields (accountId, year, yieldPercent, note, createdAt) VALUES (?, ?, ?, ?, ?)',
-    ).run(accId, 2024, 2.1, null, 2000);
+      'INSERT INTO accountYields (accountId, year, annualIncome, note, createdAt) VALUES (?, ?, ?, ?, ?)',
+    ).run(accId, 2024, 210, null, 2000);
     expect(
       (db.prepare('SELECT COUNT(*) AS c FROM accountYields').get() as { c: number }).c,
     ).toBe(2);
   });
 
-  it('ON CONFLICT upsert 不会新建行，只改数字与备注', () => {
+  it('ON CONFLICT upsert 不会新建行，只改金额与备注', () => {
     const accId = (db.prepare('SELECT id FROM accounts WHERE name = ' + "'零钱通'").get() as { id: number }).id;
     db.prepare(
-      'INSERT INTO accountYields (accountId, year, yieldPercent, note, createdAt) VALUES (?, ?, ?, ?, ?)',
-    ).run(accId, 2025, 1.83, '第一版', 1000);
+      'INSERT INTO accountYields (accountId, year, annualIncome, note, createdAt) VALUES (?, ?, ?, ?, ?)',
+    ).run(accId, 2025, 350, '第一版', 1000);
     db.prepare(
-      `INSERT INTO accountYields (accountId, year, yieldPercent, note, createdAt)
+      `INSERT INTO accountYields (accountId, year, annualIncome, note, createdAt)
        VALUES (?, ?, ?, ?, ?)
        ON CONFLICT(accountId, year) DO UPDATE SET
-         yieldPercent = excluded.yieldPercent, note = excluded.note`,
-    ).run(accId, 2025, 1.95, '第二版', 2000);
+         annualIncome = excluded.annualIncome, note = excluded.note`,
+    ).run(accId, 2025, 380, '第二版', 2000);
 
     const rows = db
-      .prepare('SELECT year, yieldPercent, note, createdAt FROM accountYields ORDER BY year')
-      .all() as Array<{ year: number; yieldPercent: number; note: string; createdAt: number }>;
+      .prepare('SELECT year, annualIncome, note, createdAt FROM accountYields ORDER BY year')
+      .all() as Array<{ year: number; annualIncome: number; note: string; createdAt: number }>;
     expect(rows).toHaveLength(1);
-    expect(rows[0].yieldPercent).toBeCloseTo(1.95, 6);
+    expect(rows[0].annualIncome).toBeCloseTo(380, 6);
     expect(rows[0].note).toBe('第二版');
     // createdAt 记录"这条记录第一次被创建"的时间，upsert 不动它
     expect(rows[0].createdAt).toBe(1000);

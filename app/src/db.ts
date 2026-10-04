@@ -48,12 +48,15 @@ export interface Account {
   /** 所属空间 id；undefined 视为默认空间 1 */
   spaceId?: number;
   /**
-   * 最近一次填写的年收益率（core: GET /api/accounts 随账户一起下发）。
+   * 最近一次填写的年度收益金额（core: GET /api/accounts 随账户一起下发）。
+   *
+   * 例：{ year: 2025, annualIncome: 350 } = 2025 年实际赚了 350 元。
+   * 记的是金额而不是年收益率：余额天天在变，"余额 × 收益率"推出来的预估数没有意义。
    *
    * 兼容说明：老版本 core 或接口失败时该字段整体缺失，
    * 因此这里是可选的，展示层一律按 null / undefined 容错。
    */
-  latestYield?: { year: number; yieldPercent: number } | null;
+  latestYield?: { year: number; annualIncome: number } | null;
   createdAt: number;
   updatedAt: number;
 }

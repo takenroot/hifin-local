@@ -143,14 +143,18 @@ CREATE TABLE IF NOT EXISTS notifications (
   payload TEXT                -- JSON；yield-reminder 为 {"accountId":N,"year":Y}
 );
 
--- 账户年收益率历史（v3 新表）：每个账户每年一条。
+-- 账户年度收益历史（v3 建表，v4 语义改为"金额"）：每个账户每年一条。
 -- UNIQUE(accountId, year) 让"一年只能有一条"由数据库兜底，
 -- REST 的 PUT 端点据此做 upsert，调度器据此判断"是否已填"。
+--
+-- annualIncome = 该年实际收益金额（元）。
+-- 刻意**不是**年收益率：零钱通/余额宝这类余额天天在变，"余额 × 收益率"推出来的
+-- 预估数没有参考价值；用户要的是"2025 年这块钱实际赚了 350 块"，一年手动记一次。
 CREATE TABLE IF NOT EXISTS accountYields (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   accountId INTEGER NOT NULL,
   year INTEGER NOT NULL,
-  yieldPercent REAL NOT NULL,
+  annualIncome REAL NOT NULL,  -- 该年实际收益金额（元）；负值合法，容纳极端亏损
   note TEXT,
   createdAt INTEGER NOT NULL,
   UNIQUE(accountId, year)
@@ -218,6 +222,10 @@ export type NotificationType =
  */
 export type NotificationStatus = 'pending' | 'resolved' | 'dismissed' | 'failed' | 'expired';
 export interface NotificationRow { id?: number; type: NotificationType; title: string; message?: string; bill_uid?: number; platform?: string; status: NotificationStatus; retry_count: number; createdAt: number; updatedAt: number; payload?: string | null; }
-/** 账户年收益率行（v3）：yieldPercent 是百分数值，1.8 表示 1.8% 而不是 0.018 */
-export interface AccountYieldRow { id?: number; accountId: number; year: number; yieldPercent: number; note?: string | null; createdAt: number; }
+/**
+ * 账户年度收益行（v4 语义）：annualIncome 是**金额（元）**，不是百分比。
+ * 例：2025 年零钱通赚了 350 元 → { year: 2025, annualIncome: 350 }。
+ * 负值合法（当年亏损），量级由 REST 层限制在 ±999,999,999。
+ */
+export interface AccountYieldRow { id?: number; accountId: number; year: number; annualIncome: number; note?: string | null; createdAt: number; }
 export interface KvRow { key: string; value?: string; }

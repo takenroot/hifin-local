@@ -2,11 +2,14 @@
  * 账户年收益率「一月催填」调度器
  * -----------------------------------------------------------------
  * 业务背景：用户的闲钱主要躺在零钱通 / 余额宝这类货币基金里，一年到头也就看
- * 一次"去年到底赚了多少"。所以每年 1 月提醒一次，把上一年的实际年收益率补录进来，
+ * 一次"去年到底赚了多少"。所以每年 1 月提醒一次，把上一年的**实际收益金额**补录进来，
  * 形成 (账户 × 年份) 的历史序列。
  *
+ * 记的是金额而不是年收益率：这些账户的余额天天在变，"余额 × 收益率"推出来的
+ * 预估数没有参考价值，用户只想知道"去年那笔钱实际赚了多少块"。
+ *
  * 三个动作，边界都必须守住，否则会变成打扰：
- *   1. 1 月内：对**缺上一年记录**的资产类账户去重建一条 yield-reminder 通知
+ *   1. 1 月内：对**缺上一年收益记录**的资产类账户去重建一条 yield-reminder 通知
  *   2. 任意时刻：记录已经补上的 → 对应通知立刻 resolved（不等到下次调度）
  *   3. 2 月 1 日起：还是 pending 的 → 标记 expired，从此不再出现在待办里
  *
@@ -24,7 +27,7 @@ import {
 } from '../notifications/store.js';
 import type { NotificationRow } from '../db/schema.js';
 
-/** 收益率催填通知的 type（契约里的 kind/category） */
+/** 年度收益催填通知的 type（契约里的 kind/category） */
 export const YIELD_REMINDER_TYPE = 'yield-reminder';
 
 /** 催填窗口的月份：1 月 = 0（Date#getMonth 从 0 开始） */
@@ -32,9 +35,9 @@ export const REMINDER_MONTH = 0;
 
 /**
  * 参与催填的账户类型。
- * 只取"会自己产生年化收益"的账户：invest / fund / other。
+ * 只取"会自己产生年度收益"的账户：invest / fund / other。
  * 刻意**不含**：
- *   - credit / debt —— 负债账户谈收益率没有意义（设计约定里它们恒为红色负值）
+ *   - credit / debt —— 负债账户谈收益没有意义（设计约定里它们恒为红色负值）
  *   - asset（公积金/社保卡这类不能变现的账户）、social —— 不产生投资收益
  * 另外还要求 includeInNetAsset = 1：用户自己排除掉的账户不该被催。
  */
@@ -85,7 +88,7 @@ export function inReminderWindow(now: Date): boolean {
   return now.getMonth() === REMINDER_MONTH;
 }
 
-/** 某账户某年是否已填（唯一的"是否已填"判据，REST 写入后立即生效） */
+/** 某账户某年是否已填收益（唯一的"是否已填"判据，REST 写入后立即生效） */
 export function hasYieldRecord(db: Database.Database, accountId: number, year: number): boolean {
   const row = db
     .prepare('SELECT 1 AS ok FROM accountYields WHERE accountId = ? AND year = ?')
@@ -94,7 +97,7 @@ export function hasYieldRecord(db: Database.Database, accountId: number, year: n
 }
 
 /**
- * 找出"该填上一年收益率却还没填"的资产类账户。
+ * 找出"该填上一年收益金额却还没填"的资产类账户。
  *
  * 纯函数：不写库；`now` 完全由调用方注入。
  * 窗口外（getMonth() !== 0）一律返回空数组——12 月不该催，2 月之后也不该再催。
@@ -196,8 +199,8 @@ export function ensureYieldReminders(db: Database.Database, now: Date): YieldRem
         notified.add(key);
         createNotification(db, {
           type: YIELD_REMINDER_TYPE,
-          title: `记一下「${m.accountName}」${m.year} 年的收益率`,
-          message: `${m.accountName}（#${m.accountId}）还没有 ${m.year} 年的年收益率记录，填一下就能看到这一年的实际收益。`,
+          title: `记一下「${m.accountName}」${m.year} 年的收益`,
+          message: `${m.accountName}（#${m.accountId}）还没有 ${m.year} 年的收益记录，填一下当年实际赚了多少钱。`,
           payload: { accountId: m.accountId, year: m.year } satisfies YieldReminderPayload,
         });
         created += 1;
@@ -225,7 +228,7 @@ export function ensureYieldReminders(db: Database.Database, now: Date): YieldRem
 }
 
 /**
- * 补填某账户某年收益率后，立刻消掉对应的催填通知（REST 的 PUT 端点调用）。
+ * 补填某账户某年收益金额后，立刻消掉对应的催填通知（REST 的 PUT 端点调用）。
  * 返回被解决的通知条数；没有待办通知时返回 0。
  *
  * 放在这里而不是路由里，是为了让"写入即消提醒"这条不变量只有一处实现，
