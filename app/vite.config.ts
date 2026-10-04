@@ -43,11 +43,12 @@ export default defineConfig({
           ) {
             return 'vendor-recharts';
           }
-          // jotai / icons / dayjs
+          // jotai / icons / dayjs / clsx
           if (
             id.includes('/node_modules/jotai/') ||
             id.includes('/node_modules/@tabler/icons-react/') ||
-            id.includes('/node_modules/dayjs/')
+            id.includes('/node_modules/dayjs/') ||
+            id.includes('/node_modules/clsx/')
           ) {
             return 'vendor-utils';
           }
