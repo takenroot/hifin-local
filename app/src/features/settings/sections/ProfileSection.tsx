@@ -120,7 +120,7 @@ export function ProfileSection() {
               label={
                 <>
                   <IconMail size={12} className="inline mr-1 -mt-0.5" />
-                  邮箱（占位）
+                  邮箱
                 </>
               }
               htmlFor={`${uid}-email`}

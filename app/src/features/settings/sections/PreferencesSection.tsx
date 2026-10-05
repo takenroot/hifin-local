@@ -106,13 +106,13 @@ export function PreferencesSection() {
             <div className="min-w-0">
               <div className="text-sm text-text dark:text-text-dark">语言</div>
               <div className="text-xs text-text-muted dark:text-text-muted-dark mt-1">
-                切换语言（当前仅简体中文；其他为占位）
+                当前仅简体中文
               </div>
             </div>
             <div className="w-[180px] flex-none">
               <Select
                 aria-label="语言"
-                value={language}
+                value={LANGUAGE_OPTIONS.some((o) => o.value === language) ? language : LANGUAGE_OPTIONS[0].value}
                 options={LANGUAGE_OPTIONS}
                 onChange={(e) => setLanguage(e.target.value)}
               />

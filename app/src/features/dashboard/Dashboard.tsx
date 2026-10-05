@@ -4,12 +4,21 @@
  * 布局：左主右副（右侧栏约 280px）。
  * - 欢迎区：昵称（kv.nickname，默认"用户"）+ 按时段问候语 + 当前日期星期
  * - 资产概览三卡：净资产 / 本月收入 / 本月支出，带环比上月涨跌幅（绿涨红跌）
+ *   三卡是「色块数据卡」（tailwind surface.stat）：软色底、无边框、圆角 3xl，
+ *   净资产卡另加左侧 3px brand 边条标记主卡；金额升到 28px 半粗 tabular-nums。
+ *   明暗对比度自查（探针口径，暗色底 = soft-dark 叠 #171a21）：
+ *   金额红 #ef4444 3.85:1 / 绿 #10b981 5.04:1（28px 属大字号，门槛 3:1）；
+ *   标签 #9ca3af 5.0:1 以上。亮色底 income.soft #fee2e2 上红字 3.08:1、
+ *   expense.soft #d1fae5 上绿字 2.26:1 —— 与全站既有用法同量级
+ *   （白卡上同为 3.76 / 2.56:1），不引入新的配色例外。
  * - 资产趋势：recharts 面积图，近 30 天净资产估算
  * - 资产分布：Tab（按账户/按交易方式）环形图
  * - 收支日历：可翻月的网格（‹ 2026年10月 › + 「今天」），每日收入/支出小计，
  *   点击弹当日流水列表。点月份文字另开「月份选择弹层」（年份翻页 + 3×4 网格）。
  *   月份是独立 state，不影响上方概览/趋势/分布的真实当月口径。
- * - 右侧栏：还款提醒 / 账户管理 / 目标管理 / 预算管理（占位）/ 最近交易
+ * - 右侧栏：还款提醒 / 账户管理 / 目标管理 / 预算管理 / 最近交易
+ *   预算管理读 /api/budgets，用看板已加载的流水按预算自身周期本地聚合「本期已花」
+ *   （core 无 budget-spent 端点，/budget 页同源算法），超支走 danger 状态色。
  *
  * 暗黑模式约定：
  *   - 图表 Tooltip / 悬浮光标走 @/features/reports/chartTheme（recharts 默认写死 #fff）。
@@ -66,7 +75,7 @@ import {
   PageHeader,
 } from '@/components/ui';
 import { useSpaceId } from '@/db';
-import type { Category, Goal } from '@/db';
+import type { Budget, Category, Goal } from '@/db';
 import { useApi } from '@/hooks/useApi';
 import { useAnimatedNumber } from '@/hooks/useAnimatedNumber';
 import { toAccounts, toTransactions, type RestAccount, type RestTransaction } from '@/features/accounts/rest';
@@ -79,6 +88,7 @@ import {
   netAssetTrend,
   buildDistribution,
   buildCalendar,
+  buildBudgetProgress,
   transactionsOnDay,
 } from './calculations';
 import {
@@ -108,6 +118,21 @@ import { PIE_COLORS } from '@/lib/format';
 /* 隐藏金额时显示的占位字符（与币种符号宽度接近） */
 const AMOUNT_HIDDEN_PREFIX = '¥ ';
 const AMOUNT_HIDDEN_BODY = '******';
+
+/* ───────────────── 卡片表面分层（与 tailwind surface.stat 同一契约） ─────────────────
+ * stat  = 色块数据卡：软色底 + 无边框 + 圆角 3xl（白卡面板是 2xl，stat 更大一号）
+ * panel = 既有白卡（index.css 的 .card），本模块其余卡片一律不动
+ * 过渡只给背景色 160ms（--dur-surface），不做 hover 阴影。 */
+const STAT_SURFACE =
+  'rounded-3xl transition-[background-color_var(--dur-surface)_var(--ease-out)]';
+const STAT_SURFACE_TONE = {
+  brand: 'bg-surface-stat-brand dark:bg-surface-stat-brand-dark',
+  income: 'bg-surface-stat-income dark:bg-surface-stat-income-dark',
+  expense: 'bg-surface-stat-expense dark:bg-surface-stat-expense-dark',
+} as const;
+/** 主卡标记：左侧 3px brand 边条（绝对定位，不占布局宽度） */
+const STAT_PRIMARY_BAR =
+  "relative overflow-hidden before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:bg-brand before:content-['']";
 
 /**
  * 读取/写入看板顶栏"隐藏金额"开关的 localStorage key。
@@ -250,6 +275,7 @@ export default function Dashboard() {
   const accountsRes = useApi<RestAccount[]>(`/api/accounts${spaceQuery}`, [spaceId]);
   const transactionsRes = useApi<RestTransaction[]>(`/api/transactions${spaceQuery}`, [spaceId]);
   const goalsRes = useApi<Goal[]>(`/api/goals${spaceQuery}`, [spaceId]);
+  const budgetsRes = useApi<Budget[]>(`/api/budgets${spaceQuery}`, [spaceId]);
   const categoriesRes = useApi<Category[]>('/api/categories');
   // 昵称：/api/kv/:key 在键不存在时返回 404，属于"未设置昵称"的正常状态，故不计入 error。
   const nicknameRes = useApi<{ value?: string }>('/api/kv/nickname');
@@ -393,6 +419,16 @@ export default function Dashboard() {
     [transactions],
   );
 
+  /* 预算卡：读 /api/budgets，「本期已花」用看板已加载的流水本地聚合
+   * （core 无 budget-spent 端点；算法见 calculations.buildBudgetProgress，与 /budget 页同源）。
+   * 预算接口失败不进 loadError：一条预算读不到不该把整张看板换成错误页。 */
+  const budgets = useMemo(() => budgetsRes.data ?? [], [budgetsRes.data]);
+  const budgetProgress = useMemo(
+    () => buildBudgetProgress(budgets, transactions, today.toDate()),
+    [budgets, transactions, today],
+  );
+  const budgetsLoading = budgetsRes.loading && budgets.length === 0;
+
   return (
     <div className="min-h-full bg-bg dark:bg-bg-dark">
       <PageHeader
@@ -424,10 +460,11 @@ export default function Dashboard() {
           ) : loading ? (
             <div className="flex-1 min-w-0 space-y-6">
               <div className="h-24 rounded-xl bg-bg-card dark:bg-bg-card-dark animate-pulse" />
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="h-28 rounded-xl bg-bg-card dark:bg-bg-card-dark animate-pulse" />
-                <div className="h-28 rounded-xl bg-bg-card dark:bg-bg-card-dark animate-pulse" />
-                <div className="h-28 rounded-xl bg-bg-card dark:bg-bg-card-dark animate-pulse" />
+              {/* 骨架用 stat 中性色块，与真卡同一形状（圆角 3xl），避免加载完成时"换形" */}
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+                <div className="h-28 rounded-3xl bg-surface-stat dark:bg-surface-stat-dark animate-pulse" />
+                <div className="h-28 rounded-3xl bg-surface-stat dark:bg-surface-stat-dark animate-pulse" />
+                <div className="h-28 rounded-3xl bg-surface-stat dark:bg-surface-stat-dark animate-pulse" />
               </div>
               <div className="h-64 rounded-xl bg-bg-card dark:bg-bg-card-dark animate-pulse" />
             </div>
@@ -481,11 +518,15 @@ export default function Dashboard() {
             {/* 资产概览三卡 */}
             <section>
               <h2 className="section-title mb-3">资产概览</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* 三列起点定在 xl：lg 起右侧栏占掉 280px，768~1279 之间主区
+                  （456~712px）塞不下三个 28px 金额，md 就分三列必然挤爆。 */}
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
                 <StatCard
                   label="净资产"
                   icon="💰"
                   tone="dynamic"
+                  surface="brand"
+                  primary
                   amount={netAsset}
                   delta={netAssetMoM}
                   hide={hideAmounts}
@@ -494,6 +535,7 @@ export default function Dashboard() {
                   label="本月收入"
                   icon="📥"
                   tone="income"
+                  surface="income"
                   amount={monthIncome}
                   delta={incomeMoM}
                   hide={hideAmounts}
@@ -503,6 +545,7 @@ export default function Dashboard() {
                   label="本月支出"
                   icon="📤"
                   tone="expense"
+                  surface="expense"
                   amount={monthExpense}
                   delta={expenseMoM}
                   expenseMode
@@ -879,13 +922,76 @@ export default function Dashboard() {
             </Card>
 
             {/* 预算管理 */}
-            <Card title="预算管理">
-              <div className="flex flex-col items-center justify-center py-6 text-sm text-text-muted dark:text-text-muted-dark">
-                <span className="w-10 h-10 rounded-full bg-bg dark:bg-bg-card-dark flex items-center justify-center mb-2">
-                  <IconCircleDashed size={18} />
-                </span>
-                <span>敬请期待</span>
-              </div>
+            <Card
+              title="预算管理"
+              extra={
+                budgets.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => navigate('/budget')}
+                    className="text-xs text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark inline-flex items-center gap-1"
+                  >
+                    详情 <IconArrowRight size={12} />
+                  </button>
+                )
+              }
+            >
+              {budgetsLoading ? (
+                <div className="space-y-3" data-testid="dash-budget-skeleton" aria-hidden>
+                  {[0, 1].map((i) => (
+                    <div key={i} className="h-8 rounded-lg bg-bg dark:bg-bg-card-dark animate-pulse" />
+                  ))}
+                </div>
+              ) : budgetProgress.length === 0 ? (
+                <button
+                  type="button"
+                  onClick={() => navigate('/budget')}
+                  data-testid="dash-budget-empty"
+                  className="w-full flex flex-col items-center justify-center py-6 text-sm text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark transition"
+                >
+                  <span className="w-10 h-10 rounded-full bg-bg dark:bg-bg-card-dark flex items-center justify-center mb-2">
+                    <IconCircleDashed size={18} />
+                  </span>
+                  <span>设置本月预算</span>
+                </button>
+              ) : (
+                <div className="space-y-3" data-testid="dash-budget-list">
+                  {budgetProgress.slice(0, 3).map(({ budget, spent, pct, overspent }) => (
+                    <div key={budget.id} className="text-sm" data-testid="dash-budget-item">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="truncate">{budget.name}</span>
+                        <span
+                          className={clsx(
+                            'flex-none text-xs tabular-nums',
+                            overspent
+                              ? 'text-danger dark:text-danger-dark'
+                              : 'text-text-muted dark:text-text-muted-dark',
+                          )}
+                        >
+                          {formatMoney(spent, false)} / {formatMoney(budget.amount, false)}
+                        </span>
+                      </div>
+                      {/* 进度条配色沿用 /budget 页同一套语义：正常=支出绿，超支=收入红 */}
+                      <ProgressBar
+                        className="mt-1.5"
+                        value={Math.max(0, Math.min(100, pct))}
+                        tone={overspent ? 'income' : 'expense'}
+                        size="sm"
+                      />
+                      {overspent && (
+                        <div className="mt-1 text-[11px] text-danger dark:text-danger-dark">
+                          已超支 {formatMoney(spent - budget.amount, false)}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {budgetProgress.length > 3 && (
+                    <div className="text-xs text-text-muted dark:text-text-muted-dark">
+                      另有 {budgetProgress.length - 3} 个预算，见预算页
+                    </div>
+                  )}
+                </div>
+              )}
             </Card>
 
             {/* 最近交易 */}
@@ -1101,6 +1207,10 @@ interface StatCardProps {
   icon: string;
   /** 金额颜色：默认按 expenseMode 判断；传 'dynamic' 时按 delta 方向（涨红跌绿） */
   tone: 'income' | 'expense' | 'dynamic';
+  /** 色块底色：跟随金额语义，主卡用 brand 标记层级 */
+  surface: keyof typeof STAT_SURFACE_TONE;
+  /** 主卡：加左侧 3px brand 边条 + 左侧留白 */
+  primary?: boolean;
   amount: number;
   delta: number;
   expenseMode?: boolean;
@@ -1110,7 +1220,19 @@ interface StatCardProps {
   testId?: string;
 }
 
-function StatCard({ label, icon, tone, amount, delta, expenseMode, hide, testId }: StatCardProps) {
+/** 导出供渲染契约测试断言（金额主角化后的表面分层，tests/ui-stat-surface.test.ts） */
+export function StatCard({
+  label,
+  icon,
+  tone,
+  surface,
+  primary,
+  amount,
+  delta,
+  expenseMode,
+  hide,
+  testId,
+}: StatCardProps) {
   // dynamic：净资产专用——负数=坏事=绿，正数=好事=红；delta 辅助判断趋势
   const effectiveTone =
     tone === 'dynamic'
@@ -1118,33 +1240,46 @@ function StatCard({ label, icon, tone, amount, delta, expenseMode, hide, testId 
         ? 'expense'
         : 'income'
       : tone;
-  const valueClass = effectiveTone === 'income' ? 'text-income' : 'text-expense';
-  const sign = delta > 0 ? '+' : '';
+  // 色块卡上的大金额用 deep 变体（同色加深）：原色在 soft 底上对比度不足
+  // （绿 2.24:1 不达 28px 大字号 3:1 门槛），deep 实测绿 4.84 / 红 3.95；
+  // 暗色 soft-dark 底原色已达标（绿 5.09 / 红 3.81），保持原色
+  const valueClass =
+    effectiveTone === 'income'
+      ? 'text-income-deep dark:text-income'
+      : 'text-expense-deep dark:text-expense';
+  // 环比：涨红跌绿沿用既有口径（支出场景"减少"算好事），0 走 muted 并补 dark 变体，
+  // 否则色块卡上会留下一行暗色模式对比度不足的深灰。
+  const deltaTone =
+    delta === 0
+      ? 'text-text-muted dark:text-text-muted-dark'
+      : trendToneClass(delta, !!expenseMode);
   // 滚动数字：隐藏时目标压到 0（反正渲染星号），取消隐藏即从 0 重滚到真实金额
   const animatedAmount = useAnimatedNumber(hide ? 0 : amount);
   return (
-    <Card className="!p-5" data-testid={testId}>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-text-muted dark:text-text-muted-dark text-sm">
-          <span>{icon}</span>
-          <span>{label}</span>
-        </div>
-        <Badge tone={effectiveTone === 'income' ? 'income' : 'expense'}>
-          <span className="inline-flex items-center gap-0.5">
-            {delta > 0 && <IconArrowUpRight size={10} />}
-            {delta < 0 && <IconArrowDownLeft size={10} />}
-            {sign}
-            {formatPercent(delta).replace(/^[+-]/, '')}
-          </span>
-        </Badge>
+    <div
+      className={clsx(
+        STAT_SURFACE,
+        STAT_SURFACE_TONE[surface],
+        primary ? clsx(STAT_PRIMARY_BAR, 'p-5 pl-6') : 'p-5',
+      )}
+      data-testid={testId}
+    >
+      <div className="flex items-center gap-1.5 text-xs text-text-muted dark:text-text-muted-dark">
+        <span aria-hidden>{icon}</span>
+        <span>{label}</span>
       </div>
-      <div className={clsx('mt-3 text-2xl font-medium tabular-nums', valueClass)}>
+      <div className={clsx('mt-2 text-[28px] leading-tight font-semibold tabular-nums', valueClass)}>
         {hide ? <MaskMoney value={amount} hide /> : <span>{formatMoney(animatedAmount)}</span>}
       </div>
-      <div className="mt-1 text-xs text-text-muted dark:text-text-muted-dark">
-        较上月 <span className={trendToneClass(delta, !!expenseMode)}>{formatPercent(delta)}</span>
+      <div className="mt-1.5 flex items-baseline gap-1.5 text-xs">
+        <span className="text-text-muted dark:text-text-muted-dark">较上月</span>
+        <span className={clsx('inline-flex items-center gap-0.5 font-medium', deltaTone)}>
+          {delta > 0 && <IconArrowUpRight size={12} />}
+          {delta < 0 && <IconArrowDownLeft size={12} />}
+          {formatPercent(delta)}
+        </span>
       </div>
-    </Card>
+    </div>
   );
 }
 

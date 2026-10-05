@@ -2,7 +2,8 @@
  * 看板数据计算聚合（仅供 dashboard 模块内部使用）
  */
 import dayjs from 'dayjs';
-import type { Account, Transaction } from '@/db';
+import type { Account, Budget, Transaction } from '@/db';
+import { periodRange } from '@/features/budget/format';
 
 /**
  * 净资产：includeInNetAsset=true 的资产类账户余额 - 负债类(credit/debt)余额
@@ -214,4 +215,42 @@ export function transactionsOnDay(
   return transactions
     .filter((t) => t.date >= start && t.date <= end)
     .sort((a, b) => b.date - a.date);
+}
+
+/** 单个预算的本期进度（看板预算卡渲染用） */
+export interface BudgetProgress {
+  budget: Budget;
+  /** 本期已花（只算支出） */
+  spent: number;
+  /** 已用百分比，amount<=0 时为 0（不做除零） */
+  pct: number;
+  /** 是否超支（amount>0 且已花超过额度） */
+  overspent: boolean;
+}
+
+/**
+ * 预算卡进度：按每个预算**自身周期**在本地聚合"本期已花"。
+ *
+ * core 没有 budget-spent 端点，所以和 /budget 页是同一套算法：复用预算模块的
+ * periodRange（monthly=当前自然月、yearly=当前自然年），只累加 type='expense'，
+ * categoryId 非空时再按分类过滤（null = 总预算，统计全部支出）。
+ * at 显式传入是为了让"本月/本年"在测试里可复现。
+ */
+export function buildBudgetProgress(
+  budgets: Budget[],
+  transactions: Transaction[],
+  at: Date = new Date(),
+): BudgetProgress[] {
+  return budgets.map((b) => {
+    const { from, to } = periodRange(b.period, at);
+    let spent = 0;
+    for (const t of transactions) {
+      if (t.type !== 'expense') continue;
+      if (t.date < from || t.date >= to) continue;
+      if (b.categoryId != null && t.categoryId !== b.categoryId) continue;
+      spent += t.amount;
+    }
+    const pct = b.amount > 0 ? (spent / b.amount) * 100 : 0;
+    return { budget: b, spent, pct, overspent: b.amount > 0 && spent > b.amount };
+  });
 }

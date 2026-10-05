@@ -99,9 +99,7 @@ export const DEFAULT_PAGE_OPTIONS: { label: string; value: string }[] = [
   { label: '设置', value: 'settings' },
 ];
 
-/** 语言占位选项（当前仅简体中文，但仍提供切换 UI） */
+/** 语言选项（i18n 暂不做，只留简体中文；不做假死选项） */
 export const LANGUAGE_OPTIONS: { label: string; value: string }[] = [
   { label: '简体中文', value: 'zh-CN' },
-  { label: 'English（占位）', value: 'en' },
-  { label: '日本語（占位）', value: 'ja' },
 ];

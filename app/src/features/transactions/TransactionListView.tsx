@@ -322,7 +322,14 @@ export function TransactionListView({ filter, onEdit, version = 0, onChanged }: 
   );
 }
 
-function SumCell({
+/**
+ * 合计卡：与看板三卡同一「色块数据卡」层级（tailwind surface.stat）——
+ * 软色底 / 无边框 / 圆角 3xl，背景过渡 160ms（--dur-surface）。
+ * 金额仍按既有金额语义上色（收入红 / 支出绿），不引入第二套配色。
+ *
+ * 导出供渲染契约测试断言（tests/ui-stat-surface.test.ts）。
+ */
+export function SumCell({
   tone,
   label,
   value,
@@ -333,14 +340,27 @@ function SumCell({
   value: number;
   isCount?: boolean;
 }) {
+  const surface =
+    tone === 'income'
+      ? 'bg-surface-stat-income dark:bg-surface-stat-income-dark'
+      : tone === 'expense'
+        ? 'bg-surface-stat-expense dark:bg-surface-stat-expense-dark'
+        : 'bg-surface-stat dark:bg-surface-stat-dark';
   return (
-    <div className="card !p-4">
+    <div
+      className={clsx(
+        'min-w-0 rounded-3xl p-4 transition-[background-color_var(--dur-surface)_var(--ease-out)]',
+        surface,
+      )}
+    >
       <div className="text-xs text-text-muted dark:text-text-muted-dark">{label}</div>
       <div
         className={clsx(
-          'mt-1 text-xl font-medium tabular-nums',
-          tone === 'income' && 'text-income',
-          tone === 'expense' && 'text-expense',
+          // 390px 下一列只有 ~171px，20px 起跳；≥640px 才升到 24px
+          'mt-1 text-xl sm:text-2xl font-semibold tabular-nums',
+          // 色块卡上的大金额用 deep 变体（soft 底上原色对比度不足，见 tailwind.config 注释）
+          tone === 'income' && 'text-income-deep dark:text-income',
+          tone === 'expense' && 'text-expense-deep dark:text-expense',
           tone === 'neutral' && 'text-text dark:text-text-dark',
         )}
       >

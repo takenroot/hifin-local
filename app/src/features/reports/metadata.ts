@@ -41,7 +41,7 @@ export const REPORT_TEMPLATES: ReportTemplateMeta[] = [
   {
     key: 'budget',
     label: '预算执行',
-    description: '跟踪预算使用情况（占位）',
+    description: '跟踪预算使用情况',
     icon: '🎯',
     tone: '#ec4899',
   },
