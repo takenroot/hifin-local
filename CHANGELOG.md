@@ -147,7 +147,7 @@
 提交：`01f087d`
 
 ### 范围
-对照 [`hifin-features.md`](../hifin-features.md) 第十二章 MVP 清单完成：
+对照 `hifin-features.md`（现归档于 docs/exploration-originals/）第十二章 MVP 清单完成：
 
 - 看板 Dashboard（资产概览/趋势/分布/日历）
 - 账户管理（两步创建/列表/详情）

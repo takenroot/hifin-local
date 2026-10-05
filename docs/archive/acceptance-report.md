@@ -9,7 +9,7 @@
 - 应用：`app/`（Vite + React 19 + TypeScript + Tailwind v3 + Dexie(IndexedDB) + jotai + recharts）
 - 启动：`cd app && npm run dev`；构建：`npm run build`（已验证通过，tsc 零错误）
 - 验收截图：`accept/*.png`（浅色/暗黑/交互流程共 16 张）
-- 复刻依据：`hifin-features.md`（对 app.hifin.ai 的逐项探索清单）
+- 复刻依据：`../exploration-originals/hifin-features.md`（对 app.hifin.ai 的逐项探索清单）
 
 ## 二、调度过程
 
@@ -20,7 +20,7 @@
 | R3 | 验收返修：Ctrl+K 全局监听缺失、userId 永不生成 | ✅ 修复，独立复核 PASS |
 | R4 | 验收返修：暗黑模式对比度（色板 text 缺 dark 变体） | ✅ 修复 30+ 文件，亮度断言 8/8 PASS |
 
-## 三、MVP 清单逐项验收（hifin-features.md 第十二章）
+## 三、MVP 清单逐项验收（复刻源功能清单第十二章，见 ../exploration-originals/hifin-features.md）
 
 | # | 功能 | 结果 | 证据 |
 |---|---|---|---|

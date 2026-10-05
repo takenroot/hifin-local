@@ -102,9 +102,8 @@ hifin/
 │   ├── known-issues.md           # 已知问题（ISSUE-001~004：URL 提取/Tailwind 缓存/ZipCrypto/规则引擎限制）
 │   ├── agent-prompt-template.md  # subagent 派发模板
 │   ├── acceptance-report.md      # R1-R4 验收报告（历史归档）
-│   └── exploration-originals/    # 原版界面截图归档
+│   └── exploration-originals/    # 原版界面截图 + 功能清单（复刻源，2026-08-20）
 ├── accept/                       # 验收产物：scripts/ 回归脚本 + screenshots/ 产物 + archive/ 历史归档
-├── hifin-features.md             # 原版功能清单（复刻源文档）
 └── README.md / CHANGELOG.md
 ```
 
@@ -137,7 +136,9 @@ hifin/
 - [docs/bill-automation-design.md](./docs/bill-automation-design.md) — 账单自动化设计
 - [docs/known-issues.md](./docs/known-issues.md) — 已知问题（ISSUE-001~005 + 待校准事项）
 - [docs/agent-prompt-template.md](./docs/agent-prompt-template.md) — subagent 模板
-- [docs/acceptance-report.md](./docs/acceptance-report.md) — R1-R4 验收报告（历史归档，数据通道叙述已过时）
+- [docs/design-principles.md](./docs/design-principles.md) — 设计原则长期基准
+- [docs/archive/](./docs/archive/) — 归档：R1-R4 验收报告、design-review 问题目录（叙述已过时，仅存档）
+- [docs/exploration-originals/](./docs/exploration-originals/) — 原版界面截图与功能清单（2026-08-20，复刻源）
 - [core/README.md](./core/README.md) — core 子项目说明
 - [app/README.md](./app/README.md) — app 子项目说明
 
