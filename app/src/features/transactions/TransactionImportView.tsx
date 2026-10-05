@@ -7,7 +7,7 @@
  * - 解析按钮 → 解析 + 预览
  * - 确认导入：逐条 POST /api/transactions（余额联动由 core 完成），历史写入 /api/kv
  */
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import dayjs from 'dayjs';
 import {
   IconUpload,
@@ -19,11 +19,11 @@ import {
   IconWand,
 } from '@tabler/icons-react';
 import clsx from 'clsx';
-import { Tabs, Button, Select, Badge } from '@/components/ui';
+import { Tabs, Button, Field, Select, Badge } from '@/components/ui';
 import { type Account, type Category, type TxRule, useSpaceId } from '@/db';
 import { filterBySpace } from '@/space';
 import { useApi, apiFetch } from '@/hooks/useApi';
-import { PLATFORMS, parseCsvText, type ParsedTx } from './csv';
+import { PLATFORMS, parseCsvText, decodeBillBytes, type ParsedTx } from './csv';
 import { formatMoney } from './format';
 import { applyRules } from '@/features/rules/engine';
 
@@ -52,12 +52,23 @@ async function readImportHistory(): Promise<ImportBatch[]> {
   }
 }
 
-function readFileText(file: File): Promise<string> {
+// 紧贴 Select 上方的标题行原先是手写 <div>，弱化成 muted 小字
+const LBL = 'text-sm text-text-muted dark:text-text-muted-dark';
+
+/**
+ * 读原始字节，不在这里定编码。
+ *
+ * 原先 `readAsText(file, 'utf-8')` 把编码写死了：支付宝导出是 GBK，硬解成 UTF-8
+ * 得到的是一份**不报错**的乱码（fatal=false），一路走到 parseCsvText 才以
+ * 「未识别到日期/金额列」的面貌爆掉，463 笔全丢。改读 ArrayBuffer，交给
+ * decodeBillBytes 判编码。
+ */
+function readFileBuffer(file: File): Promise<ArrayBuffer> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onerror = () => reject(new Error('读取失败'));
-    reader.onload = () => resolve(String(reader.result ?? ''));
-    reader.readAsText(file, 'utf-8');
+    reader.onload = () => resolve(reader.result as ArrayBuffer);
+    reader.readAsArrayBuffer(file);
   });
 }
 
@@ -82,6 +93,7 @@ export function TransactionImportView({ onImported }: { onImported?: () => void 
 /* -------- 导入面板 -------- */
 
 function ImportPanel({ onImported }: { onImported?: () => void }) {
+  const uid = useId();
   const spaceId = useSpaceId();
   // spaceId === 0 表示"全部空间"，此时不拼 spaceId 让服务端返回全量
   const spaceQ = spaceId === 0 ? '' : `?spaceId=${spaceId}`;
@@ -150,7 +162,7 @@ function ImportPanel({ onImported }: { onImported?: () => void }) {
     setParsing(true);
     setParseError(null);
     try {
-      const text = await readFileText(file);
+      const text = decodeBillBytes(await readFileBuffer(file));
       const result = parseCsvText(text, platform);
       setItems(result.items);
       // 自动套用规则：仅对有效行（无 rawLine）给出建议
@@ -352,18 +364,18 @@ function ImportPanel({ onImported }: { onImported?: () => void }) {
 
       <Card title="选择平台与账户">
         <div className="grid grid-cols-2 gap-4">
-          <div>
-            <div className="text-sm text-text-muted dark:text-text-muted-dark mb-1.5">导入平台</div>
+          <Field label="导入平台" htmlFor={`${uid}-platform`} labelClassName={LBL}>
             <Select
+              id={`${uid}-platform`}
               options={platformOpts}
               value={platform}
               onChange={(e) => setPlatform(e.target.value)}
               block
             />
-          </div>
-          <div>
-            <div className="text-sm text-text-muted dark:text-text-muted-dark mb-1.5">入账账户</div>
+          </Field>
+          <Field label="入账账户" htmlFor={`${uid}-account`} labelClassName={LBL}>
             <Select
+              id={`${uid}-account`}
               placeholder="请选择账户"
               options={accountOpts}
               value={accountId === undefined ? '' : String(accountId)}
@@ -372,7 +384,7 @@ function ImportPanel({ onImported }: { onImported?: () => void }) {
               }
               block
             />
-          </div>
+          </Field>
         </div>
         <div className="mt-4 flex items-center justify-between">
           <div className="text-xs text-text-muted dark:text-text-muted-dark">
@@ -550,6 +562,7 @@ function CategoryPicker({
 
   return (
     <Select
+      aria-label="分类"
       placeholder="选择分类"
       value={value === undefined ? '' : String(value)}
       options={opts}

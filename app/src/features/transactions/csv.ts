@@ -151,8 +151,54 @@ function parseCsv(text: string): string[][] {
   // 去 BOM
   const cleaned = text.replace(/^\uFEFF/, '');
   const lines = cleaned.split(/\r?\n/).filter((l) => l.trim().length > 0);
-  const delim = detectDelimiter(lines[0] ?? '');
-  return lines.map((l) => splitCsvLine(l, delim));
+  // 表头就在第 1 行时 findHeaderLine 返回 0，body === lines，行为与从前逐字一致
+  const headerIdx = findHeaderLine(lines);
+  const body = headerIdx > 0 ? lines.slice(headerIdx) : lines;
+  // 分隔符按**表头行**猜：有前言时拿第 1 行猜会猜到分隔线的 ',' 上
+  const delim = detectDelimiter(body[0] ?? '');
+  return body.map((l) => splitCsvLine(l, delim));
+}
+
+/**
+ * 找真正的那一行表头；找不到返回 -1。
+ *
+ * 支付宝导出前 20 多行是导出说明（分隔线、账号、统计、特别提示…），真正的表头在
+ * 后面。判据直接用 `buildFieldMap`——也就是「解析器自己认不认这一行当表头」，
+ * 不另写一份关键词表：既与下游口径天然一致，也不会把前言里恰好带「日期」的说明行
+ * 误当表头（那种说明行没有金额列，buildFieldMap 照样返回 null）。
+ *
+ * `cells.length >= 2` 这道门槛是给**单格预览行**准备的：前言里常见
+ * 「序号 交易时间 交易分类 交易对方 收/支 金额」这种用空格排版的示意行，
+ * 整行只有一个 cell，日期和金额的别名都落在同一格里，buildFieldMap 会放它过关。
+ * 真表头至少两列（日期一列、金额一列），所以这道门槛只挡假阳性。
+ */
+function findHeaderLine(lines: string[]): number {
+  for (let i = 0; i < lines.length; i++) {
+    const cells = splitCsvLine(lines[i], detectDelimiter(lines[i]));
+    if (cells.length >= 2 && buildFieldMap(cells)) return i;
+  }
+  return -1;
+}
+
+/**
+ * 账单字节 → 文本。手动上传路径用（core 读的是 ZIP 里的文件，走自己的解码）。
+ *
+ * 支付宝导出是 GBK，微信/银行多半是 UTF-8。**UTF-8 先试**：它的语法比 GBK 严得多
+ * （GBK 只要「高字节 + 0x40-0xFE」就成字，UTF-8 的中文三字节序列经常能被它整个
+ * 吃掉且不抛错，解出一份不报错的乱码）。反过来先试 GBK 才真的危险。
+ * 实测：真实支付宝原件在 utf-8 fatal 下抛错，转存成 UTF-8 后在 gbk fatal 下抛错，
+ * 两个方向都靠 fatal 判别得出来。
+ */
+export function decodeBillBytes(buf: ArrayBuffer): string {
+  for (const enc of ['utf-8', 'gbk']) {
+    try {
+      return new TextDecoder(enc, { fatal: true }).decode(buf);
+    } catch {
+      // 不是这个编码，换下一个
+    }
+  }
+  // 两个都不干净（混编/截断）：非致命解码兜底，好过直接抛错
+  return new TextDecoder('utf-8').decode(buf);
 }
 
 /* ---------- 字段匹配 ---------- */

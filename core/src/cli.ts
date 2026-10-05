@@ -414,12 +414,20 @@ program
   .option('--space <n>', '空间 ID', '1')
   .action(async (file: string, opts: { platform: string; accountId: string; space: string }) => {
     const filePath = resolve(file);
-    const text = readFileSync(filePath, 'utf8');
     // 动态 import：tsx 运行时解析；tsc 不会跨 rootDir 校验 @/db 别名
     // 用 import.meta.url 解析到项目根，避免相对路径在 ESM 中基于当前模块解析
     const csvUrl = new URL('../../app/src/features/transactions/csv.ts', import.meta.url).href;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const mod: any = await import(csvUrl);
+    // T7：readFileSync(path,'utf8') 硬编码 + 无前言剥离，真实支付宝导出（GBK+前言）
+    // 走此路径 100% 丢光（valid=0）；改读字节走共享 decodeBillBytes（UTF-8 优先探测 +
+    // GBK 回退 + 前言剥离），与 app 上传路径/core 管道同口径
+    const decodeBillBytes = mod.decodeBillBytes as (buf: ArrayBuffer) => string;
+    const raw = readFileSync(filePath);
+    // Buffer 的 .buffer 可能是共享内存池且带 byteOffset，必须切片成精确视图
+    const text = decodeBillBytes(
+      raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength) as ArrayBuffer,
+    );
     const parseCsvText = mod.parseCsvText as (
       text: string,
       platformHint?: string,
