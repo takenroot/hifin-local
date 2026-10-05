@@ -49,6 +49,13 @@
 - @testing-library+jest-axe 基建、`<Amount>` 领域原语（YAGNI 搁置）
 - 目标类型色轴（储蓄红/还款绿）、超支红报警（有注释的既有约定）——用户约定内自洽，不动
 
+## 事故档案：共享工作区 git 回滚（2026-10-05，已善后）
+- B/T8 agent 均报告过"工作区被 stash 类操作整体回滚又恢复"——后果查实：
+  b584b55（T3）丢了源码只进了测试（message 与内容不符），T5 的 known-issues
+  更正也丢了。靠工作区 stash 恢复 + 本次补提交（1f16e75）已完全对齐，
+  验证法：git show HEAD:<file> 与磁盘逐文件比对 + 全量测试
+- 教训：agent 汇报"git 事故"时必须当场逐文件核对 commit 内容，不能信 message
+
 ## 已知 flake（已缓解，彻底修需改 unzipBill 签名——YAGNI 搁置）
 - core tests/bill.test.ts「错误密码时自建的临时目录会被清掉」：
   数 OS tmpdir 目录数，与并行测试文件的临时目录竞争（历史 ~1/10）。
