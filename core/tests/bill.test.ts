@@ -16,7 +16,7 @@
  *   带密码 ZIP —— 这样测的才是 unzipBill 的真实解密路径，而不是"没加密也能过"。
  */
 
-import { describe, it, expect, beforeEach, afterAll } from 'vitest';
+import { describe, it, expect, beforeEach, afterAll, vi } from 'vitest';
 import Database from 'better-sqlite3';
 import AdmZip from 'adm-zip';
 import { createRequire } from 'node:module';
@@ -363,14 +363,17 @@ describe('unzipBill', () => {
     expect(readdirSync(outDir)).toEqual([]);
   });
 
-  it('错误密码时自建的临时目录会被清掉，不留垃圾', () => {
+  it('错误密码时自建的临时目录会被清掉，不留垃圾', async () => {
     const countTemp = (): number =>
       readdirSync(tmpdir()).filter((n) => n.startsWith('hifin-bill-')).length;
 
     const zip = writeEncryptedZip('tmpcleanup.zip', [{ name: 'a.csv', content: 'x\n' }], ALIPAY_PASSWORD);
     const before = countTemp();
     expect(() => unzipBill(zip, 'bad')).toThrow(BillPasswordError);
-    expect(countTemp()).toBe(before);
+    // 并行测试文件也在同一 tmpdir 建/删 hifin-bill-* 目录，瞬时计数会 races
+    // （历史 flake ~1/10：expected N+2 to be N）。给并行清理一个窗口再断言；
+    // 若 2s 后仍多目录，那才是我们真的没清掉。
+    await vi.waitFor(() => expect(countTemp()).toBe(before), { timeout: 2000, interval: 50 });
   });
 
   it('文件不存在抛 BillFormatError', () => {

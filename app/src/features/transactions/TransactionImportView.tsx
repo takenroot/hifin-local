@@ -15,6 +15,7 @@ import {
   IconCloudDownload,
   IconCircleCheck,
   IconAlertCircle,
+  IconAlertTriangle,
   IconBolt,
   IconWand,
 } from '@tabler/icons-react';
@@ -115,6 +116,8 @@ function ImportPanel({ onImported }: { onImported?: () => void }) {
   const [overrides, setOverrides] = useState<Record<number, number>>({});
   const [parsing, setParsing] = useState(false);
   const [parseError, setParseError] = useState<string | null>(null);
+  /** 解析成功、但有行被跳过时的如实告警（多半是文件里有未转义逗号） */
+  const [parseWarning, setParseWarning] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<{
@@ -137,6 +140,7 @@ function ImportPanel({ onImported }: { onImported?: () => void }) {
 
   function onFiles(list: FileList | null) {
     setParseError(null);
+    setParseWarning(null);
     setItems([]);
     setSuggestions({});
     setOverrides({});
@@ -161,10 +165,13 @@ function ImportPanel({ onImported }: { onImported?: () => void }) {
     }
     setParsing(true);
     setParseError(null);
+    setParseWarning(null);
     try {
       const text = decodeBillBytes(await readFileBuffer(file));
       const result = parseCsvText(text, platform);
       setItems(result.items);
+      // 有行因列数不符被跳过时如实告知——静默丢行/错列比报错更难发现
+      setParseWarning(result.warning ?? null);
       // 自动套用规则：仅对有效行（无 rawLine）给出建议
       const next: Record<number, number> = {};
       result.items.forEach((it, idx) => {
@@ -350,6 +357,15 @@ function ImportPanel({ onImported }: { onImported?: () => void }) {
       {parseError && (
         <div className="text-sm text-danger dark:text-danger-dark bg-danger-soft dark:bg-danger-soft-dark rounded-xl px-3 py-2 flex items-start gap-2">
           <IconAlertCircle size={14} className="mt-0.5 flex-none" /> {parseError}
+        </div>
+      )}
+      {/* 告警不是错误：文件能解析，但有行因列数不符被跳过，别让它悄悄过去 */}
+      {parseWarning && (
+        <div
+          className="text-sm text-warning bg-warning-soft dark:bg-warning-soft-dark rounded-xl px-3 py-2 flex items-start gap-2"
+          role="status"
+        >
+          <IconAlertTriangle size={14} className="mt-0.5 flex-none" /> {parseWarning}
         </div>
       )}
       {/* 2026-10-05 决策：成功=success 绿 / 错误=danger 红。income 红只表示"赚到钱"，

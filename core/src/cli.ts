@@ -444,8 +444,15 @@ program
         rawLine?: string;
       }>;
       error?: string;
+      warning?: string;
     };
     const result = parseCsvText(text, opts.platform);
+    // T8：列数与表头不符的行（多半是字段里有未转义逗号）被跳过了。stdout 显式打一条
+    // （stderr 会被管道/日志吞掉），emit 对象里再带一份，--human 走 console.table 也看得见。
+    if (result.warning) {
+      // eslint-disable-next-line no-console
+      console.log(`⚠ ${result.warning}`);
+    }
 
     ensureDb(program.opts().db);
     const db = getDb();
@@ -512,6 +519,7 @@ program
         skipped: skipped.length,
         items: inserted,
         error: result.error,
+        warning: result.warning,
       },
       !!program.opts().human,
     );

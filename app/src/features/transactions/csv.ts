@@ -10,6 +10,10 @@
  *   1. 按表头行探测分隔符（逗号 / 制表符 / 分号，整份文件统一；忽略空行与首行 BOM）
  *   2. 找表头并映射字段
  *   3. 逐行解析成 ParsedTx（解析失败保留 rawLine）
+ *   4. 列数与表头不符的行按坏行跳过，并在返回里带 `warning`——字段里若含**未转义**
+ *      逗号，切点会顶在金额列前（整行丢）或顶在之后（后面整列右移、错值入库），
+ *      两种都不可信。刻意不做 RFC 4180 引号感知解析，只把「这份文件有问题」如实
+ *      报给用户，胜过静默丢数据。
  * ---------------------------------------------------------------
  */
 import type { TransactionType } from '@/db';
@@ -355,6 +359,23 @@ export interface ParseResult {
   items: ParsedTx[];
   /** 没有列头 / 解析失败 */
   error?: string;
+  /** 解析成功但有行被当成坏行跳过（多半是未转义逗号）——调用方须如实展示 */
+  warning?: string;
+}
+
+/**
+ * 「列数与表头不符」的判据，刻意收得很窄，**宁可漏报不可误报正常文件**：
+ *   - 裸逗号只可能把一行切**多**列（切点不会少），所以 `cells.length > 表头列数`
+ *     是未转义逗号的充分特征，而正常文件永远不该出现——真实支付宝 463 行 / 微信
+ *     527 行实测全是等长（tests/csv-unescaped-comma.test.ts 有这份数据）。
+ *   - 反过来**少于**表头列数是正常写法（尾列省略：`...,25.5,` 少一格很常见），
+ *     只有同时解析不出日期/金额才算可疑。
+ *   - 长度必须由与解析**同一个**引号感知切分器给出：微信 xlsx 里
+ *     「内蒙东察康巴什站至锡尼镇,车牌号:蒙LB4552」是**规范加了引号**的，
+ *     朴素 split(',') 会把它数成多列，真账单上凭空多出 5 条误报。
+ */
+function isColumnMismatch(cellCount: number, headerCount: number, keyBroken: boolean): boolean {
+  return cellCount > headerCount || (cellCount !== headerCount && keyBroken);
 }
 
 export function parseCsvText(text: string, platformHint?: string): ParseResult {
@@ -379,6 +400,9 @@ export function parseCsvText(text: string, platformHint?: string): ParseResult {
 
   const items: ParsedTx[] = [];
   let valid = 0;
+  const headerCount = headers.length;
+  let mismatchFirst = 0;
+  let mismatchCount = 0;
   for (let i = 1; i < rows.length; i++) {
     const r = rows[i];
     const dateCell = r[map.date];
@@ -393,7 +417,16 @@ export function parseCsvText(text: string, platformHint?: string): ParseResult {
 
     const date = parseDate(dateCell);
     const amount = parseAmount(amountCell);
-    if (!date || amount === null) {
+    const keyBroken = !date || amount === null;
+    // 裸逗号把切点顶在金额列**之前** → 金额列读到「支出」→ 整行丢进 rawLine（静默丢行）；
+    // 顶在**之后** → 金额还读得对，但后面整列右移一格，「商家订单号」会顶替「备注」
+    // 被静默写进库（错值入库，比丢行更难发现）。两种都不可信，统一当坏行跳过 + 报 warning。
+    const mismatch = isColumnMismatch(r.length, headerCount, keyBroken);
+    if (mismatch) {
+      if (mismatchCount === 0) mismatchFirst = i;
+      mismatchCount++;
+    }
+    if (keyBroken || mismatch) {
       items.push({
         date: 0,
         amount: 0,
@@ -420,7 +453,19 @@ export function parseCsvText(text: string, platformHint?: string): ParseResult {
     valid++;
   }
 
-  return { platform, total: rows.length - 1, valid, items };
+  return {
+    platform,
+    total: rows.length - 1,
+    valid,
+    items,
+    ...(mismatchCount > 0
+      ? {
+          warning:
+            `第 ${mismatchFirst} 行列数与表头不符，已跳过 ${mismatchCount} 行` +
+            `——该文件可能含未转义逗号，请核对原始文件`,
+        }
+      : {}),
+  };
 }
 
 /** 简易 CSV 转义 */
