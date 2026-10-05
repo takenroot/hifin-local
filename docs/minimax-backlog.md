@@ -19,10 +19,13 @@
 - [x] **T5 审计误报定性**（428f3e4）5 条全为 disabled:opacity-40 按钮（1.94:1 观感色），
       WCAG 豁免 inactive 组件，降级 advisory 带实测值，issue 11→6
 - [x] **T6 基准图标注**（5f6a3e6）README 四要素+scrim/暗色辨析；纠正 design-review 过期描述
+- [x] **T7 app/CLI 导入路径 100% 丢光**（ec63a73）kimi 调查定性（GBK+前言剥离缺失）→
+      minimax 实施（UTF-8 优先探测+共享 decodeBillBytes+假表头门槛，修正调查方案两处硬伤、
+      揪出 CLI import-csv 兄弟 bug）→ 调度方补 CLI 尾+误导入回滚（教训：CLI 测试须用 DB 副本）
 
 ## 下一个任务（按此顺序继续）
 
-### T7 app 导入路径读不进真实支付宝导出（T4 发现的新问题，优先级最高）
+### ~~T7 app 导入路径读不进真实支付宝导出~~（已完成 ec63a73：kimi 调查 + minimax 实施 + 调度方补 CLI 尾）
 - 背景：app 侧 TransactionImportView 只按 UTF-8 裸读，无前言剥离——带 22 行前言的
   真实支付宝导出走 app 路径 valid=0 整份丢光；core 在 importer.ts:288-295 有
   前言剥离+GBK 解码，但 core 与 app 共享的 csv parser 只管字段级解析
@@ -32,7 +35,7 @@
   必要时 core/src/bill/importer.ts（保持两边语义一致）
 - 验收：真实支付宝导出文件（GBK+前言）走 app 路径能解析出全部行；core 399/app 240+ 全过
 
-### T8 未转义逗号丢行（CSV 固有歧义，低优先）
+### T8 未转义逗号丢行（CSV 固有歧义，低优先）——队列中下一个
 - 背景：逗号 CSV 字段内含裸 , 同样错位丢行；廉价修不了，csv.ts 注释已写明
 - 候选：引号感知切分（RFC 4180 -lite）或明确报错"该文件含未转义逗号"而非静默丢行
 - 倾向后者（YAGNI：真实账单都由 core 管道导入，app 路径是手工补充）
