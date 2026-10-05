@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generatedAt": "2026-10-04T16:51:48.400Z",
+    "generatedAt": "2026-10-05T04:55:22.271Z",
     "tool": "accept/scripts/darkmode-audit.mjs",
     "baseUrl": "http://127.0.0.1:5185",
     "viewport": {
@@ -134,9 +134,9 @@
       "screenshot": "accept/screenshots/darkmode-audit/home.png",
       "darkClassApplied": true,
       "storedTheme": "\"dark\"",
-      "text": 139,
+      "text": 133,
       "placeholder": 0,
-      "border": 57,
+      "border": 45,
       "icon": 28,
       "deduped": 13,
       "hiddenByOpacity": [],
@@ -168,7 +168,7 @@
       "storedTheme": "\"dark\"",
       "text": 7645,
       "placeholder": 1,
-      "border": 1686,
+      "border": 1678,
       "icon": 1734,
       "deduped": 14,
       "hiddenByOpacity": [],
@@ -2918,19 +2918,19 @@
       "page": "home",
       "route": "/home",
       "scope": "page",
-      "selector": "div.grid.grid-cols-1.md\\:grid-cols-3 > div.card.p-6.\\!p-5:nth-of-type(2) > div.flex.items-center.justify-between:nth-of-type(1) > span.inline-flex.items-center.px-2 > span.inline-flex.items-center.gap-0\\.5",
-      "text": "100.00%",
+      "selector": "section:nth-of-type(2) > div.grid.grid-cols-1.xl\\:grid-cols-3 > div.rounded-3xl.transition-\\[background-color_var\\(--dur-surface\\)_var\\(--ease-out\\)\\].bg-surface-stat-expense:nth-of-type(3) > div.mt-1\\.5.flex.items-baseline:nth-of-type(3) > span.inline-flex.items-center.gap-0\\.5:nth-of-type(2)",
+      "text": "-76.20%",
       "color": "rgb(239, 68, 68)",
       "colorRaw": "rgb(239, 68, 68)",
-      "background": "rgb(62, 33, 39)",
-      "contrast": 3.84,
+      "background": "rgb(15, 47, 40)",
+      "contrast": 3.83,
       "threshold": 3,
       "largeText": false,
       "fontSize": 12,
       "disabled": false,
       "occurrences": 1,
       "sampleSelectors": [
-        "div.grid.grid-cols-1.md\\:grid-cols-3 > div.card.p-6.\\!p-5:nth-of-type(2) > div.flex.items-center.justify-between:nth-of-type(1) > span.inline-flex.items-center.px-2 > span.inline-flex.items-center.gap-0\\.5"
+        "section:nth-of-type(2) > div.grid.grid-cols-1.xl\\:grid-cols-3 > div.rounded-3xl.transition-\\[background-color_var\\(--dur-surface\\)_var\\(--ease-out\\)\\].bg-surface-stat-expense:nth-of-type(3) > div.mt-1\\.5.flex.items-baseline:nth-of-type(3) > span.inline-flex.items-center.gap-0\\.5:nth-of-type(2)"
       ]
     },
     {
