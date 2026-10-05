@@ -6,8 +6,8 @@
  *   currentAmount 对关联账户的贡献，再按新值重新计入（saving 记 +，repayment 记 -）。
  *   因此"是否联动账户"不再是前端可选项——只要目标关联了账户就会联动。
  */
-import { useEffect, useMemo, useState } from 'react';
-import { Button, Input, Modal } from '@/components/ui';
+import { useEffect, useId, useMemo, useState } from 'react';
+import { Button, Field, Input, Modal } from '@/components/ui';
 import { apiFetch } from '@/hooks/useApi';
 import { type Account, type Goal } from '@/db';
 import { formatMoney, parseAmount } from './format';
@@ -26,6 +26,7 @@ interface Props {
 const AMOUNT_LIMIT = 12;
 
 export function GoalAmountModal({ open, onClose, goal, mode, account, onChanged }: Props) {
+  const uid = useId();
   const [amount, setAmount] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -121,22 +122,27 @@ export function GoalAmountModal({ open, onClose, goal, mode, account, onChanged 
           </div>
         </div>
 
-        <div>
-          <div className="flex items-center justify-between mb-1.5">
-            {/* Modal 通过 portal 挂到 body，脱离 AppLayout 的 text-text 根色，
-                label 未显式上色时在暗黑模式下会退回纯黑，只剩红色的 * 可见 */}
-            <label className="text-sm text-text dark:text-text-dark">
-              金额 <span className="text-danger dark:text-danger-dark">*</span>
-            </label>
+        {/* Modal 通过 portal 挂到 body，脱离 AppLayout 的 text-text 根色，
+            所以 label 必须显式声明颜色，否则暗黑模式下退回浏览器默认纯黑不可见。
+            Field 的 labelClassName 默认已是 text-text/dark:text-text-dark。 */}
+        <Field
+          label="金额"
+          required
+          htmlFor={`${uid}-amount`}
+          hint={
             <span
-              className={`text-xs tabular-nums ${
-                tooLong ? 'text-danger dark:text-danger-dark' : 'text-text-muted dark:text-text-muted-dark'
+              className={`tabular-nums ${
+                tooLong
+                  ? 'text-danger dark:text-danger-dark'
+                  : 'text-text-muted dark:text-text-muted-dark'
               }`}
             >
               {amount.length}/{AMOUNT_LIMIT}
             </span>
-          </div>
+          }
+        >
           <Input
+            id={`${uid}-amount`}
             prefix={<span>¥</span>}
             value={amount}
             placeholder="0.00"
@@ -145,7 +151,7 @@ export function GoalAmountModal({ open, onClose, goal, mode, account, onChanged 
             invalid={tooLong || overflow}
             onChange={(e) => setAmount(e.target.value)}
           />
-        </div>
+        </Field>
 
         {account ? (
           <div className="rounded-xl border border-border dark:border-border-dark p-3 text-xs text-text-muted dark:text-text-muted-dark">

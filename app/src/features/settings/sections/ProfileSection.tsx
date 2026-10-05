@@ -7,18 +7,22 @@
  *
  * core 的 GET /api/kv/:key 对不存在的键返回 404，useKv() 已把它归一成 null。
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import {
   IconUser,
   IconCopy,
   IconCheck,
   IconMail,
 } from '@tabler/icons-react';
-import { Button, Card, Input } from '@/components/ui';
+import { Button, Card, Field, Input } from '@/components/ui';
 import { kvPut, useKv } from '../restApi';
 import { generateUserId } from '../format';
 
+// 设置类表单统一用小号弱化 label
+const LBL = 'block text-xs text-text-muted dark:text-text-muted-dark';
+
 export function ProfileSection() {
+  const uid = useId();
   const nicknameKv = useKv<string>('nickname');
   // 把"无记录"规范化为 null，让 undefined 仅表示"加载中"，避免两个状态被混在一起。
   const userIdKv = useKv<string>('userId');
@@ -76,12 +80,20 @@ export function ProfileSection() {
       <Card title="基础信息">
         <div className="space-y-4 max-w-[560px]">
           <div>
-            <label className="block text-xs text-text-muted dark:text-text-muted-dark mb-2">
-              <IconUser size={12} className="inline mr-1 -mt-0.5" />
-              昵称
-            </label>
+            <Field
+              label={
+                <>
+                  <IconUser size={12} className="inline mr-1 -mt-0.5" />
+                  昵称
+                </>
+              }
+              htmlFor={`${uid}-nickname`}
+              labelClassName={LBL}
+              className="mb-2"
+            >
             <div className="flex gap-2">
               <Input
+                id={`${uid}-nickname`}
                 value={nickname}
                 onChange={(e) => setNickname(e.target.value)}
                 placeholder="设置一个昵称"
@@ -100,14 +112,23 @@ export function ProfileSection() {
             <div className="mt-1 text-xs text-text-muted dark:text-text-muted-dark">
               {nickname.length}/20
             </div>
+            </Field>
           </div>
 
           <div>
-            <label className="block text-xs text-text-muted dark:text-text-muted-dark mb-2">
-              <IconMail size={12} className="inline mr-1 -mt-0.5" />
-              邮箱（占位）
-            </label>
+            <Field
+              label={
+                <>
+                  <IconMail size={12} className="inline mr-1 -mt-0.5" />
+                  邮箱（占位）
+                </>
+              }
+              htmlFor={`${uid}-email`}
+              labelClassName={LBL}
+              className="mb-2"
+            >
             <Input
+              id={`${uid}-email`}
               value={emailDisplay}
               placeholder="本地版本不进行云端同步，邮箱仅展示"
               readOnly
@@ -115,6 +136,7 @@ export function ProfileSection() {
             <div className="mt-1 text-xs text-text-muted dark:text-text-muted-dark">
               本地复刻版不会上传邮箱；此字段仅为 UI 兼容占位。
             </div>
+            </Field>
           </div>
         </div>
       </Card>

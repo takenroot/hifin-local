@@ -44,9 +44,11 @@ export function SpaceSection() {
       >
         <div className="space-y-3 max-w-[560px]">
           <div>
-            <label className="block text-xs text-text-muted dark:text-text-muted-dark mb-1.5">
+            {/* 下面是只读展示框，不是可聚焦控件，<label htmlFor> 无处可指；
+                用本文件既有的「非控件标题 = div」写法（同下方「已有空间」行） */}
+            <div className="text-xs text-text-muted dark:text-text-muted-dark mb-1.5">
               当前空间
-            </label>
+            </div>
             <div className="h-10 px-3 rounded-xl border border-border dark:border-border-dark bg-bg dark:bg-bg-dark flex items-center text-sm">
               {label}
             </div>

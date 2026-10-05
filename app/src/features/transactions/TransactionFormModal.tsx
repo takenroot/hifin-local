@@ -9,7 +9,7 @@
  *   容器需显式 text-text dark:text-text-dark；浅色板专用的 *-soft 底色
  *   一律配 dark: 低透明度版本，避免暗黑下出现刺眼亮块。
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 import { Modal, Input, Textarea, Select, Switch, Button, Badge, Field } from '@/components/ui';
 import {
@@ -66,6 +66,7 @@ function accountsOfType(
 
 export function TransactionFormModal({ open, onClose, editing, version = 0, onSaved }: Props) {
   const spaceId = useSpaceId();
+  const uid = useId();
   // spaceId === 0 表示"全部空间"，此时不拼 spaceId 让服务端返回全量
   const spaceQ = spaceId === 0 ? '' : `?spaceId=${spaceId}`;
 
@@ -344,7 +345,8 @@ export function TransactionFormModal({ open, onClose, editing, version = 0, onSa
         {/* 名称 + 日期 */}
         {type !== 'transfer' && (
           <Field
-            label={`${type === 'excluded' ? '说明' : '名称'}${type !== 'excluded' ? ' *' : ''}`}
+            label={type === 'excluded' ? '说明' : '名称'}
+            required={type !== 'excluded'}
             htmlFor="tx-name"
             labelClassName="text-sm text-text-muted dark:text-text-muted-dark"
           >
@@ -361,7 +363,8 @@ export function TransactionFormModal({ open, onClose, editing, version = 0, onSa
           </Field>
         )}
         <Field
-          label="交易日期 *"
+          label="交易日期"
+          required
           htmlFor="tx-date"
           labelClassName="text-sm text-text-muted dark:text-text-muted-dark"
         >
@@ -378,7 +381,8 @@ export function TransactionFormModal({ open, onClose, editing, version = 0, onSa
 
         {/* 金额 */}
         <Field
-          label="金额 *"
+          label="金额"
+          required
           htmlFor="tx-amount"
           labelClassName="text-sm text-text-muted dark:text-text-muted-dark"
         >
@@ -399,7 +403,8 @@ export function TransactionFormModal({ open, onClose, editing, version = 0, onSa
         {/* 分类 */}
         {(type === 'expense' || type === 'income') && (
           <Field
-            label="分类 *"
+            label="分类"
+            required
             htmlFor="tx-category"
             labelClassName="text-sm text-text-muted dark:text-text-muted-dark"
           >
@@ -442,7 +447,8 @@ export function TransactionFormModal({ open, onClose, editing, version = 0, onSa
 
         {/* 账户 */}
         <Field
-          label={type === 'transfer' ? '转出账户 *' : '账户 *'}
+          label={type === 'transfer' ? '转出账户' : '账户'}
+          required
           htmlFor="tx-account"
           labelClassName="text-sm text-text-muted dark:text-text-muted-dark"
         >
@@ -459,7 +465,8 @@ export function TransactionFormModal({ open, onClose, editing, version = 0, onSa
         {/* 转入账户 */}
         {type === 'transfer' && (
           <Field
-            label="转入账户 *"
+            label="转入账户"
+            required
             htmlFor="tx-account-in"
             labelClassName="text-sm text-text-muted dark:text-text-muted-dark"
           >
@@ -499,8 +506,9 @@ export function TransactionFormModal({ open, onClose, editing, version = 0, onSa
 
         {/* 标签多选 */}
         {(tags?.length ?? 0) > 0 && (
-          <Field label="标签" labelClassName="text-sm text-text-muted dark:text-text-muted-dark">
-            <div className="flex flex-wrap gap-1.5">
+          <Field label="标签" labelId={`${uid}-tags-lbl`} labelClassName="text-sm text-text-muted dark:text-text-muted-dark">
+            {/* 一排多选按钮，label 只能 htmlFor 到单个控件，整组靠 role=group 取名 */}
+            <div className="flex flex-wrap gap-1.5" role="group" aria-labelledby={`${uid}-tags-lbl`}>
               {(tags ?? []).map((t) => {
                 const active = tagIds.includes(t.id as number);
                 const color = t.color ?? undefined;

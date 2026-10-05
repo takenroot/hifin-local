@@ -3,7 +3,7 @@
  *
  * merchants 表 CRUD：名称 + 备注
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import {
   IconPlus,
   IconPencil,
@@ -14,6 +14,7 @@ import {
   Button,
   Card,
   EmptyState,
+  Field,
   Input,
   Modal,
   Textarea,
@@ -27,6 +28,9 @@ const FIELD_INPUT_CLS =
   '[&_input]:placeholder:text-text-muted dark:[&_input]:placeholder:text-text-muted-dark';
 const FIELD_TEXTAREA_CLS =
   'placeholder:text-text-muted dark:placeholder:text-text-muted-dark';
+
+// 设置类表单统一用小号弱化 label
+const LBL = 'block text-xs text-text-muted dark:text-text-muted-dark';
 
 export function MerchantsSection() {
   const { data, loading, refetch } = useApi<RestMerchantRow[]>('/api/merchants');
@@ -159,6 +163,7 @@ function MerchantFormModal({
   onSaved?: () => void;
 }) {
   const isEdit = !!merchant;
+  const uid = useId();
   const [name, setName] = useState('');
   const [remark, setRemark] = useState('');
   const [saving, setSaving] = useState(false);
@@ -218,31 +223,31 @@ function MerchantFormModal({
     >
       {/* 根节点自带前景色：Modal 走 portal，脱离 AppLayout 的 text-text 根节点 */}
       <div className="space-y-3 text-text dark:text-text-dark">
-        <div>
-          <label className="block text-xs text-text-muted dark:text-text-muted-dark mb-1.5">
-            名称<span className="text-danger dark:text-danger-dark ml-0.5">*</span>
-          </label>
+        <Field label="名称" required htmlFor={`${uid}-name`} labelClassName={LBL}>
           <Input
+            id={`${uid}-name`}
             className={FIELD_INPUT_CLS}
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="例如：星巴克"
             maxLength={20}
           />
-        </div>
-        <div>
-          <label className="block text-xs text-text-muted dark:text-text-muted-dark mb-1.5">备注</label>
+        </Field>
+        <Field
+          label="备注"
+          htmlFor={`${uid}-remark`}
+          labelClassName={LBL}
+          hint={<span className="tabular-nums">{remark.length}/200</span>}
+        >
           <Textarea
+            id={`${uid}-remark`}
             className={FIELD_TEXTAREA_CLS}
             value={remark}
             onChange={(e) => setRemark(e.target.value)}
             placeholder="可选；最多 200 字"
             maxLength={200}
           />
-          <div className="mt-1 text-xs text-text-muted dark:text-text-muted-dark text-right">
-            {remark.length}/200
-          </div>
-        </div>
+        </Field>
         {error && (
           <div className="text-xs text-danger dark:text-danger-dark bg-danger-soft dark:bg-danger-soft-dark px-3 py-2 rounded-lg">
             {error}

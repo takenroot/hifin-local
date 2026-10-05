@@ -10,7 +10,7 @@
  *
  * 表格按 priority 降序展示；空态引导用户创建第一条规则。
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import {
   IconPlus,
   IconPencil,
@@ -22,6 +22,7 @@ import {
   Button,
   Card,
   EmptyState,
+  Field,
   Input,
   Modal,
   Select,
@@ -46,6 +47,10 @@ const MATCH_FIELD_OPTIONS: Array<{ label: string; value: RuleMatchField }> = [
 // Input 的 placeholder 色写死在 ui 组件里（无 dark 变体），这里用任意变体补暗黑态
 const FIELD_INPUT_CLS =
   '[&_input]:placeholder:text-text-muted dark:[&_input]:placeholder:text-text-muted-dark';
+
+// 设置类表单统一用小号弱化 label（原先由各 section 自带的 Row 副本产出，
+// Row 已删除，统一走 Field + 这个 labelClassName）
+const LBL = 'block text-xs text-text-muted dark:text-text-muted-dark';
 
 const MATCH_FIELD_LABEL: Record<RuleMatchField, string> = {
   name: '流水名称',
@@ -282,6 +287,9 @@ function RuleFormModal({
     return opts;
   }, [categories]);
 
+  // 字段 id 用 useId：这个弹层会随列表行数复用，硬编码 id 在同页多开时会撞
+  const uid = useId();
+
   async function save() {
     const kw = keyword.trim();
     if (!kw) {
@@ -345,40 +353,55 @@ function RuleFormModal({
     >
       {/* 根节点自带前景色：Modal 走 portal，脱离 AppLayout 的 text-text 根节点 */}
       <div className="space-y-3 text-text dark:text-text-dark">
-        <Row label="关键词" required>
+        {/* 少了 htmlFor，这个 Input 就没有可访问名——label 退化成 div，读屏只念 placeholder */}
+        <Field label="关键词" required htmlFor={`${uid}-keyword`} labelClassName={LBL}>
           <Input
+            id={`${uid}-keyword`}
             className={FIELD_INPUT_CLS}
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
             placeholder="例如：星巴克 / 滴滴 / 工资"
             maxLength={40}
           />
-        </Row>
-        <Row label="匹配字段" required>
+        </Field>
+        <Field
+          label="匹配字段"
+          required
+          htmlFor={`${uid}-match-field`}
+          labelClassName={LBL}
+        >
           <Select
+            id={`${uid}-match-field`}
             value={matchField}
             options={MATCH_FIELD_OPTIONS}
             onChange={(e) => setMatchField(e.target.value as RuleMatchField)}
           />
-        </Row>
-        <Row label="目标分类" required>
+        </Field>
+        <Field
+          label="目标分类"
+          required
+          htmlFor={`${uid}-category`}
+          labelClassName={LBL}
+        >
           <Select
+            id={`${uid}-category`}
             placeholder="请选择分类"
             value={categoryId}
             options={categoryOptions}
             onChange={(e) => setCategoryId(e.target.value)}
           />
-        </Row>
-        <Row label="优先级" required>
+        </Field>
+        <Field label="优先级" required htmlFor={`${uid}-priority`} labelClassName={LBL}>
           <Input
+            id={`${uid}-priority`}
             className={FIELD_INPUT_CLS}
             type="number"
             value={priority}
             onChange={(e) => setPriority(e.target.value)}
             placeholder="数字越大越优先"
           />
-        </Row>
-        <Row label="启用">
+        </Field>
+        <Field label="启用" labelClassName={LBL}>
           <div className="flex items-center gap-2 h-10">
             <Switch
               checked={enabled}
@@ -390,7 +413,7 @@ function RuleFormModal({
               {enabled ? '启用' : '停用'}
             </span>
           </div>
-        </Row>
+        </Field>
         {error && (
           <div className="text-xs text-danger dark:text-danger-dark bg-danger-soft dark:bg-danger-soft-dark px-3 py-2 rounded-lg">
             {error}
@@ -475,25 +498,5 @@ function DeleteRuleModal({
         )}
       </div>
     </Modal>
-  );
-}
-
-function Row({
-  label,
-  required,
-  children,
-}: {
-  label: string;
-  required?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <label className="block text-xs text-text-muted dark:text-text-muted-dark mb-1.5">
-        {label}
-        {required && <span className="text-danger dark:text-danger-dark ml-0.5">*</span>}
-      </label>
-      {children}
-    </div>
   );
 }

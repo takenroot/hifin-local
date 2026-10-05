@@ -6,7 +6,7 @@
  *
  * 通过 props.account 传入已有账户即可进入"编辑"模式（自动跳过第一步）。
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import clsx from 'clsx';
 import {
   IconCircleCheckFilled,
@@ -417,6 +417,7 @@ function FormStep({
   saveError,
 }: FormStepProps) {
   const meta = ACCOUNT_TYPE_META[type];
+  const uid = useId();
 
   const tagOptions = useMemo(
     () =>
@@ -508,8 +509,9 @@ function FormStep({
       </Field>
 
       {/* 标签 */}
-      <Field label="标签" hint="可选择多个标签" className="mb-2">
+      <Field label="标签" htmlFor={`${uid}-tags`} hint="可选择多个标签" className="mb-2">
         <TagMultiSelect
+          id={`${uid}-tags`}
           options={tagOptions}
           value={form.tagIds}
           onChange={(ids) => setForm({ ...form, tagIds: ids })}
@@ -584,10 +586,12 @@ function Counter({
 // ────────────────────────────────────────────────────────────
 
 function TagMultiSelect({
+  id,
   options,
   value,
   onChange,
 }: {
+  id: string;
   options: Array<{ value: string; label: string }>;
   value: number[];
   onChange: (ids: number[]) => void;
@@ -623,6 +627,7 @@ function TagMultiSelect({
       )}
       <div className="relative">
         <select
+          id={id}
           value=""
           onChange={(e) => {
             const v = e.target.value;

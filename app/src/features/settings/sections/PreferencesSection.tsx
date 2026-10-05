@@ -111,6 +111,7 @@ export function PreferencesSection() {
             </div>
             <div className="w-[180px] flex-none">
               <Select
+                aria-label="语言"
                 value={language}
                 options={LANGUAGE_OPTIONS}
                 onChange={(e) => setLanguage(e.target.value)}
@@ -128,6 +129,7 @@ export function PreferencesSection() {
             </div>
             <div className="w-[180px] flex-none">
               <Select
+                aria-label="默认登录页"
                 value={defaultPage}
                 options={DEFAULT_PAGE_OPTIONS}
                 onChange={(e) => setDefaultPage(e.target.value)}

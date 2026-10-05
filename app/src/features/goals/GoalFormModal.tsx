@@ -5,7 +5,7 @@
  * - 第二步：填写完整表单（名称、目标金额、当前已存金额、截止日期、关联账户、图标 / 颜色）
  * - 编辑模式直接进入第二步
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import clsx from 'clsx';
 import {
   IconChevronLeft,
@@ -424,6 +424,7 @@ function FormStep({
     ],
     [accounts],
   );
+  const uid = useId();
 
   return (
     <div className="space-y-5">
@@ -516,8 +517,8 @@ function FormStep({
       </Field>
 
       {/* 图标 / 颜色 */}
-      <Field label="颜色">
-        <div className="flex flex-wrap gap-2">
+      <Field label="颜色" labelId={`${uid}-color-lbl`}>
+        <div className="flex flex-wrap gap-2" role="group" aria-labelledby={`${uid}-color-lbl`}>
           {COLOR_CHOICES.map((c) => {
             const active = form.color === c;
             return (

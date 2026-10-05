@@ -368,6 +368,7 @@ export default function AssistantPage() {
           <Card title="模型">
             <div className="space-y-2">
               <Select
+                aria-label="模型"
                 value={selectedId != null ? String(selectedId) : ''}
                 onChange={(e) => {
                   const id = Number(e.target.value);

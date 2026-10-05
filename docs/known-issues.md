@@ -169,5 +169,8 @@ credit/debt 账户一律 `debt += Math.abs(balance)`。花呗当前推算余额�
 - 或分类名文字改中性色，颜色只留小圆点/图标（信息不丢、对比度全交给文字）
 
 ### 另注
-darkmode-audit 的「保存/下一步/确认」5 条按钮文本告警为存量（改动前后 selector 一致），
-疑似审计工具对 secondary 按钮的误报，暂不处理。
+darkmode-audit 的「保存/下一步/确认」5 条按钮文本告警已定性（T5）：**确认误报**。
+不是 secondary 按钮的问题，而是 primary 按钮的**禁用态**：实测启用态 4.47:1，
+禁用态按 `disabled:opacity-40` 合成观感后 1.94:1。WCAG 1.4.3/1.4.11 明确豁免
+inactive user interface component，已在 `darkmode-audit.mjs` 的 `classifyTextRecord`
+处降级为 advisory（实测值与推理见该函数上方注释）。issue 总数 11 → 6，未新增。

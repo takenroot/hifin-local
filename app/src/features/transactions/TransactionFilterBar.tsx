@@ -90,6 +90,7 @@ export function TransactionFilterBar({ filter, onChange, version = 0 }: Props) {
 
       <div className="w-32">
         <Select
+          aria-label="按类型筛选"
           options={TYPE_OPTS}
           value={activeType}
           onChange={(e) => setType(e.target.value)}
@@ -99,6 +100,7 @@ export function TransactionFilterBar({ filter, onChange, version = 0 }: Props) {
 
       <div className="w-40">
         <Select
+          aria-label="按分类筛选"
           options={categoryOptions}
           value={filter.categoryId ? String(filter.categoryId) : ''}
           onChange={(e) =>
@@ -113,6 +115,7 @@ export function TransactionFilterBar({ filter, onChange, version = 0 }: Props) {
 
       <div className="w-36">
         <Select
+          aria-label="按账户筛选"
           options={accountOptions}
           value={filter.accountId ? String(filter.accountId) : ''}
           onChange={(e) =>

@@ -10,11 +10,12 @@
  *    默认黑字（暗黑下 = 只看得见绿色的星号）。因此这里的内容根节点必须自带
  *    前景色，label / 标题类元素再各自显式声明一次。
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import clsx from 'clsx';
 import { IconCheck } from '@tabler/icons-react';
 import {
   Button,
+  Field,
   Input,
   Modal,
   Select,
@@ -89,6 +90,7 @@ function formFromReport(r: Report): FormState {
 
 export function ReportFormModal({ open, onClose, report, onSaved }: Props) {
   const isEdit = !!report;
+  const uid = useId();
   const [form, setForm] = useState<FormState>(DEFAULT_FORM);
   const [submitted, setSubmitted] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -193,21 +195,19 @@ export function ReportFormModal({ open, onClose, report, onSaved }: Props) {
         </div>
 
         {/* 名称 */}
-        <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <label className="text-sm text-text dark:text-text-dark">
-              名称 <span className="text-danger dark:text-danger-dark">*</span>
-            </label>
-            <span
-              className={clsx(
-                'text-xs tabular-nums',
-                nameTooLong ? 'text-danger dark:text-danger-dark' : 'text-text-muted dark:text-text-muted-dark',
-              )}
+        <Field
+          label="名称"
+          required
+          htmlFor={`${uid}-name`}
+          hint={
+            <span className={clsx('tabular-nums', nameTooLong ? 'text-danger dark:text-danger-dark' : '')}
             >
               {form.name.length}/{NAME_LIMIT}
             </span>
-          </div>
+          }
+        >
           <Input
+            id={`${uid}-name`}
             className={FIELD_INPUT_CLS}
             placeholder="为报表起个名字"
             value={form.name}
@@ -218,22 +218,21 @@ export function ReportFormModal({ open, onClose, report, onSaved }: Props) {
           {nameInvalid && (
             <div className="mt-1 text-xs text-danger dark:text-danger-dark">名称不能为空</div>
           )}
-        </div>
+        </Field>
 
         {/* 描述 */}
-        <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <label className="text-sm text-text dark:text-text-dark">描述</label>
-            <span
-              className={clsx(
-                'text-xs tabular-nums',
-                descTooLong ? 'text-danger dark:text-danger-dark' : 'text-text-muted dark:text-text-muted-dark',
-              )}
+        <Field
+          label="描述"
+          htmlFor={`${uid}-desc`}
+          hint={
+            <span className={clsx('tabular-nums', descTooLong ? 'text-danger dark:text-danger-dark' : '')}
             >
               {form.description.length}/{DESC_LIMIT}
             </span>
-          </div>
+          }
+        >
           <Textarea
+            id={`${uid}-desc`}
             className={FIELD_TEXTAREA_CLS}
             placeholder="为报表添加描述（可选）"
             value={form.description}
@@ -241,7 +240,7 @@ export function ReportFormModal({ open, onClose, report, onSaved }: Props) {
             invalid={descTooLong}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
           />
-        </div>
+        </Field>
 
         {/* 模板 */}
         <div>
@@ -289,9 +288,9 @@ export function ReportFormModal({ open, onClose, report, onSaved }: Props) {
         </div>
 
         {/* 自定义：数据范围 */}
-        <div>
-          <div className="mb-1.5 text-sm text-text dark:text-text-dark">数据范围</div>
+        <Field label="数据范围" htmlFor={`${uid}-range`}>
           <Select
+            id={`${uid}-range`}
             value={form.config.range}
             onChange={(e) =>
               setForm({
@@ -304,19 +303,20 @@ export function ReportFormModal({ open, onClose, report, onSaved }: Props) {
             }
             options={rangeOptions}
           />
-        </div>
+        </Field>
 
-        {/* 自定义：展示组件（多选） */}
-        <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <label className="text-sm text-text dark:text-text-dark">
-              展示组件 <span className="text-danger dark:text-danger-dark">*</span>
-            </label>
-            <span className="text-xs text-text-muted dark:text-text-muted-dark">
-              已选 {form.config.components.length} 项
-            </span>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {/* 自定义：展示组件（多选）——一排 toggle 按钮，label 关联不到单个控件，用 group 取名 */}
+        <Field
+          label="展示组件"
+          required
+          labelId={`${uid}-comp-lbl`}
+          hint={<span>已选 {form.config.components.length} 项</span>}
+        >
+          <div
+            className="grid grid-cols-1 sm:grid-cols-2 gap-2"
+            role="group"
+            aria-labelledby={`${uid}-comp-lbl`}
+          >
             {REPORT_COMPONENT_OPTIONS.map((opt) => {
               const active = form.config.components.includes(opt.key);
               return (
@@ -355,7 +355,7 @@ export function ReportFormModal({ open, onClose, report, onSaved }: Props) {
           {configInvalid && (
             <div className="mt-1 text-xs text-danger dark:text-danger-dark">请至少勾选一个展示组件</div>
           )}
-        </div>
+        </Field>
 
         {/* 图标 */}
         <div>

@@ -3,7 +3,7 @@
  *
  * tags 表 CRUD：名称 + 颜色圆点
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import {
   IconPlus,
   IconPencil,
@@ -14,6 +14,7 @@ import {
   Button,
   Card,
   EmptyState,
+  Field,
   Input,
   Modal,
 } from '@/components/ui';
@@ -37,6 +38,9 @@ const COLOR_OPTIONS = [
 // Input 的 placeholder 色写死在 ui 组件里（无 dark 变体），这里用任意变体补暗黑态
 const FIELD_INPUT_CLS =
   '[&_input]:placeholder:text-text-muted dark:[&_input]:placeholder:text-text-muted-dark';
+
+// 设置类表单统一用小号弱化 label
+const LBL = 'block text-xs text-text-muted dark:text-text-muted-dark';
 
 export function TagsSection() {
   const { data, loading, refetch } = useApi<RestTagRow[]>('/api/tags');
@@ -171,6 +175,7 @@ function TagFormModal({
   onSaved?: () => void;
 }) {
   const isEdit = !!tag;
+  const uid = useId();
   const [name, setName] = useState('');
   const [color, setColor] = useState(COLOR_OPTIONS[0]);
   const [saving, setSaving] = useState(false);
@@ -230,21 +235,23 @@ function TagFormModal({
     >
       {/* 根节点自带前景色：Modal 走 portal，脱离 AppLayout 的 text-text 根节点 */}
       <div className="space-y-3 text-text dark:text-text-dark">
-        <div>
-          <label className="block text-xs text-text-muted dark:text-text-muted-dark mb-1.5">
-            名称<span className="text-danger dark:text-danger-dark ml-0.5">*</span>
-          </label>
+        <Field label="名称" required htmlFor={`${uid}-name`} labelClassName={LBL}>
           <Input
+            id={`${uid}-name`}
             className={FIELD_INPUT_CLS}
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="例如：必要"
             maxLength={20}
           />
-        </div>
-        <div>
-          <label className="block text-xs text-text-muted dark:text-text-muted-dark mb-1.5">颜色</label>
-          <div className="flex flex-wrap gap-2">
+        </Field>
+        {/* 颜色是一排按钮，label 关联不到单个控件，改用 group + aria-labelledby 整组取名 */}
+        <Field label="颜色" labelId={`${uid}-color-lbl`} labelClassName={LBL}>
+          <div
+            className="flex flex-wrap gap-2"
+            role="group"
+            aria-labelledby={`${uid}-color-lbl`}
+          >
             {COLOR_OPTIONS.map((c) => (
               <button
                 key={c}
@@ -260,7 +267,7 @@ function TagFormModal({
               />
             ))}
           </div>
-        </div>
+        </Field>
         {error && (
           <div className="text-xs text-danger dark:text-danger-dark bg-danger-soft dark:bg-danger-soft-dark px-3 py-2 rounded-lg">
             {error}

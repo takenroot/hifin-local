@@ -7,7 +7,7 @@
  * - 写操作：core 仅提供 POST /api/categories，**没有** PUT / DELETE，
  *   因此编辑与删除入口在服务端补齐前先禁用（不保留 Dexie 旁路）。
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import {
   IconPlus,
   IconPencil,
@@ -22,6 +22,7 @@ import {
   Button,
   Card,
   EmptyState,
+  Field,
   Input,
   Modal,
   Select,
@@ -45,6 +46,9 @@ const TYPE_TONE: Record<CategoryType, 'expense' | 'income'> = {
 // Input 的 placeholder 色写死在 ui 组件里（无 dark 变体），这里用任意变体补暗黑态
 const FIELD_INPUT_CLS =
   '[&_input]:placeholder:text-text-muted dark:[&_input]:placeholder:text-text-muted-dark';
+
+// 设置类表单统一用小号弱化 label（原先由本文件自带的 Row 副本产出，Row 已删除）
+const LBL = 'block text-xs text-text-muted dark:text-text-muted-dark';
 
 /** core 未提供分类的更新 / 删除端点，功能入口随之禁用。 */
 const CATEGORIES_MUTABLE = false;
@@ -403,6 +407,8 @@ function CategoryFormModal({
   onSaved,
 }: CategoryFormModalProps) {
   const isEdit = !!category;
+  // 字段 id 用 useId：弹层随分类行复用，硬编码 id 同页多开时会撞
+  const uid = useId();
   const [name, setName] = useState('');
   const [type, setType] = useState<CategoryType>('expense');
   const [icon, setIcon] = useState('🎯');
@@ -480,26 +486,29 @@ function CategoryFormModal({
     >
       {/* 根节点自带前景色：Modal 走 portal，脱离 AppLayout 的 text-text 根节点 */}
       <div className="space-y-3 text-text dark:text-text-dark">
-        <Row label="名称" required>
+        <Field label="名称" required htmlFor={`${uid}-name`} labelClassName={LBL}>
           <Input
+            id={`${uid}-name`}
             className={FIELD_INPUT_CLS}
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="例如：日常餐饮"
             maxLength={20}
           />
-        </Row>
-        <Row label="分组" required>
+        </Field>
+        <Field label="分组" required htmlFor={`${uid}-group`} labelClassName={LBL}>
           <Input
+            id={`${uid}-group`}
             className={FIELD_INPUT_CLS}
             value={groupName}
             onChange={(e) => setGroupName(e.target.value)}
             placeholder="例如：餐饮"
             maxLength={20}
           />
-        </Row>
-        <Row label="类型" required>
+        </Field>
+        <Field label="类型" required htmlFor={`${uid}-type`} labelClassName={LBL}>
           <Select
+            id={`${uid}-type`}
             value={type}
             options={[
               { label: '支出', value: 'expense' },
@@ -507,9 +516,14 @@ function CategoryFormModal({
             ]}
             onChange={(e) => setType(e.target.value as CategoryType)}
           />
-        </Row>
-        <Row label="图标">
-          <div className="flex flex-wrap gap-1.5 p-2 rounded-xl border border-border dark:border-border-dark bg-bg-card dark:bg-bg-card-dark max-h-[120px] overflow-y-auto">
+        </Field>
+        {/* 图标/颜色都是一排按钮，label 关联不到单个控件，只能整组 role=group 取名 */}
+        <Field label="图标" labelId={`${uid}-icon-lbl`} labelClassName={LBL}>
+          <div
+            className="flex flex-wrap gap-1.5 p-2 rounded-xl border border-border dark:border-border-dark bg-bg-card dark:bg-bg-card-dark max-h-[120px] overflow-y-auto"
+            role="group"
+            aria-labelledby={`${uid}-icon-lbl`}
+          >
             {ICON_OPTIONS.map((emo) => (
               <button
                 key={emo}
@@ -526,9 +540,9 @@ function CategoryFormModal({
               </button>
             ))}
           </div>
-        </Row>
-        <Row label="颜色">
-          <div className="flex flex-wrap gap-2">
+        </Field>
+        <Field label="颜色" labelId={`${uid}-color-lbl`} labelClassName={LBL}>
+          <div className="flex flex-wrap gap-2" role="group" aria-labelledby={`${uid}-color-lbl`}>
             {COLOR_OPTIONS.map((c) => (
               <button
                 key={c}
@@ -545,7 +559,7 @@ function CategoryFormModal({
               />
             ))}
           </div>
-        </Row>
+        </Field>
         {error && (
           <div className="text-xs text-danger dark:text-danger-dark bg-danger-soft dark:bg-danger-soft-dark px-3 py-2 rounded-lg">
             {error}
@@ -553,26 +567,6 @@ function CategoryFormModal({
         )}
       </div>
     </Modal>
-  );
-}
-
-function Row({
-  label,
-  required,
-  children,
-}: {
-  label: string;
-  required?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <label className="block text-xs text-text-muted dark:text-text-muted-dark mb-1.5">
-        {label}
-        {required && <span className="text-danger dark:text-danger-dark ml-0.5">*</span>}
-      </label>
-      {children}
-    </div>
   );
 }
 
