@@ -51,7 +51,14 @@
 - **确定性去重**：有 externalId 按 `(source, externalId)` 唯一索引精确去重，无则退回四字段启发式——重复导入同笔零风险
 - **自动分类**：分类决策顺序 = rules 规则（含方向闸门）→ 账单原件分类列映射（category-map.ts）→ null
 - **通知系统**：need_password → 用户提交 → 3 次重试 → failed 降级
-- **CLI**：`hifin serve/accounts/tx/summary/import-csv/import-bill/mail config/mail poll`
+- **SSE 实时通知**：`GET /api/notifications/stream` + 进程内事件总线（store 写入点 publish），
+  前端原生 EventSource（连续 5 次失败自动降级回 30s 轮询）；通知延迟 30s → 秒级
+- **AI 洞察引擎**：每月自动生成上月财务小结（规则版兜底 + LLM 两阶段加成，未配模型只产规则版）；
+  手动触发 `POST /api/ai-insights/generate`（配额 3 次/月）；通知中心 toast + Dashboard 角标展示
+- **MCP server**：`hifin mcp`（stdio，Claude Code / Cursor 直连），11 个工具
+  （8 只读查询 + 3 个 [mutating] 写工具：import_bill / mail_poll / mail_submit_bill_password），
+  复用 core 既有 export，handler 与 transport 解耦
+- **CLI**：`hifin serve/accounts/tx/summary/import-csv/import-bill/mail config/mail poll/mcp`
 
 ## 快速开始
 
@@ -126,7 +133,7 @@ hifin/
 |---|---|
 | 前端 | React 18 + Vite + TS + Tailwind v3（darkMode:class）+ jotai + recharts |
 | 后端 | Node 24 + TS + Express + better-sqlite3（WAL）+ imapflow + adm-zip + xlsx |
-| 测试 | Vitest × 570 例（前端 177 + 后端 393）|
+| 测试 | Vitest × 780 例（前端 288 + 后端 492）|
 | 验收 | Playwright（`accept/scripts/` 10 个可复跑回归脚本，历史产物在 `accept/archive/`）|
 | 部署 | GitHub Actions 无，纯本地 |
 
@@ -134,6 +141,9 @@ hifin/
 
 - [CHANGELOG.md](./CHANGELOG.md) — 版本历史（R1-R8 + core P0-P1）
 - [docs/bill-automation-design.md](./docs/bill-automation-design.md) — 账单自动化设计
+- [docs/mcp-design.md](./docs/mcp-design.md) — MCP server 设计（11 工具 / stdio / 密码状态机映射）
+- [docs/ai-insights-design.md](./docs/ai-insights-design.md) — AI 洞察引擎设计（规则版兜底 + LLM 两阶段加成）
+- [docs/sse-design.md](./docs/sse-design.md) — SSE 实时通知设计（bus + /stream + 前端降级）
 - [docs/known-issues.md](./docs/known-issues.md) — 已知问题（ISSUE-001~005 + 待校准事项）
 - [docs/agent-prompt-template.md](./docs/agent-prompt-template.md) — subagent 模板
 - [docs/design-principles.md](./docs/design-principles.md) — 设计原则长期基准

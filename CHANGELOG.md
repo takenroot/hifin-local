@@ -6,6 +6,28 @@
 
 ## [unreleased]
 
+### 新增（2026-10-05 晚：路线图三件套落地——调研 → minimax 两波实现 → 调度方逐文件验收）
+
+三路可行性调研（docs/mcp-design.md / ai-insights-design.md / sse-design.md，minimax 并行产出、
+调度方评审修正两处硬事实）后分两波实现：
+
+- **MCP server**（`hifin mcp`，stdio）：11 个工具（8 只读 + 3 写，写工具 [mutating] 前缀），
+  复用 core 9 处既有 export（summaryHelpers / listNotifications / importBillZip / runMailPoll /
+  setBillPassword 等），不抽路由 handler；`@modelcontextprotocol/server` v2 + zod v4；
+  handler 纯函数与 transport 解耦（SDK InMemoryTransport 同进程测 26 例）；
+  stdout 只写 JSON-RPC 帧、日志全走 stderr
+- **SSE 实时通知**：`GET /api/notifications/stream`（flushHeaders + 25s 心跳注释 + close/aborted
+  清理）；notifications 进程内事件总线（store 4 写入点 publish，incrementRetry 不发布）；
+  前端原生 EventSource 替换 30s 轮询，连续 5 次 onerror 切回轮询兜底，原轮询路径保留降级
+- **AI 洞察引擎**：每月自动生成上月财务小结（月初调度，同月去重 7d，照 yields 调度器
+  「立刻 + 24h + 幂等」模式）；**规则版兜底 + LLM 两阶段加成**——先写 llmNarrative=null
+  的通知，LLM 异步成功再 UPDATE 同行；未配模型只产规则版（遵守"本地默认关闭"承诺）；
+  手动触发 POST /api/ai-insights/generate（同月 200 复用，配额 3 次/月 kv 计数）；
+  schema v5 扩 notifications CHECK（照 v2→v3 重建先例，migrate-check 对真实库副本回归）；
+  前端 toast 分支 + Dashboard 角标
+- **测试**：core 393 → **492**（+26 MCP +15 SSE +69 insights/v5），app 278 → **288**（+10）；
+  tsc 两侧干净，vite build 过；洞察 e2e 冒烟（无模型 → 规则版通知）通过
+
 ### 新增（2026-10-03：字段扩展 + 智能分类 + 日历翻页）
 - **交易字段扩展**：transactions 新增 `source`（alipay/wechat/manual/csv）、`externalId`（平台交易单号，部分唯一索引）、`paymentMethod`（支付方式主渠道）、`status`（交易状态原文）；schema v1→v2 迁移幂等
 - **确定性去重**：有 externalId 时按 (source, externalId) 精确去重（UNIQUE 索引兜底），无则退回四字段启发式；重复导入同笔零风险
@@ -84,9 +106,9 @@
 
 ### 路线图（2026-10-05 用户决策）
 - ~~Tauri 桌面 App~~ —— **不做**
-- MCP server 模式（AI Agent 直接调用）——已立项，调研中（docs/mcp-design.md）
-- AI 分析引擎（LLM 生成财务建议）——已立项，调研中（docs/ai-insights-design.md）
-- IDLE 长连接替代轮询（秒级通知）——已立项，调研中（docs/sse-design.md）
+- ~~MCP server 模式~~ —— **已实现**（f2016a5）
+- ~~AI 分析引擎~~ —— **已实现**（f4f2a71）
+- ~~IDLE 长连接替代轮询~~ —— **已实现**（SSE，f2016a5；通知延迟 30s → 秒级）
 
 ---
 

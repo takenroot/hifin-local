@@ -51,9 +51,18 @@
 - 目标类型色轴（储蓄红/还款绿）、超支红报警（有注释的既有约定）——用户约定内自洽，不动
 - ISSUE-001 真实微信邮件回归：用户今年年底前才重申请流水，届时再验（记于 known-issues）
 
-## 已立项（2026-10-05 用户批准，调研先行）
-- MCP server / AI 分析引擎 / SSE 实时通知：workflow 派 minimax-cn/MiniMax-M3 三路并行调研，
-  产出 docs/mcp-design.md、docs/ai-insights-design.md、docs/sse-design.md，评审后实现
+## 已立项（2026-10-05 用户批准）→ 全部完成（2026-10-05 晚，两波 minimax 实现 + 调度方逐文件验收）
+- ~~MCP server / AI 分析引擎 / SSE 实时通知调研~~ 调研产出 docs/mcp-design.md、
+  docs/ai-insights-design.md、docs/sse-design.md（commit 2dac8ed，含调度方评审修正：
+  v5 迁移 + dayjs 去除 + 接口计数/降级语义）
+- 实现 Wave 1（并行不相交，commit f2016a5）：MCP server 11 工具 + SSE 通知；
+  core 393→434 / app 278→288
+- 实现 Wave 2（commit f4f2a71）：AI 洞察引擎（schema v5 + insights 四件套 + 5 端点 +
+  前端 toast/角标）；core 434→492；调度方修 month=stored 日志残句
+- 验收记录：tsc 两侧干净、vitest 全绿、vite build 过、v5 迁移对真实库 /tmp 副本回归
+  （行数保留/新类型可写/垃圾类型被拒）、洞察 e2e 冒烟（无模型→规则版通知）通过
+- 遗留观察：MCP 写工具并发多 host 共写无锁（UNIQUE 索引兜底重复导入，known 风险，不修）；
+  SSE 跨进程事件不可达（CLI 触发的通知走不到 server 进程的 bus，轮询兜底覆盖，sse-design §4.8 表述已失真，事实如此）
 
 ## 事故档案：共享工作区 git 回滚（2026-10-05，已善后）
 - B/T8 agent 均报告过"工作区被 stash 类操作整体回滚又恢复"——后果查实：
