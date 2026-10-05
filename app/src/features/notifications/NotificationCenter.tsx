@@ -55,6 +55,7 @@ import {
   remainingAttempts,
 } from './logic';
 import type { AppNotification } from './types';
+import { openNotificationStream, upsertById } from './stream';
 
 interface Toast {
   key: number;
@@ -87,6 +88,8 @@ export function NotificationCenter() {
   const waitRounds = useRef(0);
   /** 弹窗当前已知的 retry_count；只用于判断"又失败了一次" */
   const knownRetry = useRef(0);
+  /** SSE 接入与轮询降级使用的清理容器；useEffect unmount 时统一倒序执行 */
+  const cleanupFns = useRef<Array<() => void>>([]);
 
   /** 当前弹窗展示的通知（供异步回调读取，避免闭包拿到旧值） */
   const active = useMemo(
@@ -120,15 +123,45 @@ export function NotificationCenter() {
 
   useEffect(() => {
     mounted.current = true;
+    // 首屏仍走一次 REST，保证首帧有数据（SWR-style）
     void pollRef.current();
-    const timer = window.setInterval(() => {
-      // 处理期间只等 +30s 那一次触发，处理完自动回到常规节奏
-      if (processingId.current != null) return;
-      void pollRef.current();
-    }, POLL_INTERVAL_MS);
+    if (typeof EventSource === 'undefined') {
+      // 浏览器不支持 EventSource：保留 30s 轮询降级路径
+      const timer = window.setInterval(() => {
+        // 处理期间只等 +30s 那一次触发，处理完自动回到常规节奏
+        if (processingId.current != null) return;
+        void pollRef.current();
+      }, POLL_INTERVAL_MS);
+      // 用一个 sentinel 放进 cleanupFns 让 unmount 时一并清掉
+      cleanupFns.current.push(() => window.clearInterval(timer));
+    } else {
+      // EventSource 持续失败（5 次）→ 启动与原逻辑相同的 30s setInterval 轮询兜底
+      openNotificationStream(
+        {
+          onCreated: (n) => setNotifications((prev) => upsertById(prev, n)),
+          onResolved: (id) => setNotifications((prev) => prev.filter((x) => x.id !== id)),
+          onDismissed: (id) => setNotifications((prev) => prev.filter((x) => x.id !== id)),
+          onExpired: (id) => setNotifications((prev) => prev.filter((x) => x.id !== id)),
+          onClose: () => {
+            const timer = window.setInterval(() => {
+              if (processingId.current != null) return;
+              void pollRef.current();
+            }, POLL_INTERVAL_MS);
+            cleanupFns.current.push(() => window.clearInterval(timer));
+          },
+        },
+        cleanupFns.current,
+      );
+    }
     return () => {
       mounted.current = false;
-      window.clearInterval(timer);
+      while (cleanupFns.current.length > 0) {
+        try {
+          cleanupFns.current.pop()?.();
+        } catch {
+          /* noop */
+        }
+      }
       if (waitTimer.current != null) window.clearTimeout(waitTimer.current);
     };
   }, []);

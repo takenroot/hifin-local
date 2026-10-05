@@ -657,6 +657,24 @@ mail
     emit(summary, !!program.opts().human);
   });
 
+// ── mcp ────────────────────────────────────────────────────
+/**
+ * 启动 MCP server（供 Claude Code / Cursor 等 AI Agent 通过 stdio 连接）。
+ * MCP 走 stdio JSON-RPC：stdout 只能写帧、日志全部 stderr；handler 出错
+ * 让 SDK 走 -32603 内部错误，但账单 ZIP 的三类用户错误走 tool isError 兜住。
+ * 复用 ensureDb 同入口：与 serve / import-bill / mail poll 走同一份 db 连接。
+ */
+program
+  .command('mcp')
+  .description('启动 MCP server（stdio，AI Agent 客户端连接）')
+  .action(async () => {
+    ensureDb(program.opts().db);
+    const { createMcpServer } = await import('./mcp/server.js');
+    const server = createMcpServer(getDb());
+    const { serveStdio } = await import('@modelcontextprotocol/server/stdio');
+    await serveStdio(() => server);
+  });
+
 program.parseAsync(process.argv).catch((err) => {
   // eslint-disable-next-line no-console
   console.error('[hifin] error:', err?.message ?? err);

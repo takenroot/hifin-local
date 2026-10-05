@@ -19,6 +19,7 @@ import type {
   NotificationStatus,
   NotificationType,
 } from '../db/schema.js';
+import { publish } from './bus.js';
 
 /** schema.ts 里的 CHECK 约束，同步一份用于入参校验，避免直接吃到 SQLite 报错 */
 export const NOTIFICATION_TYPES: NotificationType[] = [
@@ -170,7 +171,9 @@ export function createNotification(
     )
     .run(type, title, message, billUid, platform, ts, ts, payload);
 
-  return getOrThrow(db, Number(result.lastInsertRowid));
+  const row = getOrThrow(db, Number(result.lastInsertRowid));
+  publish({ kind: 'created', notification: row });
+  return row;
 }
 
 /**
@@ -222,6 +225,7 @@ export function resolveNotification(db: Database.Database, id: number): void {
     nowMs(),
     target,
   );
+  publish({ kind: 'resolved', id: target });
 }
 
 /** 用户忽略：status → dismissed，并维护 updatedAt。不存在抛 NotFoundError */
@@ -232,6 +236,7 @@ export function dismissNotification(db: Database.Database, id: number): void {
     nowMs(),
     target,
   );
+  publish({ kind: 'dismissed', id: target });
 }
 
 /**
@@ -248,6 +253,7 @@ export function expireNotification(db: Database.Database, id: number): void {
     nowMs(),
     target,
   );
+  publish({ kind: 'expired', id: target });
 }
 
 /**

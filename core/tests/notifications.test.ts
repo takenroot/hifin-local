@@ -401,3 +401,300 @@ describe('REST /api/bills', () => {
     expect(getBillPassword(1812)).toBeUndefined();
   });
 });
+
+// ───────────────────────────── SSE bus + /stream 路由（v4.1.0 实时通知） ─────────────────────────────
+
+import { afterEach } from 'vitest';
+import { publish, subscribe } from '../src/notifications/bus.js';
+
+/**
+ * 本段测点对照 docs/sse-design.md §2.5.1：
+ *  A. createNotification 触发 'created'
+ *  B. resolve / dismiss / expire 各 publish
+ *  C. 单个订阅者抛错不影响其它
+ *  D. HTTP GET /api/notifications/stream 立即送 hello
+ *  E. HTTP 流中 store.publish 能被客户端收到（notification 事件）
+ *  F. 客户端断开后订阅者被清理（再创建一次 publish 不影响 / 旧的取消收到）
+ *
+ * bus 是模块级单例 Set，跨测试会污染；每个测试各自 unsubscribe。
+ */
+const unsubscribers: Array<() => void> = [];
+function trackUnsub(u: () => void): void {
+  unsubscribers.push(u);
+}
+afterEach(() => {
+  while (unsubscribers.length > 0) {
+    try {
+      unsubscribers.pop()?.();
+    } catch {
+      /* ignore */
+    }
+  }
+});
+
+describe('notifications/bus', () => {
+  it('A: createNotification 推一条 {kind:"created", notification:row}', () => {
+    const seen: Array<{ kind: string; row?: unknown; id?: number }> = [];
+    trackUnsub(
+      subscribe((ev) => {
+        seen.push({ kind: ev.kind, row: ev.kind === 'created' ? ev.notification : undefined });
+      }),
+    );
+
+    const row = createNotification(memDb, { type: 'need_password', title: 'bus: 收到' });
+    expect(seen).toHaveLength(1);
+    expect(seen[0]?.kind).toBe('created');
+    expect((seen[0]?.row as { id?: number }).id).toBe(row.id);
+  });
+
+  it('B: resolve / dismiss / expire 各 publish 对应 kind', () => {
+    const created = createNotification(memDb, { type: 'need_password', title: 'bus: 多动作' });
+    const id = created.id as number;
+
+    const seen: string[] = [];
+    trackUnsub(subscribe((ev) => seen.push(ev.kind)));
+
+    resolveNotification(memDb, id);
+    dismissNotification(memDb, id);
+    // dismiss 后再 expire：仅为了验证 expired 也走 publish
+    expireNotification(memDb, id);
+
+    expect(seen).toEqual(['resolved', 'dismissed', 'expired']);
+  });
+
+  it('C: 单个订阅者抛错不影响其它订阅者', () => {
+    const seen: string[] = [];
+    trackUnsub(subscribe(() => seen.push('good')));
+    trackUnsub(subscribe(() => {
+      throw new Error('boom');
+    }));
+    trackUnsub(subscribe(() => seen.push('good2')));
+
+    publish({ kind: 'resolved', id: 1 });
+    expect(seen).toEqual(['good', 'good2']);
+  });
+
+  it('subscribe 返回的函数真正解绑订阅', () => {
+    const seen: string[] = [];
+    const u = subscribe((ev) => seen.push(ev.kind));
+    publish({ kind: 'resolved', id: 1 });
+    expect(seen).toEqual(['resolved']);
+
+    u();
+    publish({ kind: 'resolved', id: 2 });
+    expect(seen).toEqual(['resolved']);
+  });
+});
+
+describe('REST GET /api/notifications/stream (SSE)', () => {
+  /** 把 SSE 报文按 \n\n 切成单条事件，返回 [{event, data, id?}, ...] */
+  function parseSseChunks(buf: string): Array<{ event?: string; id?: string; data?: string }> {
+    const out: Array<{ event?: string; id?: string; data?: string }> = [];
+    for (const raw of buf.split('\n\n')) {
+      const trimmed = raw.replace(/\n$/, '');
+      if (!trimmed) continue;
+      const ev: { event?: string; id?: string; data?: string } = {};
+      for (const line of trimmed.split('\n')) {
+        if (line.startsWith(':')) continue; // 注释行 / 心跳
+        if (line.startsWith('event:')) ev.event = line.slice(6).trim();
+        else if (line.startsWith('id:')) ev.id = line.slice(3).trim();
+        else if (line.startsWith('data:')) ev.data = line.slice(5).trim();
+      }
+      if (ev.event || ev.data) out.push(ev);
+    }
+    return out;
+  }
+
+  /** 异步读 fetch response.body 直到拿到 contains 期望的子串或超时 */
+  async function readUntil(
+    res: Response,
+    predicate: (buf: string) => boolean,
+    timeoutMs = 1500,
+  ): Promise<string> {
+    const reader = res.body?.getReader();
+    if (!reader) throw new Error('no body');
+    const decoder = new TextDecoder();
+    let buf = '';
+    const t0 = Date.now();
+    while (Date.now() - t0 < timeoutMs) {
+      const remain = timeoutMs - (Date.now() - t0);
+      const { value, done: rdone } = await Promise.race([
+        reader.read(),
+        new Promise<{ value: undefined; done: true }>((r) =>
+          setTimeout(() => r({ value: undefined, done: true }), remain),
+        ),
+      ]);
+      if (value) buf += decoder.decode(value, { stream: true });
+      if (predicate(buf)) {
+        try {
+          await reader.cancel();
+        } catch {
+          /* noop */
+        }
+        return buf;
+      }
+      if (rdone) break;
+    }
+    try {
+      await reader.cancel();
+    } catch {
+      /* noop */
+    }
+    return buf;
+  }
+
+  /**
+   * 单 reader 多 read：getReader() 只能调一次，所以聚合多次 readUntil 在一个流上。
+   * 返回一个 collect 函数：传入 predicate 与 timeout，等 predicate 命中或超时，
+   * 返回那一刻已累积的整段 buffer。
+   */
+  function streamCollector(res: Response): {
+    collect: (predicate: (buf: string) => boolean, timeoutMs?: number) => Promise<string>;
+    cancel: () => Promise<void>;
+  } {
+    const reader = res.body?.getReader();
+    if (!reader) throw new Error('no body');
+    const decoder = new TextDecoder();
+    let buf = '';
+    const pump = (async () => {
+      try {
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) return;
+          if (value) buf += decoder.decode(value, { stream: true });
+        }
+      } catch {
+        /* abort / cancel */
+      }
+    })();
+    return {
+      collect: async (predicate, timeoutMs = 2000) => {
+        const t0 = Date.now();
+        while (Date.now() - t0 < timeoutMs) {
+          if (predicate(buf)) return buf;
+          await new Promise((r) => setTimeout(r, 10));
+        }
+        return buf;
+      },
+      cancel: async () => {
+        try {
+          await reader.cancel();
+        } catch {
+          /* noop */
+        }
+        await pump.catch(() => undefined);
+      },
+    };
+  }
+
+  it('D: 立即 flushHeaders，首条事件是 hello（含正确的 Content-Type）', async () => {
+    const ac = new AbortController();
+    const res = await fetch(`${baseUrl}/api/notifications/stream`, { signal: ac.signal });
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toContain('text/event-stream');
+    expect(res.headers.get('cache-control')).toContain('no-cache');
+    expect(res.headers.get('connection')).toBe('keep-alive');
+
+    const col = streamCollector(res);
+    const buf = await col.collect((b) => b.includes('event: hello'), 2000);
+    await col.cancel();
+    const events = parseSseChunks(buf);
+    expect(events[0]?.event).toBe('hello');
+    expect(events[0]?.data).toMatch(/^\{"ts":\d+\}$/);
+
+    ac.abort();
+  });
+
+  it('E: 客户端订阅期间 store.createNotification → 收到 notification 事件', async () => {
+    const ac = new AbortController();
+    const res = await fetch(`${baseUrl}/api/notifications/stream`, { signal: ac.signal });
+    const col = streamCollector(res);
+
+    // 等 hello 出现再触发 store（避免在 hello 之前抢跑）
+    await col.collect((b) => b.includes('event: hello'), 2000);
+
+    const created = createNotification(memDb, {
+      type: 'need_password',
+      title: 'http-stream: 实时收到',
+      bill_uid: 20251005,
+      platform: 'alipay',
+    });
+    const targetId = created.id as number;
+
+    const buf = await col.collect(
+      (b) => b.includes(`event: notification`) && b.includes(`"id":${targetId}`),
+      2000,
+    );
+    await col.cancel();
+    const events = parseSseChunks(buf);
+    const notif = events.find((e) => e.event === 'notification');
+    expect(notif).toBeDefined();
+    expect(notif?.id).toBe(String(targetId));
+    const parsed = JSON.parse(notif?.data ?? '{}') as { kind: string; notification: { id: number; title: string } };
+    expect(parsed.kind).toBe('created');
+    expect(parsed.notification.id).toBe(targetId);
+    expect(parsed.notification.title).toBe('http-stream: 实时收到');
+
+    ac.abort();
+  });
+
+  it('F: 客户端断开后，服务端不再向该连接推送', async () => {
+    const ac1 = new AbortController();
+    const res1 = await fetch(`${baseUrl}/api/notifications/stream`, { signal: ac1.signal });
+    const col1 = streamCollector(res1);
+    await col1.collect((b) => b.includes('event: hello'), 2000);
+
+    // 立刻断开；cleanup 应该清掉订阅
+    ac1.abort();
+    await col1.cancel();
+    // 给事件循环一拍让 req.close 落地
+    await new Promise((r) => setTimeout(r, 50));
+
+    // 再开第二个连接，触发 store 写入；断言 res2 能看到
+    const ac2 = new AbortController();
+    const res2 = await fetch(`${baseUrl}/api/notifications/stream`, { signal: ac2.signal });
+    const col2 = streamCollector(res2);
+    await col2.collect((b) => b.includes('event: hello'), 2000);
+
+    const created = createNotification(memDb, {
+      type: 'need_password',
+      title: 'http-stream: 断开后再开',
+    });
+    const targetId = created.id as number;
+    const buf = await col2.collect(
+      (b) => b.includes(`event: notification`) && b.includes(`"id":${targetId}`),
+      2000,
+    );
+    await col2.cancel();
+    expect(buf).toContain('event: notification');
+
+    ac2.abort();
+  });
+
+  it('resolveNotification 推送 resolved 事件，载荷含 id', async () => {
+    const ac = new AbortController();
+    const res = await fetch(`${baseUrl}/api/notifications/stream`, { signal: ac.signal });
+    const col = streamCollector(res);
+    await col.collect((b) => b.includes('event: hello'), 2000);
+
+    const created = createNotification(memDb, { type: 'need_password', title: 'http-stream: 待 resolve' });
+    const targetId = created.id as number;
+    await col.collect((b) => b.includes(`event: notification`), 2000);
+
+    resolveNotification(memDb, targetId);
+    const buf = await col.collect(
+      (b) => b.includes(`event: resolved`) && b.includes(`"id":${targetId}`),
+      2000,
+    );
+    await col.cancel();
+    const events = parseSseChunks(buf);
+    const ev = events.find((e) => e.event === 'resolved');
+    expect(ev).toBeDefined();
+    expect(ev?.id).toBe(String(targetId));
+    const parsed = JSON.parse(ev?.data ?? '{}') as { kind: string; id: number };
+    expect(parsed.kind).toBe('resolved');
+    expect(parsed.id).toBe(targetId);
+
+    ac.abort();
+  });
+});

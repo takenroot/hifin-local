@@ -17,6 +17,7 @@ import {
   NOTIFICATION_STATUSES,
   NOTIFICATION_TYPES,
 } from '../notifications/store.js';
+import { subscribe } from '../notifications/bus.js';
 import type { NotificationRow, NotificationStatus, NotificationType } from '../db/schema.js';
 
 export const notificationsRouter = Router();
@@ -63,6 +64,65 @@ notificationsRouter.get('/', (req: Request, res: Response) => {
     limit: limit !== undefined ? Number(limit) : undefined,
   });
   res.json(rows);
+});
+
+/**
+ * GET /api/notifications/stream — SSE 实时通知流
+ * ---------------------------------------------------------------
+ * 详见 docs/sse-design.md §2.2.3。要点：
+ *  - 立即 flushHeaders 让 Vite dev proxy 不缓冲首字节
+ *  - 25s 心跳注释行避开常见 30s/60s 反代超时
+ *  - req close/aborted 都触发清理（同一个 cleanup 即可）
+ *  - 当前项目无鉴权，与现有路由保持一致
+ *
+ * 注意：必须放在 /:id 之前注册，否则会被 :id 误匹配（'stream' 不是合法数字 → 400）
+ */
+notificationsRouter.get('/stream', (req: Request, res: Response) => {
+  res.statusCode = 200;
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  // 首次连接立刻送 hello，客户端用它确认建立
+  res.write(`event: hello\ndata: {"ts":${Date.now()}}\n\n`);
+
+  // 25s 心跳；避开 30s/60s 反代超时阈值
+  const heartbeat = setInterval(() => {
+    try {
+      res.write(`: keepalive ${Date.now()}\n\n`);
+    } catch {
+      /* 已断，下次 req.close 兜底清理 */
+    }
+  }, 25_000);
+
+  const unsub = subscribe((ev) => {
+    const payload = JSON.stringify(ev);
+    try {
+      if (ev.kind === 'created') {
+        res.write(`event: notification\nid: ${ev.notification.id}\ndata: ${payload}\n\n`);
+      } else {
+        res.write(`event: ${ev.kind}\nid: ${ev.id}\ndata: ${payload}\n\n`);
+      }
+    } catch {
+      /* 已断，留给 req.close 兜底 */
+    }
+  });
+
+  let cleaned = false;
+  const cleanup = (): void => {
+    if (cleaned) return;
+    cleaned = true;
+    clearInterval(heartbeat);
+    unsub();
+    try {
+      res.end();
+    } catch {
+      /* noop */
+    }
+  };
+  req.on('close', cleanup);
+  req.on('aborted', cleanup);
 });
 
 /** GET /api/notifications/:id — 单条详情（弹窗刷新用） */
