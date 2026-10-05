@@ -22,8 +22,11 @@
 - [x] **T7 app/CLI 导入路径 100% 丢光**（ec63a73）kimi 调查定性（GBK+前言剥离缺失）→
       minimax 实施（UTF-8 优先探测+共享 decodeBillBytes+假表头门槛，修正调查方案两处硬伤、
       揪出 CLI import-csv 兄弟 bug）→ 调度方补 CLI 尾+误导入回滚（教训：CLI 测试须用 DB 副本）
+- [x] **T8 未转义逗号静默丢行**（5262c0f）改明确 warning 不入库错列；列数统计必须走同一
+      引号感知切分器（朴素 split 会把真实微信 5 行规范引号逗号误判）；真实原件 0 warning；
+      附带缓解 bill.test.ts tmpdir 计数 flake（vi.waitFor 窗口，6 连跑全过）
 
-## 下一个任务（按此顺序继续）
+## 下一个任务（队列已清空——新任务从这里追加）
 
 ### ~~T7 app 导入路径读不进真实支付宝导出~~（已完成 ec63a73：kimi 调查 + minimax 实施 + 调度方补 CLI 尾）
 - 背景：app 侧 TransactionImportView 只按 UTF-8 裸读，无前言剥离——带 22 行前言的
@@ -35,7 +38,7 @@
   必要时 core/src/bill/importer.ts（保持两边语义一致）
 - 验收：真实支付宝导出文件（GBK+前言）走 app 路径能解析出全部行；core 399/app 240+ 全过
 
-### T8 未转义逗号丢行（CSV 固有歧义，低优先）——队列中下一个
+### ~~T8 未转义逗号丢行~~（已完成 5262c0f：静默丢行→明确 warning，YAGNI 不做 RFC 4180）
 - 背景：逗号 CSV 字段内含裸 , 同样错位丢行；廉价修不了，csv.ts 注释已写明
 - 候选：引号感知切分（RFC 4180 -lite）或明确报错"该文件含未转义逗号"而非静默丢行
 - 倾向后者（YAGNI：真实账单都由 core 管道导入，app 路径是手工补充）
@@ -46,6 +49,8 @@
 - @testing-library+jest-axe 基建、`<Amount>` 领域原语（YAGNI 搁置）
 - 目标类型色轴（储蓄红/还款绿）、超支红报警（有注释的既有约定）——用户约定内自洽，不动
 
-## 已知 flake（非缺陷，别修）
+## 已知 flake（已缓解，彻底修需改 unzipBill 签名——YAGNI 搁置）
 - core tests/bill.test.ts「错误密码时自建的临时目录会被清掉」：
-  数 OS tmpdir 目录数，与并行 CLI 子进程干扰，单独跑必过、全量偶发 1/256 概率红
+  数 OS tmpdir 目录数，与并行测试文件的临时目录竞争（历史 ~1/10）。
+  已加 vi.waitFor 2s 窗口（5262c0f），6 连跑全过；持续高负载下仍可能超时，
+  彻底隔离需给 unzipBill 加 tmpRoot 注入参数，改动源签名不值当
