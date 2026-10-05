@@ -119,10 +119,10 @@ importer 的 ORDER BY 没有显式 tiebreak）。**影响**：未来若两个同
 
 ---
 
-## ISSUE-005：`calcNetAsset` 对正余额信用账户符号翻转（低危，待校准后顺手修）
+## ISSUE-005：`calcNetAsset` 对正余额信用账户符号翻转（~~低危，待校准后顺手修~~）
 
 **发现时间**：2026-10-03（多账户拆分首次建花呗账户暴露）
-**状态**：已知，待修
+**状态**：**已修复**（T1，bcb3a54）——三处副本（core summary/app dashboard/reports/ai-assistant）全部改 debt += -balance，+14 例单测钉死
 
 ### 现象
 `core/src/routes/summary.ts` 与 `app/.../calculations.ts` 的 `calcNetAsset` 对
