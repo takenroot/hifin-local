@@ -15,7 +15,9 @@ export type NotificationType =
   | 'need_password'
   | 'password_error'
   | 'import_success'
-  | 'import_failed';
+  | 'import_failed'
+  /** 自动财务洞察（v5 新增）：title 固定为「本月财务小结」，payload 含 summary / sections / llmNarrative */
+  | 'ai-insight';
 
 /** 与 core/src/db/schema.ts 的 NotificationStatus 保持一致 */
 export type NotificationStatus = 'pending' | 'resolved' | 'dismissed' | 'failed';
@@ -25,6 +27,7 @@ const TYPE_SET: readonly string[] = [
   'password_error',
   'import_success',
   'import_failed',
+  'ai-insight',
 ];
 
 /** REST 返回的原始通知行（未归一化） */
@@ -39,6 +42,8 @@ export interface RestNotification {
   retry_count?: number | null;
   createdAt?: number | null;
   updatedAt?: number | null;
+  /** v3+ 通用业务载荷（JSON 文本）；ai-insight 用它装 summary / sections / llmNarrative */
+  payload?: string | null;
 }
 
 /** 归一化后的前端通知实体 */
@@ -54,6 +59,8 @@ export interface AppNotification {
   retryCount: number;
   createdAt: number;
   updatedAt: number;
+  /** v3+ 通用业务载荷（已 JSON.parse 的对象）；ai-insight 用，其它类型可为空 */
+  payload?: Record<string, unknown> | null;
 }
 
 /** 未知 type 一律丢弃：宁可少弹一个窗，也不要用错分支渲染 */
@@ -87,7 +94,21 @@ export function toNotification(row: RestNotification | null | undefined): AppNot
       : 0,
     createdAt: typeof row.createdAt === 'number' ? row.createdAt : now,
     updatedAt: typeof row.updatedAt === 'number' ? row.updatedAt : now,
+    payload: parsePayloadField(row.payload),
   };
+}
+
+/** 解析 payload 字段：脏 JSON 一律容错为 null，不让列表渲染整页翻车 */
+function parsePayloadField(raw: unknown): Record<string, unknown> | null {
+  if (typeof raw !== 'string' || raw.trim() === '') return null;
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : null;
+  } catch {
+    return null;
+  }
 }
 
 /**

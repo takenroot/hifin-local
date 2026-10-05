@@ -28,6 +28,7 @@ export const NOTIFICATION_TYPES: NotificationType[] = [
   'import_success',
   'import_failed',
   'yield-reminder',
+  'ai-insight',
 ];
 
 export const NOTIFICATION_STATUSES: NotificationStatus[] = [

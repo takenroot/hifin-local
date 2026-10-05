@@ -29,6 +29,7 @@ import { useApi, apiFetch } from '@/hooks/useApi';
 import { ALL_SPACES_ID, belongsToSpace } from '@/space';
 import { CommandPaletteView as CommandPalette } from '@/features/command-palette/CommandPaletteView';
 import { NotificationCenter } from '@/features/notifications/NotificationCenter';
+import { toNotificationList } from '@/features/notifications/types';
 import { toSpaces, type RestSpaceRow } from '@/features/settings/restApi';
 
 interface NavItem {
@@ -127,6 +128,17 @@ export default function AppLayout() {
     [restSpaces],
   );
 
+  // ─── 看板角标：有未处理的 AI 洞察通知时挂一个小红点 ───
+  // 复用现有轮询（NotificationCenter 已 30s 拉一次 pending），这里再拉一份避免与弹窗时序耦合；
+  // 网络抖动静默失败，UI 退化到无角标，**不**显示骨架/Loading。
+  const { data: insightRaw } = useApi<unknown>(
+    '/api/notifications?status=pending&type=ai-insight',
+  );
+  const hasPendingAiInsight = useMemo(
+    () => toNotificationList(insightRaw).length > 0,
+    [insightRaw],
+  );
+
   // 计算底部展示名
   const currentSpaceName = (() => {
     if (spaceId === ALL_SPACES_ID) return ALL_SPACES_LABEL;
@@ -154,6 +166,7 @@ export default function AppLayout() {
           currentSpaceName={currentSpaceName}
           visibleItems={visibleItems}
           pathname={location.pathname}
+          hasPendingAiInsight={hasPendingAiInsight}
         />
       </aside>
 
@@ -224,6 +237,7 @@ export default function AppLayout() {
             currentSpaceName={currentSpaceName}
             visibleItems={visibleItems}
             pathname={location.pathname}
+            hasPendingAiInsight={hasPendingAiInsight}
           />
         </aside>
       </div>
@@ -249,6 +263,8 @@ interface SidebarBodyProps {
   currentSpaceName: string;
   visibleItems: NavItem[];
   pathname: string;
+  /** 看板有未处理 AI 洞察通知时挂小红点 */
+  hasPendingAiInsight?: boolean;
 }
 
 function SidebarBody({
@@ -261,6 +277,7 @@ function SidebarBody({
   currentSpaceName,
   visibleItems,
   pathname,
+  hasPendingAiInsight,
 }: SidebarBodyProps) {
   return (
     <>
@@ -293,6 +310,8 @@ function SidebarBody({
       <nav className="flex-1 px-2 space-y-0.5 overflow-auto">
         {visibleItems.map((it) => {
           const active = isNavActive(it, pathname);
+          // 看板：未处理 AI 洞察通知时挂一个小红点（视觉信号：点击进去即看到通知中心 Modal）
+          const showBadge = it.label === '看板' && hasPendingAiInsight;
           return (
             <NavLink
               key={it.label}
@@ -305,7 +324,13 @@ function SidebarBody({
               )}
             >
               <span className="flex-none text-text-muted">{it.icon}</span>
-              <span className="truncate">{it.label}</span>
+              <span className="truncate flex-1">{it.label}</span>
+              {showBadge && (
+                <span
+                  aria-label="有新的财务洞察通知"
+                  className="flex-none w-2 h-2 rounded-full bg-danger dark:bg-danger-dark"
+                />
+              )}
             </NavLink>
           );
         })}

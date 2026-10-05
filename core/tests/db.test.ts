@@ -313,3 +313,152 @@ describe('db: v2 → v3 迁移（老 notifications 表重建）', () => {
     db.close();
   });
 });
+
+/**
+ * v4 → v5 的真实升级路径。
+ *
+ * 关键点（与 v2→v3 完全同构）：
+ *  - v4 老 CHECK 不接受 'ai-insight'；
+ *  - migrate() 走 ensureAiInsightNotificationsShape → "重命名 → 建新表 → INSERT SELECT → DROP"；
+ *  - 老数据逐行不丢；新 CHECK 生效后 'ai-insight' 与其它合法类型都能写；
+ *  - 索引 idx_notif_status 仍挂在新表上；
+ *  - 重复跑幂等，临时表不残留。
+ */
+describe('db: v4 → v5 迁移（老 notifications 表再次重建，扩 ai-insight）', () => {
+  /** 造一张 v4 形状的库：CHECK 不含 ai-insight、有 payload 列、user_version=4 */
+  function makeV4Db(): ReturnType<typeof openDatabase> {
+    const legacy = openDatabase(':memory:');
+    legacy.exec(`
+      CREATE TABLE notifications (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        type TEXT NOT NULL CHECK(type IN ('need_password','password_error','import_success','import_failed','yield-reminder')),
+        title TEXT NOT NULL,
+        message TEXT,
+        bill_uid INTEGER,
+        platform TEXT,
+        status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','resolved','dismissed','failed','expired')),
+        retry_count INTEGER NOT NULL DEFAULT 0,
+        createdAt INTEGER NOT NULL,
+        updatedAt INTEGER NOT NULL,
+        payload TEXT
+      );
+      CREATE INDEX IF NOT EXISTS idx_notif_status ON notifications(status);
+      CREATE TABLE accountYields (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        accountId INTEGER NOT NULL,
+        year INTEGER NOT NULL,
+        annualIncome REAL NOT NULL,
+        note TEXT,
+        createdAt INTEGER NOT NULL,
+        UNIQUE(accountId, year)
+      );
+    `);
+    legacy.exec(
+      `INSERT INTO notifications (type, title, message, bill_uid, platform, status, retry_count, createdAt, updatedAt, payload)
+       VALUES ('yield-reminder', '催填 零钱通', '去年的', 1811, 'alipay', 'pending', 0, 1000, 1000, '{"accountId":1,"year":2025}'),
+              ('import_success', '导入成功', '128 笔', NULL, 'wechat', 'resolved', 0, 2000, 2000, NULL)`,
+    );
+    legacy.pragma('user_version = 4');
+    return legacy;
+  }
+
+  function dumpNotifications(db: ReturnType<typeof openDatabase>): unknown[] {
+    return db
+      .prepare(
+        'SELECT id, type, title, message, bill_uid, platform, status, retry_count, createdAt, updatedAt FROM notifications ORDER BY id',
+      )
+      .all();
+  }
+
+  it('老表被重建：数据逐行不变，新 type 可以写入，垃圾类型仍被 CHECK 拦下', () => {
+    const db = makeV4Db();
+    const before = dumpNotifications(db);
+
+    // 迁移前：插入 ai-insight 在老 CHECK 下必然被拒
+    expect(() =>
+      db
+        .prepare(
+          `INSERT INTO notifications (type, title, status, createdAt, updatedAt)
+           VALUES ('ai-insight', '财务小结', 'pending', 1, 1)`,
+        )
+        .run(),
+    ).toThrow(/CHECK/i);
+
+    migrate(db);
+
+    expect(getUserVersion(db)).toBe(CURRENT_SCHEMA_VERSION);
+    // 重建过程中一列都不能丢
+    expect(dumpNotifications(db)).toEqual(before);
+
+    // 现在 'ai-insight' 合法
+    db.prepare(
+      `INSERT INTO notifications (type, title, status, createdAt, updatedAt, payload)
+       VALUES ('ai-insight', '本月财务小结', 'pending', 1, 1, '{"month":"2026-01","summary":"x","sections":[],"llmNarrative":null,"source":"auto","generatedAt":1}')`,
+    ).run();
+
+    // 垃圾 type 仍被 CHECK 拦下
+    expect(() =>
+      db
+        .prepare(
+          `INSERT INTO notifications (type, title, status, createdAt, updatedAt)
+           VALUES ('junk', 'x', 'pending', 1, 1)`,
+        )
+        .run(),
+    ).toThrow(/CHECK/i);
+
+    db.close();
+  });
+
+  it('迁移幂等：连跑三遍，通知不多不少、user_version 不变、临时表无残留', () => {
+    const db = makeV4Db();
+    migrate(db);
+    migrate(db);
+    migrate(db);
+
+    expect(getUserVersion(db)).toBe(CURRENT_SCHEMA_VERSION);
+    // 老数据还在（2 行）
+    expect(
+      (db.prepare('SELECT COUNT(*) AS c FROM notifications').get() as { c: number }).c,
+    ).toBe(2);
+
+    // 临时表不能残留（v4 的临时表名 + v2 的临时表名都应清掉）
+    expect(
+      (db
+        .prepare("SELECT COUNT(*) c FROM sqlite_master WHERE name='notifications_legacy_v4'")
+        .get() as { c: number }).c,
+    ).toBe(0);
+    expect(
+      (db
+        .prepare("SELECT COUNT(*) c FROM sqlite_master WHERE name='notifications_legacy_v2'")
+        .get() as { c: number }).c,
+    ).toBe(0);
+
+    // 索引仍挂在新表上
+    const idx = db
+      .prepare("SELECT sql FROM sqlite_master WHERE type='index' AND name='idx_notif_status'")
+      .get() as { sql: string } | undefined;
+    expect(idx?.sql).toContain('ON notifications(status)');
+
+    db.close();
+  });
+
+  it('payload 列在 v4 → v5 重建时保留（不为空）', () => {
+    const db = makeV4Db();
+    migrate(db);
+    const row = db
+      .prepare("SELECT payload FROM notifications WHERE type = 'yield-reminder'")
+      .get() as { payload: string | null };
+    expect(row.payload).toBe('{"accountId":1,"year":2025}');
+    db.close();
+  });
+
+  it('ensureAiInsightNotificationsShape 对已是 v5 形状的库是 no-op', async () => {
+    const db = openDatabase(':memory:');
+    migrate(db);
+    const before = dumpNotifications(db);
+    const { ensureAiInsightNotificationsShape } = await import('../src/db/migrate.js');
+    expect(ensureAiInsightNotificationsShape(db)).toBe(false);
+    expect(dumpNotifications(db)).toEqual(before);
+    db.close();
+  });
+});

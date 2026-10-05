@@ -131,7 +131,7 @@ CREATE TABLE IF NOT EXISTS kv (
 -- 其余通知类型留 NULL，读侧一律容错。
 CREATE TABLE IF NOT EXISTS notifications (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  type TEXT NOT NULL CHECK(type IN ('need_password','password_error','import_success','import_failed','yield-reminder')),
+  type TEXT NOT NULL CHECK(type IN ('need_password','password_error','import_success','import_failed','yield-reminder','ai-insight')),
   title TEXT NOT NULL,
   message TEXT,
   bill_uid INTEGER,
@@ -214,7 +214,12 @@ export type NotificationType =
    * 账户年收益率催填（v3 新增）。
    * 与账单通知不同，它不带 bill_uid，accountId/year 装在 payload 里。
    */
-  | 'yield-reminder';
+  | 'yield-reminder'
+  /**
+   * 自动财务洞察（v5 新增）。month / sections / llmNarrative 等装在 payload 里。
+   * 前端通过通知中心 Modal + Dashboard 角标展示。
+   */
+  | 'ai-insight';
 /**
  * pending 待处理 / resolved 已解决 / dismissed 用户忽略 / failed 失败。
  * expired 是 v3 新增的终态：催填窗口（2 月 1 日）已过且用户始终没填，

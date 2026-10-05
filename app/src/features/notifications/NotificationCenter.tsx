@@ -45,6 +45,7 @@ import {
   POLL_INTERVAL_MS,
   PROCESSING_WAIT_MS,
   TOAST_TTL_MS,
+  aiInsightToastMessage,
   importFailedMessage,
   importSuccessMessage,
   isExhausted,
@@ -201,12 +202,22 @@ export function NotificationCenter() {
     fresh.forEach((n) => seenToastIds.current.add(n.id));
     setToasts((prev) => [
       ...prev,
-      ...fresh.map((n) => ({
-        key: (toastSeq += 1),
-        tone: n.type === 'import_success' ? ('success' as const) : ('error' as const),
-        text: n.type === 'import_success' ? importSuccessMessage(n) : importFailedMessage(n),
-        expiresAt: Date.now() + TOAST_TTL_MS,
-      })),
+      ...fresh.map((n) => {
+        const tone: Toast['tone'] =
+          n.type === 'import_success' ? 'success' : n.type === 'ai-insight' ? 'success' : 'error';
+        const text =
+          n.type === 'import_success'
+            ? importSuccessMessage(n)
+            : n.type === 'ai-insight'
+              ? aiInsightToastMessage(n.payload)
+              : importFailedMessage(n);
+        return {
+          key: (toastSeq += 1),
+          tone,
+          text,
+          expiresAt: Date.now() + TOAST_TTL_MS,
+        };
+      }),
     ]);
     // 结果已经播报过，让 core 把它收掉，别一直占着 pending
     fresh.forEach((n) => void resolveNotification(n.id));

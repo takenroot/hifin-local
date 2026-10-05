@@ -8,7 +8,7 @@
  */
 import { apiFetch } from '@/hooks/useApi';
 import { parsePasswordSubmit, type PasswordSubmitOutcome } from './logic';
-import { toNotificationList, type AppNotification } from './types';
+import { toNotification, toNotificationList, type AppNotification, type RestNotification } from './types';
 
 /** 拉取待处理通知。返回空数组表示"没有待办"，不抛错——轮询失败不该打扰用户。 */
 export async function fetchPendingNotifications(signal?: AbortSignal): Promise<AppNotification[]> {
@@ -71,5 +71,18 @@ export async function dismissNotification(id: number): Promise<void> {
     await apiFetch(`/api/notifications/${encodeURIComponent(String(id))}/dismiss`, 'POST');
   } catch {
     /* 同上，忽略失败不阻断 UI */
+  }
+}
+
+/** 拉取单条 AI 洞察详情（Modal 打开后异步刷新 llmNarrative） */
+export async function fetchAiInsightDetail(id: number): Promise<AppNotification | null> {
+  try {
+    const r = await fetch(`/api/ai-insights/${encodeURIComponent(String(id))}`);
+    if (!r.ok) return null;
+    const data = (await r.json()) as RestNotification;
+    return toNotification(data);
+  } catch {
+    /* 网络抖动：返回 null，让上层继续展示规则版 */
+    return null;
   }
 }

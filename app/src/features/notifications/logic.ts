@@ -102,7 +102,7 @@ export function needsPasswordModal(type: NotificationType): boolean {
 
 /** 只用 toast 播报、不打断操作的两类通知 */
 export function isToastType(type: NotificationType): boolean {
-  return type === 'import_success' || type === 'import_failed';
+  return type === 'import_success' || type === 'import_failed' || type === 'ai-insight';
 }
 
 /**
@@ -129,6 +129,19 @@ export function pickToastNotifications(
   return list
     .filter((n) => isToastType(n.type) && !seen.has(n.id))
     .sort((a, b) => a.createdAt - b.createdAt || a.id - b.id);
+}
+
+/** ai-insight 的 toast 文案：取 payload.summary 前 60 字；空则用通用文案 */
+export function aiInsightToastMessage(payload: unknown): string {
+  const summary = extractInsightSummary(payload);
+  if (summary) return summary.length > 60 ? `${summary.slice(0, 60)}…` : summary;
+  return '本月财务小结已生成，点击查看';
+}
+
+function extractInsightSummary(payload: unknown): string {
+  if (!payload || typeof payload !== 'object') return '';
+  const obj = payload as Record<string, unknown>;
+  return typeof obj.summary === 'string' ? obj.summary : '';
 }
 
 /* ─────────────────── 密码提交结果解析 ─────────────────── */

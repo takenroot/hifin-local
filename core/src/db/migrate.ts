@@ -25,7 +25,7 @@
 import type { DatabaseType } from './connection.js';
 import { SCHEMA_SQL } from './schema.js';
 
-const SCHEMA_VERSION = 4;
+const SCHEMA_VERSION = 5;
 
 /**
  * 列级迁移：table + 需要补上的列 + 该列的 DDL 片段。
@@ -62,11 +62,36 @@ const NOTIFICATIONS_V2_COLUMNS = [
 /** 重建期间的临时表名。选一个正常流程里不可能出现的名字，避免撞车。 */
 const NOTIFICATIONS_LEGACY_TABLE = 'notifications_legacy_v2';
 
+/** v5 重建期间的临时表名。 */
+const NOTIFICATIONS_LEGACY_TABLE_V5 = 'notifications_legacy_v4';
+
 /** 新版 notifications 的建表语句（与 schema.ts 的 SCHEMA_SQL 保持一致）。 */
 export const NOTIFICATIONS_V3_SQL = `
 CREATE TABLE IF NOT EXISTS notifications (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   type TEXT NOT NULL CHECK(type IN ('need_password','password_error','import_success','import_failed','yield-reminder')),
+  title TEXT NOT NULL,
+  message TEXT,
+  bill_uid INTEGER,
+  platform TEXT,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','resolved','dismissed','failed','expired')),
+  retry_count INTEGER NOT NULL DEFAULT 0,
+  createdAt INTEGER NOT NULL,
+  updatedAt INTEGER NOT NULL,
+  payload TEXT
+);
+`;
+
+/**
+ * v5 notifications 的建表语句：type CHECK 再扩入 'ai-insight'（自动财务洞察）。
+ *
+ * 同样走"建新表 → 拷数据 → 删旧表 → 改名"的 SQLite 唯一可行路径，
+ * 因为 CHECK 约束在建表时固化、SQLite 没有 ALTER DROP CONSTRAINT。
+ */
+export const NOTIFICATIONS_V5_SQL = `
+CREATE TABLE IF NOT EXISTS notifications (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  type TEXT NOT NULL CHECK(type IN ('need_password','password_error','import_success','import_failed','yield-reminder','ai-insight')),
   title TEXT NOT NULL,
   message TEXT,
   bill_uid INTEGER,
@@ -129,6 +154,58 @@ export function ensureNotificationsShape(db: DatabaseType): boolean {
       );
     }
     db.exec(`DROP TABLE ${NOTIFICATIONS_LEGACY_TABLE};`);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_notif_status ON notifications(status);');
+  });
+  run();
+  return true;
+}
+
+/**
+ * 把 notifications 表升级到 v5 形状：type 扩入 'ai-insight'。
+ *
+ * 与 ensureNotificationsShape 同一套思路：
+ *  - 读 sqlite_master 的建表语句判断要不要重建（CHECK 里已有 'ai-insight' 就跳过）；
+ *  - 重建走"重命名 → 建新表 → INSERT SELECT → DROP"四步；
+ *  - 拷贝列按"老表实际有的"取交集（11 列 = 老列 + payload），缺列就跳过；
+ *  - 索引 DROP 重建，确保 idx_notif_status 仍挂在新表上。
+ */
+export function ensureAiInsightNotificationsShape(db: DatabaseType): boolean {
+  const current = getTableSql(db, 'notifications');
+  if (current === null) {
+    // SCHEMA_SQL 刚建出来的就是 v5，无需重建
+    return false;
+  }
+  if (current.includes("'ai-insight'")) {
+    return false;
+  }
+
+  const existing = new Set(getColumns(db, 'notifications'));
+  // v4 的 notifications 有 11 列（含 v3 补的 payload）
+  const copyCols = [
+    'id',
+    'type',
+    'title',
+    'message',
+    'bill_uid',
+    'platform',
+    'status',
+    'retry_count',
+    'createdAt',
+    'updatedAt',
+    'payload',
+  ].filter((c) => existing.has(c));
+
+  const run = db.transaction(() => {
+    db.exec('DROP INDEX IF EXISTS idx_notif_status;');
+    db.exec(`ALTER TABLE notifications RENAME TO ${NOTIFICATIONS_LEGACY_TABLE_V5};`);
+    db.exec(NOTIFICATIONS_V5_SQL);
+    if (copyCols.length > 0) {
+      const cols = copyCols.join(', ');
+      db.exec(
+        `INSERT INTO notifications (${cols}) SELECT ${cols} FROM ${NOTIFICATIONS_LEGACY_TABLE_V5};`,
+      );
+    }
+    db.exec(`DROP TABLE ${NOTIFICATIONS_LEGACY_TABLE_V5};`);
     db.exec('CREATE INDEX IF NOT EXISTS idx_notif_status ON notifications(status);');
   });
   run();
@@ -278,6 +355,7 @@ export function migrate(db: DatabaseType): void {
   db.exec(SCHEMA_SQL);
   // 重建必须先于补列（见文件头注释）
   ensureNotificationsShape(db);
+  ensureAiInsightNotificationsShape(db);
   ensureAccountYieldsShape(db);
   // 补列必须先于建索引（见文件头注释）
   ensureColumns(db);

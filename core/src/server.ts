@@ -33,6 +33,8 @@ import { kvRouter } from './routes/kv.js';
 import { aiModelsRouter } from './routes/ai-models.js';
 import { notificationsRouter } from './routes/notifications.js';
 import { billsRouter } from './routes/bills.js';
+import { aiInsightsRouter } from './routes/ai-insights.js';
+import { startAiInsightScheduler } from './insights/scheduler.js';
 
 export interface CreateAppOptions {
   /** 已连接的 db 实例；若不传，则视为外部已通过 setDb/openDatabase 准备好 */
@@ -66,6 +68,7 @@ export function createApp(opts: CreateAppOptions = {}): Express {
   app.use('/api/ai-models', aiModelsRouter);
   app.use('/api/notifications', notificationsRouter);
   app.use('/api/bills', billsRouter);
+  app.use('/api/ai-insights', aiInsightsRouter);
 
   // 404
   app.use((req: Request, res: Response) => {
@@ -143,6 +146,7 @@ function main(): void {
   // createApp 已经把迁移后的 db 注入了路由层，这里直接复用同一个实例，
   // 不再额外 openDatabase —— 两个连接写同一个文件只会平白多一层锁竞争。
   startYieldReminderScheduler(getDb());
+  startAiInsightScheduler(getDb());
   app.listen(port, () => {
     // eslint-disable-next-line no-console
     console.log(`[hifin-core] listening on http://127.0.0.1:${port} (db=${dbPath})`);
