@@ -11,6 +11,7 @@
  */
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import dayjs from 'dayjs';
 import {
   IconArrowsLeftRight,
   IconPlus,
@@ -25,10 +26,11 @@ import TransactionStatsView from './TransactionStatsView';
 import TransactionFilterBar from './TransactionFilterBar';
 import TransactionFormModal from './TransactionFormModal';
 import TransactionImportView from './TransactionImportView';
+import TransactionCalendar from '@/features/shared/TransactionCalendar';
 import type { RestTransaction } from './api';
 import type { TxFilter } from './balance';
 
-type View = 'list' | 'import' | 'stats';
+type View = 'list' | 'import' | 'stats' | 'calendar';
 
 export default function TransactionList() {
   const [params, setParams] = useSearchParams();
@@ -60,8 +62,36 @@ export default function TransactionList() {
     [txRows, spaceId],
   );
 
+  // 日历只依赖最小三字段；直接复用父级已加载的 txRows 与空间隔离结果，
+  // 单独再发一次请求只会浪费带宽、引入两份数据不一致的风险。
+  const calendarTx = useMemo(
+    () =>
+      filterBySpace(txRows ?? [], spaceId).map((r) => ({
+        date: r.date,
+        type: r.type,
+        amount: r.amount,
+      })),
+    [txRows, spaceId],
+  );
+
   // loading 时不算空：否则每次进页面都会先闪一帧"创建流水"空态
   const showEmpty = !loading && scopedCount === 0 && view === 'list';
+
+  /**
+   * 日历点日 → 切回列表 tab 并按当日过滤。
+   * TxFilter 已有 from/to 日期筛选能力（见 TransactionFilterBar / balance.applyFilter），
+   * 这里直接对接：from=startOfDay、to=endOfDay，覆盖用户的"按日查流水"意图。
+   * 用函数式更新只覆盖日期维度，不冲掉用户已选的账户/分类等其它条件。
+   */
+  const onCalendarSelectDay = useCallback((dateKey: string) => {
+    const d = dayjs(dateKey);
+    setFilter((prev) => ({
+      ...prev,
+      from: d.startOf('day').valueOf(),
+      to: d.endOf('day').valueOf(),
+    }));
+    setView('list');
+  }, []);
 
   function openCreate() {
     setEditing(null);
@@ -125,6 +155,7 @@ export default function TransactionList() {
             items={[
               { key: 'list', label: '流水列表' },
               { key: 'stats', label: '统计' },
+              { key: 'calendar', label: '日历' },
               { key: 'import', label: '账单导入' },
             ]}
           />
@@ -171,6 +202,10 @@ export default function TransactionList() {
           ))}
 
         {view === 'stats' && <TransactionStatsView version={version} />}
+
+        {view === 'calendar' && (
+          <TransactionCalendar transactions={calendarTx} onSelectDay={onCalendarSelectDay} />
+        )}
 
         {view === 'import' && <TransactionImportView onImported={bumpVersion} />}
       </div>
