@@ -17,8 +17,6 @@ import {
   IconCheck,
   IconMenu2,
   IconX,
-  IconLayoutSidebarLeftCollapse,
-  IconLayoutSidebarLeftExpand,
 } from '@tabler/icons-react';
 import clsx from 'clsx';
 import {
@@ -34,6 +32,8 @@ import { CommandPaletteView as CommandPalette } from '@/features/command-palette
 import { NotificationCenter } from '@/features/notifications/NotificationCenter';
 import { toNotificationList } from '@/features/notifications/types';
 import { toSpaces, type RestSpaceRow } from '@/features/settings/restApi';
+import { SidebarTools } from '@/features/layout/SidebarTools';
+import { SidebarCollapseHandle } from '@/features/layout/SidebarCollapseHandle';
 
 interface NavItem {
   key: keyof ReturnType<typeof useMenuVisibility>;
@@ -144,16 +144,6 @@ export default function AppLayout() {
     [insightRaw],
   );
 
-  // 计算底部展示名
-  const currentSpaceName = (() => {
-    if (spaceId === ALL_SPACES_ID) return ALL_SPACES_LABEL;
-    const found = spaces.find((s) => s.id === spaceId);
-    if (found) return found.name;
-    // 当前 id 已无效（被删除或从未存在）⇒ 回退默认空间
-    const fallback = spaces.find((s) => s.id === 1);
-    return fallback?.name ?? ALL_SPACES_LABEL;
-  })();
-
   return (
     <div
       className="flex h-dvh w-screen overflow-hidden bg-bg dark:bg-bg-dark text-text dark:text-text-dark"
@@ -162,7 +152,7 @@ export default function AppLayout() {
       {/* 桌面侧边栏（lg 及以上常驻；可折叠为 icon rail，宽度 200ms 过渡） */}
       <aside
         className={clsx(
-          'hidden lg:flex flex-none border-r border-border dark:border-border-dark flex-col bg-bg-card dark:bg-bg-card-dark transition-[width] duration-200 ease-out',
+          'relative hidden lg:flex flex-none border-r border-border dark:border-border-dark flex-col bg-bg-card dark:bg-bg-card-dark transition-[width] duration-200 ease-out',
           sidebarCollapsed ? 'w-14' : 'w-[200px]',
         )}
       >
@@ -173,12 +163,15 @@ export default function AppLayout() {
           onRefreshSpaces={refetchSpaces}
           onOpenPalette={() => setPaletteOpen(true)}
           onNavigateSettings={() => navigate('/settings')}
-          currentSpaceName={currentSpaceName}
           visibleItems={visibleItems}
           pathname={location.pathname}
           hasPendingAiInsight={hasPendingAiInsight}
           collapsed={sidebarCollapsed}
-          onToggleCollapse={() => setSidebarCollapsed((v) => !v)}
+        />
+        {/* 边缘折叠手柄（桌面专属；aside 已有 relative，半浮于右沿） */}
+        <SidebarCollapseHandle
+          collapsed={sidebarCollapsed}
+          onToggle={() => setSidebarCollapsed((v) => !v)}
         />
       </aside>
 
@@ -246,7 +239,6 @@ export default function AppLayout() {
               setMobileNavOpen(false);
               navigate('/settings');
             }}
-            currentSpaceName={currentSpaceName}
             visibleItems={visibleItems}
             pathname={location.pathname}
             hasPendingAiInsight={hasPendingAiInsight}
@@ -272,14 +264,12 @@ interface SidebarBodyProps {
   onRefreshSpaces: () => void;
   onOpenPalette: () => void;
   onNavigateSettings: () => void;
-  currentSpaceName: string;
   visibleItems: NavItem[];
   pathname: string;
   /** 看板有未处理 AI 洞察通知时挂小红点 */
   hasPendingAiInsight?: boolean;
   /** 桌面折叠态：收起为 icon rail（仅桌面传，移动端抽屉恒为展开） */
   collapsed?: boolean;
-  onToggleCollapse?: () => void;
 }
 
 function SidebarBody({
@@ -289,12 +279,10 @@ function SidebarBody({
   onRefreshSpaces,
   onOpenPalette,
   onNavigateSettings,
-  currentSpaceName,
   visibleItems,
   pathname,
   hasPendingAiInsight,
   collapsed = false,
-  onToggleCollapse,
 }: SidebarBodyProps) {
   return (
     <>
@@ -376,52 +364,27 @@ function SidebarBody({
         })}
       </nav>
 
-      {/* Settings & profile：折叠切换按钮放设置上方（桌面专属；移动端不传 onToggleCollapse 自然隐藏） */}
+      {/* Tools + Settings：工具排 4 件套在主导航下方、设置上方；折叠切换按钮已迁到
+          边缘手柄（SidebarCollapseHandle），底栏不再放切换入口。 */}
       <div
         className={clsx(
           'pt-2 pb-3 border-t border-border dark:border-border-dark space-y-1',
-          collapsed ? 'px-2.5' : 'px-3',
+          collapsed ? 'px-0' : 'px-0',
         )}
       >
-        {onToggleCollapse && (
-          <button
-            type="button"
-            onClick={onToggleCollapse}
-            title={collapsed ? '展开侧边栏' : '折叠侧边栏'}
-            aria-label={collapsed ? '展开侧边栏' : '折叠侧边栏'}
-            className={clsx(
-              'flex items-center rounded-xl text-sm text-text-muted hover:bg-bg dark:hover:bg-bg-dark hover:text-text dark:hover:text-text-dark transition',
-              collapsed ? 'w-9 h-9 justify-center' : 'w-full gap-2.5 h-9 px-3',
-            )}
-          >
-            {collapsed ? (
-              <IconLayoutSidebarLeftExpand size={18} />
-            ) : (
-              <IconLayoutSidebarLeftCollapse size={18} />
-            )}
-            {!collapsed && <span>折叠</span>}
-          </button>
-        )}
+        <SidebarTools collapsed={collapsed} />
         <button
           type="button"
           onClick={onNavigateSettings}
           title={collapsed ? '设置' : undefined}
           className={clsx(
-            'flex items-center rounded-xl text-sm text-text-muted hover:bg-bg dark:hover:bg-bg-dark hover:text-text dark:hover:text-text-dark transition',
-            collapsed ? 'w-9 h-9 justify-center' : 'w-full gap-2.5 h-9 px-3',
+            'mx-2.5 flex items-center rounded-xl text-sm text-text-muted hover:bg-bg dark:hover:bg-bg-dark hover:text-text dark:hover:text-text-dark transition',
+            collapsed ? 'w-9 h-9 justify-center' : 'w-[calc(100%-1.25rem)] gap-2.5 h-9 px-3',
           )}
         >
           <IconSettings size={18} />
           {!collapsed && <span>设置</span>}
         </button>
-        {/* 收起态名片隐藏（rail 宽度放不下，空间名仍在展开态与弹层里可达） */}
-        {!collapsed && (
-          <div className="flex items-center gap-2 px-2 pt-1">
-            {/* ponytail: 头像占位中性化（Wave B），原粉→紫渐变是历史 palette 残留，与品牌炭黑极简语言不一致 */}
-            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-text-muted to-text flex-none" />
-            <div className="text-xs text-text-muted truncate">{currentSpaceName}</div>
-          </div>
-        )}
       </div>
     </>
   );

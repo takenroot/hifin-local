@@ -84,12 +84,17 @@ export default {
           soft: '#fffbeb',
           'soft-dark': 'rgba(217,119,6,0.16)',
         },
-        // 品牌主色：炭黑（原版登录页/AI 设置页实测 #26262B）。
-        // 语言基调 = HeroUI 式极简：彩色只留给钱（income/expense），
-        // 按钮/链接/强调位一律炭黑，暗色模式反转为浅灰白。
+        // 品牌主色：默认炭黑（原版登录页/AI 设置页实测 #26262B）；
+        // 现在用户可在 5 档里切换——indigo/ocean/violet/rose。
+        // 通过 CSS 变量（--brand-rgb / --brand-dark-rgb）下发到 token，
+        // [data-accent] 在不同值下改写变量，颜色随选择实时切换。
+        // 形态 rgb(var(--brand-rgb) / <alpha-value>)：Tailwind 的 modern
+        // 颜色声明，可被 bg-brand/40、ring-brand/30 之类的 alpha 工具类消费。
+        // ponytail: brand-soft 不进调色盘，保持中性灰——soft 底走"减弱的品牌感"
+        // 不是"换色"，否则会污染卡片底的可读性边界（见 SOFT.brand 注释）。
         brand: {
-          DEFAULT: '#26262b',
-          dark: '#d4d4d8',
+          DEFAULT: 'rgb(var(--brand-rgb) / <alpha-value>)',
+          dark: 'rgb(var(--brand-dark-rgb) / <alpha-value>)',
           soft: SOFT.brand.light,
           'soft-dark': SOFT.brand.dark,
         },

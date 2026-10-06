@@ -74,6 +74,25 @@ export const spaceAtom = atomWithStorage<string>('hifin:space', '默认空间');
  */
 export const sidebarCollapsedAtom = atomWithStorage<boolean>('hifin:sidebarCollapsed', false);
 
+/**
+ * 主题色调色盘（2026-10 Wave 3）：5 档可切换。
+ * - 'charcoal'：默认炭黑，复刻源 §11.2 极简语言
+ * - 'indigo' / 'ocean' / 'violet' / 'rose'：彩色档，色值见 index.css
+ * 语义色（income/expense/danger/success）不受此档影响——收入/支出/错误/成功
+ * 是钱和操作语义的轴，不该被"我喜欢紫"覆盖。
+ * ponytail: 默认 'charcoal' 与现有按钮/图表视觉一致——已是默认态，
+ * 不需要额外的兼容期（见 themeAtom 注释里的 system 反选写法）。
+ *
+ * getOnInit: true —— jotai 2.x 的 atomWithStorage 默认在 init 时不同步
+ * 读取 localStorage（先返回 initialValue，再下一帧更新）。ThemeProvider 的
+ * useEffect 会先写错默认值 dataset.accent='charcoal'，再下次同步被
+ * 'violet' 覆盖——视觉上是一次闪烁。getOnInit 让初始读就拿到真值。
+ * 用 Option 显式声明，避免 jotai 升级后默认行为变化再次踩坑。
+ */
+export type AccentKey = 'charcoal' | 'indigo' | 'ocean' | 'violet' | 'rose';
+
+export const accentAtom = atomWithStorage<AccentKey>('hifin:accent', 'charcoal', undefined, { getOnInit: true });
+
 /* ───────────────── 交易流水：分组维度 / 统计月份 ───────────────── */
 
 /**

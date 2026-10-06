@@ -63,16 +63,48 @@
   --dur-chart: 600ms; /* recharts series */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* 主题色调色盘（2026-10 Wave 3）：5 档可切换；变量形态是 "R G B"（无 rgb() 包装），
+     让 tailwind brand 令牌用 rgb(var(--brand-rgb) / <alpha-value>) 形态消费 alpha。
+     默认炭黑（复刻源 §11.2），4 个彩色档由 [data-accent] 覆盖。
+     ponytail: 不用品牌名做硬编码颜色——颜色集中在 CSS 层，Tailwind 配置保持中性。 */
+  --brand-rgb: 38 38 43;        /* #26262b 默认炭黑 */
+  --brand-dark-rgb: 212 212 216; /* #d4d4d8 暗色提亮版（vs #0f1115 12.79:1 / vs #171a21 11.78:1） */
 }
 
-/* 图表炭黑的暗色反转（2026-10-06 Wave 2 验收修补）：#26262b 在暗色卡 #171a21 上
-   不可见（资产趋势暗色下整条线消失）。recharts 的 stroke/stopColor 用 currentColor +
-   本类取色——暗色反转为 brand-dark #d4d4d8。 */
+/* 4 个彩色档（data-accent 切换）。暗色提亮版选自 Tailwind -400 色阶：
+   亮色档 vs #ffffff（按钮白底）实测 4.7~6.3:1（≥ 4.5 ✓）
+   暗色档 vs #0f1115（页面底）实测 6.3~10.5:1；vs #171a21（卡片底）5.8~9.6:1（≥ 4.5 ✓）
+   ponytail: 不为「漂亮的低对比色」另外切档——可读性是底线，替换档直接覆盖。 */
+[data-accent='indigo'] {
+  --brand-rgb: 79 70 229;        /* #4f46e5 vs white 6.29:1 */
+  --brand-dark-rgb: 129 140 248; /* #818cf8 vs #0f1115 6.33:1 / vs #171a21 5.84:1 */
+}
+[data-accent='ocean'] {
+  --brand-rgb: 14 116 144;        /* #0e7490 vs white 5.36:1 */
+  --brand-dark-rgb: 34 211 238;   /* #22d3ee vs #0f1115 10.46:1 / vs #171a21 9.63:1 */
+}
+[data-accent='violet'] {
+  --brand-rgb: 124 58 237;        /* #7c3aed vs white 5.70:1 */
+  --brand-dark-rgb: 167 139 250;  /* #a78bfa vs #0f1115 6.94:1 / vs #171a21 6.40:1 */
+}
+[data-accent='rose'] {
+  --brand-rgb: 225 29 72;         /* #e11d48 vs white 4.70:1 */
+  --brand-dark-rgb: 251 113 133;  /* #fb7185 vs #0f1115 7.02:1 / vs #171a21 6.47:1 */
+}
+
+/* 图表主色（2026-10 Wave 3 改为变量驱动）：recharts 的 stroke/stopColor
+   走 currentColor + 本类取色——切档时图表线/面积/坐标轴同步换色。
+   亮态用 --brand-rgb 拼 #RRGGBB（currentColor 不接受 var-only rgb 分量），
+   暗态反之。Tailwind 已经把 brand.dark 映射到 --brand-dark-rgb，这里
+   显式重拼一份给 .chart-brand —— 实测同一套变量，但 .chart-brand 不挂在
+   bg-brand 类上、Tailwind 不会自动生成 var(--brand-rgb) 形态。
+   ponytail: 不在 JS 里维护 CHART_COLORS.brand 第二份——这里与 token 同源。 */
 .chart-brand {
-  color: #26262b;
+  color: rgb(var(--brand-rgb));
 }
 .dark .chart-brand {
-  color: #d4d4d8;
+  color: rgb(var(--brand-dark-rgb));
 }
 
 @layer components {
