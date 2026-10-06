@@ -564,21 +564,22 @@ export default function Dashboard() {
                       <AreaChart data={trendData} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
                         <defs>
                           <linearGradient id="dashNetGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#6366f1" stopOpacity={0.4} />
-                            <stop offset="100%" stopColor="#6366f1" stopOpacity={0} />
+                            {/* ponytail: 资产趋势是净资产线（不是钱的方向），用 brand 炭黑与全站极简语言一致；软底渐变保深度即可 */}
+                            <stop offset="0%" stopColor="#26262b" stopOpacity={0.4} />
+                            <stop offset="100%" stopColor="#26262b" stopOpacity={0} />
                           </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-border dark:text-border-dark" />
                         <XAxis
                           dataKey="date"
-                          tick={{ fontSize: 11, fill: '#6b7280' }}
-                          className="dark:[&_text]:fill-[#9ca3af]"
+                          tick={{ fontSize: 11, fill: 'currentColor' }}
+                          className="text-text-muted dark:text-text-muted-dark"
                           tickFormatter={(v: string) => dayjs(v).format('MM/DD')}
                           minTickGap={28}
                         />
                         <YAxis
-                          tick={{ fontSize: 11, fill: '#6b7280' }}
-                          className="dark:[&_text]:fill-[#9ca3af]"
+                          tick={{ fontSize: 11, fill: 'currentColor' }}
+                          className="text-text-muted dark:text-text-muted-dark"
                           width={60}
                           tickFormatter={(v: number) => {
                             if (Math.abs(v) >= 10000) return `${(v / 10000).toFixed(1)}万`;
@@ -594,7 +595,7 @@ export default function Dashboard() {
                         <Area
                           type="monotone"
                           dataKey="value"
-                          stroke="#6366f1"
+                          stroke="#26262b"
                           strokeWidth={2}
                           fill="url(#dashNetGradient)"
                           animationDuration={600}

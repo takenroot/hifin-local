@@ -271,8 +271,9 @@ function BudgetCard({ budget, category, spent, onEdit, onDelete }: BudgetCardPro
           <div
             className="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-none"
             style={{
-              background: category?.color ? `${category.color}22` : '#6366f122',
-              color: category?.color ?? '#6366f1',
+              // ponytail: 无分类色时回退中性灰（text-muted #6b7280），不用已废的靛蓝
+              background: category?.color ? `${category.color}22` : 'rgba(107,114,128,0.13)',
+              color: category?.color ?? '#6b7280',
             }}
           >
             {category?.icon ?? '🎯'}

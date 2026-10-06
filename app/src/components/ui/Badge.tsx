@@ -14,7 +14,8 @@ const toneClass: Record<BadgeTone, string> = {
   income: 'bg-income-soft dark:bg-income-soft-dark text-income',
   expense: 'bg-expense-soft dark:bg-expense-soft-dark text-expense',
   brand: 'bg-brand-soft text-brand',
-  warning: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
+  // ponytail: warning token 化（Wave B），避免硬编码 yellow-* 调色板与品牌炭黑极简语言打架
+  warning: 'bg-warning-soft dark:bg-warning-soft-dark text-warning',
 };
 
 export function Badge({ tone = 'neutral', children, className }: BadgeProps) {

@@ -73,6 +73,7 @@ import {
 } from './calculations';
 import { formatAxis, formatMoney } from './format';
 import { PIE_COLORS } from '@/lib/format';
+import { CHART_COLORS } from '@/lib/chartColors';
 import {
   BAR_CURSOR,
   ChartLegend,
@@ -382,8 +383,8 @@ function ConfigIncomeExpenseBar({
               <Legend
                 content={<ChartLegend formatter={(v) => (v === 'income' ? '收入' : '支出')} />}
               />
-              <Bar dataKey="income" fill="#ef4444" radius={[4, 4, 0, 0]} animationDuration={600} animationEasing="ease-out" />
-              <Bar dataKey="expense" fill="#10b981" radius={[4, 4, 0, 0]} animationDuration={600} animationEasing="ease-out" />
+              <Bar dataKey="income" fill={CHART_COLORS.income} radius={[4, 4, 0, 0]} animationDuration={600} animationEasing="ease-out" />
+              <Bar dataKey="expense" fill={CHART_COLORS.expense} radius={[4, 4, 0, 0]} animationDuration={600} animationEasing="ease-out" />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -523,8 +524,8 @@ function ConfigTrendArea({
             <AreaChart data={data} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="trendNet" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#6366f1" stopOpacity={0.5} />
-                  <stop offset="100%" stopColor="#6366f1" stopOpacity={0.05} />
+                  <stop offset="0%" stopColor={CHART_COLORS.brand} stopOpacity={0.5} />
+                  <stop offset="100%" stopColor={CHART_COLORS.brand} stopOpacity={0.05} />
                 </linearGradient>
               </defs>
               <CartesianGrid
@@ -551,7 +552,7 @@ function ConfigTrendArea({
               <Area
                 type="monotone"
                 dataKey="net"
-                stroke="#6366f1"
+                stroke={CHART_COLORS.brand}
                 strokeWidth={2}
                 fill="url(#trendNet)"
                 animationDuration={600}
@@ -710,8 +711,8 @@ function MonthlyTemplate() {
               <Legend
                 content={<ChartLegend formatter={(v) => (v === 'income' ? '收入' : '支出')} />}
               />
-              <Bar dataKey="income" fill="#ef4444" radius={[4, 4, 0, 0]} animationDuration={600} animationEasing="ease-out" />
-              <Bar dataKey="expense" fill="#10b981" radius={[4, 4, 0, 0]} animationDuration={600} animationEasing="ease-out" />
+              <Bar dataKey="income" fill={CHART_COLORS.income} radius={[4, 4, 0, 0]} animationDuration={600} animationEasing="ease-out" />
+              <Bar dataKey="expense" fill={CHART_COLORS.expense} radius={[4, 4, 0, 0]} animationDuration={600} animationEasing="ease-out" />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -829,7 +830,7 @@ function YearlyTemplate() {
               <Line
                 type="monotone"
                 dataKey="income"
-                stroke="#ef4444"
+                stroke={CHART_COLORS.income}
                 strokeWidth={2}
                 dot={{ r: 3 }}
                 activeDot={{ r: 5 }}
@@ -839,7 +840,7 @@ function YearlyTemplate() {
               <Line
                 type="monotone"
                 dataKey="expense"
-                stroke="#10b981"
+                stroke={CHART_COLORS.expense}
                 strokeWidth={2}
                 dot={{ r: 3 }}
                 activeDot={{ r: 5 }}
@@ -849,7 +850,7 @@ function YearlyTemplate() {
               <Line
                 type="monotone"
                 dataKey="net"
-                stroke="#6366f1"
+                stroke={CHART_COLORS.brand}
                 strokeWidth={2}
                 strokeDasharray="4 4"
                 dot={{ r: 3 }}
@@ -1213,8 +1214,8 @@ function BudgetTemplate() {
               <Legend
                 content={<ChartLegend formatter={(v) => (v === '预算' ? '预算' : '实际')} />}
               />
-              <Bar dataKey="预算" fill="#6366f1" radius={[4, 4, 0, 0]} animationDuration={600} animationEasing="ease-out" />
-              <Bar dataKey="实际" fill="#ef4444" radius={[4, 4, 0, 0]} animationDuration={600} animationEasing="ease-out" />
+              <Bar dataKey="预算" fill={CHART_COLORS.brand} radius={[4, 4, 0, 0]} animationDuration={600} animationEasing="ease-out" />
+              <Bar dataKey="实际" fill={CHART_COLORS.expense} radius={[4, 4, 0, 0]} animationDuration={600} animationEasing="ease-out" />
             </BarChart>
           </ResponsiveContainer>
         </div>

@@ -210,7 +210,8 @@ export function DiscoverPage() {
                   {alerts.map(({ budget, spent, pct }) => (
                     <Card key={budget.id}>
                       <div className="flex items-center gap-2 text-sm">
-                        <IconAlertTriangle size={16} className={pct >= 100 ? 'text-expense' : 'text-yellow-500 dark:text-yellow-400'} />
+                        {/* ponytail: 接近上限是 warning 状态，与 Badge tone 对齐 */}
+                        <IconAlertTriangle size={16} className={pct >= 100 ? 'text-expense' : 'text-warning'} />
                         <span className="font-medium">{budget.name}</span>
                         <Badge tone={pct >= 100 ? 'expense' : 'warning'}>
                           {pct >= 100 ? '已超支' : '接近上限'}

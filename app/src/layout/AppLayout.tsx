@@ -347,7 +347,8 @@ function SidebarBody({
           <span>设置</span>
         </button>
         <div className="flex items-center gap-2 px-2 pt-1">
-          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-pink-300 to-violet-400 flex-none" />
+          {/* ponytail: 头像占位中性化（Wave B），原粉→紫渐变是历史 palette 残留，与品牌炭黑极简语言不一致 */}
+          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-text-muted to-text flex-none" />
           <div className="text-xs text-text-muted truncate">{currentSpaceName}</div>
         </div>
       </div>

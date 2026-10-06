@@ -98,7 +98,7 @@ export const ACCOUNT_TONE: Record<AccountType, string> = {
   fund: 'text-emerald-600 dark:text-emerald-400',
   asset: 'text-sky-600 dark:text-sky-400',
   social: 'text-violet-600 dark:text-violet-400',
-  invest: 'text-indigo-600 dark:text-indigo-400',
+  invest: 'text-brand dark:text-brand-dark',
   other: 'text-slate-600 dark:text-slate-400',
   credit: 'text-rose-600 dark:text-rose-400',
   debt: 'text-amber-600 dark:text-amber-400',
@@ -108,7 +108,8 @@ export const ACCOUNT_TONE_BG: Record<AccountType, string> = {
   fund: 'bg-emerald-100 dark:bg-emerald-900/30',
   asset: 'bg-sky-100 dark:bg-sky-900/30',
   social: 'bg-violet-100 dark:bg-violet-900/30',
-  invest: 'bg-indigo-100 dark:bg-indigo-900/30',
+  // ponytail: invest 中性化（Wave B），与上方 token 对齐
+  invest: 'bg-brand-soft dark:bg-brand-soft-dark',
   other: 'bg-slate-100 dark:bg-slate-800/50',
   credit: 'bg-rose-100 dark:bg-rose-900/30',
   debt: 'bg-amber-100 dark:bg-amber-900/30',
