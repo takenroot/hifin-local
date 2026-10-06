@@ -239,7 +239,7 @@ async function newCtx(browser, theme) {
 }
 
 async function openList(page) {
-  await page.goto(`${BASE}/account/list`, { waitUntil: 'networkidle' });
+  await page.goto(`${BASE}/account/list`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('[data-testid="account-card"]', { timeout: 25000 });
   await page.waitForTimeout(400);
 }

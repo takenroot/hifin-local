@@ -337,7 +337,10 @@ export function ReportFormModal({ open, onClose, report, onSaved }: Props) {
                       className={clsx(
                         'w-4 h-4 rounded border flex-none flex items-center justify-center',
                         active
-                          ? 'bg-text dark:bg-bg-card-dark border-text dark:border-bg-card-dark text-bg dark:text-text-dark'
+                          // 选中圆点 = 反色芯片：亮底黑点白勾 / 暗底浅点深勾。
+                          // 此前暗色 bg 与 border 同为 bg-card-dark，圆点整体融进卡片
+                          // （darkmode-audit 4 条 1:1 边框告警 DM-126~129）；勾子配色同步对调
+                          ? 'bg-text dark:bg-text-dark border-transparent text-bg dark:text-bg-dark'
                           : 'border-border dark:border-border-dark',
                       )}
                     >

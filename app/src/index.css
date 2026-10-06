@@ -94,6 +94,16 @@
 
 /* hover lift 阴影（2026-10-06 bento-motion §1）：仅 BentoCard 在 hover 时引用。
    回归闸已放开 hover 阴影——本类是唯一合法来源，避免 shadow.soft 被滥用。 */
+/* 图表炭黑的暗色反转（2026-10-06 Wave 2 验收修补）：#26262b 在暗色卡 #171a21 上
+   不可见（资产趋势暗色下整条线消失）。recharts 的 stroke/stopColor 用 currentColor +
+   本类取色——暗色反转为 brand-dark #d4d4d8。 */
+.chart-brand {
+  color: #26262b;
+}
+.dark .chart-brand {
+  color: #d4d4d8;
+}
+
 .shadow-lift {
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
 }

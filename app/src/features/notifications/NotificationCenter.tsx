@@ -65,6 +65,35 @@ interface Toast {
   expiresAt: number;
 }
 
+/**
+ * toast 退场动画时长（2026-10-06 bento-motion §4）：
+ * 与入场 --dur-overlay 对称。toast 标 data-state="closed" 后必须等满这个
+ * 时长才 unmount，否则 CSS transition 没机会播完退场——视觉上"闪一下"
+ * 直接消失，对称路径就破了。
+ * ponytail: 220ms 是从 --dur-overlay token 搬过来；不另起令牌。
+ * 导出供单元测试断言"关闭动画时长与入场对称"。
+ */
+export const TOAST_FADE_OUT_MS = 220;
+
+/**
+ * 判定某条 toast 在给定时间点上是否**应当**进入退出阶段。
+ *
+ * 三条契约：
+ *  - 到期：expiresAt <= now 才算过期
+ *  - 不重入：已经在 closingKeys 集合里 → 不要再触发（定时器已排队）
+ *  - 类型安全：toast 的 key 必须是数字（NotificationCenter 内单调递增）
+ *
+ * 纯函数导出，让单元测试不依赖 React / DOM 即可覆盖退场状态机的核心分支。
+ */
+export function shouldEnterClosing(
+  toast: { key: number; expiresAt: number },
+  now: number,
+  closingKeys: ReadonlySet<number>,
+): boolean {
+  if (closingKeys.has(toast.key)) return false;
+  return toast.expiresAt <= now;
+}
+
 let toastSeq = 0;
 
 export function NotificationCenter() {
@@ -76,6 +105,9 @@ export function NotificationCenter() {
   const [processing, setProcessing] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
+  /** toast 退场中：data-state=closed + 220ms 后才 unmount（设计 §4 对称路径）。
+   * 用 Set 而不是 Toast 字段，避免改动 Toast 类型/批量推送逻辑。 */
+  const [closingToastKeys, setClosingToastKeys] = useState<Set<number>>(() => new Set());
 
   /** 已播报过的 toast 通知，防止每 30 秒轮询都把同一条结果再播一次 */
   const seenToastIds = useRef<Set<number>>(new Set());
@@ -91,6 +123,8 @@ export function NotificationCenter() {
   const knownRetry = useRef(0);
   /** SSE 接入与轮询降级使用的清理容器；useEffect unmount 时统一倒序执行 */
   const cleanupFns = useRef<Array<() => void>>([]);
+  /** toast 退场定时器：key → timeoutId。批量 unmount 时一次清空。 */
+  const toastCloseTimers = useRef<Map<number, number>>(new Map());
 
   /** 当前弹窗展示的通知（供异步回调读取，避免闭包拿到旧值） */
   const active = useMemo(
@@ -104,6 +138,34 @@ export function NotificationCenter() {
     toastSeq += 1;
     const toast: Toast = { key: toastSeq, tone, text, expiresAt: Date.now() + TOAST_TTL_MS };
     setToasts((prev) => [...prev, toast]);
+  }, []);
+
+  /**
+   * 触发 toast 退出态（设计 §4：对称路径）。
+   * 第一步：标 data-state="closed" → CSS 在 220ms（--dur-overlay）内播退场动画。
+   * 第二步：220ms 后才把 toast 从列表移除，与动画时长对齐——否则 UI 会闪一下。
+   * 批处理：多条同时进入 closing 阶段时，每条独立计时；unmount 时统一清掉所有定时器。
+   */
+  const closeToast = useCallback((key: number) => {
+    setClosingToastKeys((prev) => {
+      if (prev.has(key)) return prev;
+      const next = new Set(prev);
+      next.add(key);
+      return next;
+    });
+    // 已经排队过的就不要再排第二个定时器——幂等
+    if (toastCloseTimers.current.has(key)) return;
+    const timerId = window.setTimeout(() => {
+      toastCloseTimers.current.delete(key);
+      setToasts((prev) => prev.filter((t) => t.key !== key));
+      setClosingToastKeys((prev) => {
+        if (!prev.has(key)) return prev;
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
+    }, TOAST_FADE_OUT_MS);
+    toastCloseTimers.current.set(key, timerId);
   }, []);
 
   /* ─────────── 轮询 ─────────── */
@@ -223,12 +285,29 @@ export function NotificationCenter() {
     fresh.forEach((n) => void resolveNotification(n.id));
   }, [notifications]);
 
-  // 到期自动消失
+  // 到期自动消失：标 closing → 220ms 后卸载（与手动关闭同路径）
   useEffect(() => {
     const timer = window.setInterval(() => {
-      setToasts((prev) => (prev.length > 0 ? prev.filter((t) => t.expiresAt <= Date.now()) : prev));
+      const now = Date.now();
+      // 只把已到期但尚未进入 closing 阶段的 toast 触发一次 close——
+      // 正在退场的留给 closeToast 内的 220ms 定时器收尾，避免重入
+      setToasts((prev) => {
+        for (const t of prev) {
+          if (shouldEnterClosing(t, now, closingToastKeys)) closeToast(t.key);
+        }
+        return prev;
+      });
     }, 1000);
     return () => window.clearInterval(timer);
+  }, [closeToast, closingToastKeys]);
+
+  // 组件 unmount 时把退场定时器全部清掉：React 卸载 ToastStack 前，
+  // 我们没有任何机会再播退场动画，索性直接停掉 pending timer。
+  useEffect(() => {
+    return () => {
+      for (const id of toastCloseTimers.current.values()) window.clearTimeout(id);
+      toastCloseTimers.current.clear();
+    };
   }, []);
 
   /* ─────────── 弹窗开合 ─────────── */
@@ -452,7 +531,11 @@ export function NotificationCenter() {
         </Modal>
       )}
 
-      <ToastStack toasts={toasts} onClose={(key) => setToasts((p) => p.filter((t) => t.key !== key))} />
+      <ToastStack
+        toasts={toasts}
+        closingKeys={closingToastKeys}
+        onClose={closeToast}
+      />
     </>
   );
 }
@@ -499,8 +582,19 @@ function ProcessingBody({ platform, message }: { platform: string; message: stri
   );
 }
 
-/** 右上角 toast 栈；移动端改为底部通栏 */
-function ToastStack({ toasts, onClose }: { toasts: Toast[]; onClose: (key: number) => void }) {
+/** 右上角 toast 栈；移动端改为底部通栏
+ * closingKeys：处于退场中的 toast key。ToastStack 用它驱动 data-state="closed"
+ * 让 CSS 在 220ms 内播反向动画——保持与入场对称（设计 §4）。
+ */
+function ToastStack({
+  toasts,
+  closingKeys,
+  onClose,
+}: {
+  toasts: Toast[];
+  closingKeys: Set<number>;
+  onClose: (key: number) => void;
+}) {
   if (toasts.length === 0) return null;
   return (
     <div
@@ -512,7 +606,7 @@ function ToastStack({ toasts, onClose }: { toasts: Toast[]; onClose: (key: numbe
       {toasts.map((t) => (
         <div
           key={t.key}
-          data-state="open"
+          data-state={closingKeys.has(t.key) ? 'closed' : 'open'}
           className="card !rounded-xl flex items-start gap-2.5 px-4 py-3 shadow-soft dark:shadow-soft-dark toast-card"
         >
           {/*

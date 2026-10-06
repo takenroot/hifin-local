@@ -133,7 +133,7 @@ async function newCtx(browser, theme, viewport = { width: 1440, height: 1000 }) 
 }
 
 async function openDash(page) {
-  await page.goto(`${BASE}/home`, { waitUntil: 'networkidle' });
+  await page.goto(`${BASE}/home`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('[data-testid="dash-calendar"]', { timeout: 20000 });
   await page.waitForTimeout(700);
 }
@@ -290,7 +290,7 @@ try {
     await page.click('[data-testid="dash-calendar-prev"]');
     await page.waitForTimeout(300);
     const beforeReload = await monthLabel(page);
-    await page.reload({ waitUntil: 'networkidle' });
+    await page.reload({ waitUntil: 'domcontentloaded' });
     await page.waitForSelector('[data-testid="dash-calendar"]', { timeout: 20000 });
     await page.waitForTimeout(600);
     const afterReload = await monthLabel(page);

@@ -26,7 +26,7 @@
 import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
 
-const BASE = process.env.HIFIN_BASE || 'http://127.0.0.1:5185';
+const BASE = process.env.HIFIN_BASE || process.env.BASE_URL || 'http://127.0.0.1:5185'; // BASE_URL 为通用回退（与 design-consistency 对齐）
 const OUT_DIR = 'accept/screenshots/darkmode-audit'; // 相对仓库根，运行前 cd 到仓库根
 const VIEWPORT = { width: 1440, height: 900 };
 
@@ -454,6 +454,10 @@ function scanInPage({ scope }) {
   for (const el of all) {
     if (el.nodeType !== 1) continue;
     if (el.tagName.toLowerCase() !== 'svg') continue;
+    // 2026-10-06 DM-013 定性：recharts 图表 svg 根的 fill 是 UA 默认黑（子元素全部
+    // 自带显式 fill/stroke，无一个像素真的黑）——根元素不是图标，跳过；
+    // 真正的 tabler 图标 svg 不落在 .recharts-wrapper 下，不受影响
+    if (el.closest('.recharts-wrapper')) continue;
     if (!isRendered(el)) continue;
     const cs = getComputedStyle(el);
     const opacity = parseFloat(cs.opacity);
@@ -551,26 +555,32 @@ async function shoot(page, file) {
 
 /** 等待页面渲染稳定：networkidle + 字体/动画落定 */
 async function settle(page, ms = 900) {
-  await page.waitForLoadState('networkidle').catch(() => {});
+  await page.waitForLoadState('domcontentloaded').catch(() => {});
   await page.waitForTimeout(ms);
 }
 
 /** 确认 html.dark 真的挂上了（theme 存的是 JSON 字符串） */
 async function ensureDark(page) {
+  // 2026-10-06：SSE 长连接使 networkidle 永真，goto 改 domcontentloaded 后导航失败时
+  // 页面可能停在 about:blank，localStorage 访问会抛 SecurityError——整段评估包 try
   return page.evaluate(() => {
-    const dark = document.documentElement.classList.contains('dark');
-    if (!dark) {
-      try {
-        localStorage.setItem('hifin:theme', 'dark'); // jotai 非 JSON 兜底
-      } catch {
-        /* ignore */
+    try {
+      const dark = document.documentElement.classList.contains('dark');
+      if (!dark) {
+        try {
+          localStorage.setItem('hifin:theme', 'dark'); // jotai 非 JSON 兜底
+        } catch {
+          /* ignore */
+        }
       }
+      return {
+        dark,
+        stored: localStorage.getItem('hifin:theme'),
+        htmlClass: document.documentElement.className,
+      };
+    } catch {
+      return { dark: false, stored: null, htmlClass: '' };
     }
-    return {
-      dark,
-      stored: localStorage.getItem('hifin:theme'),
-      htmlClass: document.documentElement.className,
-    };
   });
 }
 

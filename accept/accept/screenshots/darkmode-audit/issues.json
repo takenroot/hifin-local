@@ -1,0 +1,312 @@
+{
+  "meta": {
+    "generatedAt": "2026-10-06T05:28:30.848Z",
+    "tool": "accept/scripts/darkmode-audit.mjs",
+    "baseUrl": "http://127.0.0.1:5185",
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "darkMode": {
+      "localStorage": "hifin:theme = \"dark\"（jotai JSON 格式）",
+      "emulateMedia": "colorScheme: dark",
+      "verifiedHtmlDarkClass": false,
+      "perRoute": [
+        {
+          "route": "/home",
+          "dark": false,
+          "stored": null,
+          "htmlClass": ""
+        },
+        {
+          "route": "/account/list",
+          "dark": false,
+          "stored": null,
+          "htmlClass": ""
+        },
+        {
+          "route": "/transaction",
+          "dark": false,
+          "stored": null,
+          "htmlClass": ""
+        },
+        {
+          "route": "/goal/list",
+          "dark": false,
+          "stored": null,
+          "htmlClass": ""
+        },
+        {
+          "route": "/report/list",
+          "dark": false,
+          "stored": null,
+          "htmlClass": ""
+        },
+        {
+          "route": "/budget",
+          "dark": false,
+          "stored": null,
+          "htmlClass": ""
+        },
+        {
+          "route": "/discover",
+          "dark": false,
+          "stored": null,
+          "htmlClass": ""
+        },
+        {
+          "route": "/settings",
+          "dark": false,
+          "stored": null,
+          "htmlClass": ""
+        },
+        {
+          "route": "/ai",
+          "dark": false,
+          "stored": null,
+          "htmlClass": ""
+        }
+      ]
+    },
+    "contrastFormula": "(L1 + 0.05) / (L2 + 0.05), L = 0.2126R + 0.7152G + 0.0722B (sRGB→linear)",
+    "backgroundResolution": "向上遍历祖先链至首个不透明层，再自外向内 alpha 合成",
+    "thresholds": {
+      "textIssue": 3,
+      "textWarn": 4.5,
+      "borderIssue": 1.5,
+      "borderWarn": 3
+    },
+    "knownTradeoffs": [
+      "computed opacity === 0 的 hover 才显形元素记入 hiddenByOpacity，不计入 issues",
+      "color alpha === 0（text-transparent 占位）记入 intentionallyTransparent，不计入 issues",
+      "disabled 控件文字降级为 advisory：WCAG 1.4.3/1.4.11 豁免 inactive component（「保存/下一步/确认」实测启用态 4.47:1、禁用态合成 1.94:1，1.94:1 来自 disabled:opacity-40 的交互语义）",
+      "扫描覆盖整个 DOM（不限于首屏视口），截图才使用 fullPage:false",
+      "advisories 为 3:1 ≤ contrast < 4.5（文字/图标）或 1.5 ≤ contrast < 3（边框），非硬性问题"
+    ],
+    "pagesScanned": 9,
+    "modalsScanned": 0,
+    "runtimeErrors": []
+  },
+  "summary": {
+    "totalIssues": 0,
+    "totalAdvisories": 0,
+    "byCategory": {},
+    "advisoryByCategory": {},
+    "byPage": {},
+    "pagesWithIssues": []
+  },
+  "pages": [
+    {
+      "page": "home",
+      "route": "/home",
+      "screenshot": "accept/screenshots/darkmode-audit/home.png",
+      "darkClassApplied": false,
+      "storedTheme": null,
+      "text": 0,
+      "placeholder": 0,
+      "border": 0,
+      "icon": 0,
+      "deduped": 0,
+      "hiddenByOpacity": [],
+      "intentionallyTransparent": [],
+      "unparsed": [],
+      "notes": []
+    },
+    {
+      "page": "account-list",
+      "route": "/account/list",
+      "screenshot": "accept/screenshots/darkmode-audit/account-list.png",
+      "darkClassApplied": false,
+      "storedTheme": null,
+      "text": 0,
+      "placeholder": 0,
+      "border": 0,
+      "icon": 0,
+      "deduped": 0,
+      "hiddenByOpacity": [],
+      "intentionallyTransparent": [],
+      "unparsed": [],
+      "notes": []
+    },
+    {
+      "page": "transaction",
+      "route": "/transaction",
+      "screenshot": "accept/screenshots/darkmode-audit/transaction.png",
+      "darkClassApplied": false,
+      "storedTheme": null,
+      "text": 0,
+      "placeholder": 0,
+      "border": 0,
+      "icon": 0,
+      "deduped": 0,
+      "hiddenByOpacity": [],
+      "intentionallyTransparent": [],
+      "unparsed": [],
+      "notes": []
+    },
+    {
+      "page": "goal-list",
+      "route": "/goal/list",
+      "screenshot": "accept/screenshots/darkmode-audit/goal-list.png",
+      "darkClassApplied": false,
+      "storedTheme": null,
+      "text": 0,
+      "placeholder": 0,
+      "border": 0,
+      "icon": 0,
+      "deduped": 0,
+      "hiddenByOpacity": [],
+      "intentionallyTransparent": [],
+      "unparsed": [],
+      "notes": []
+    },
+    {
+      "page": "report-list",
+      "route": "/report/list",
+      "screenshot": "accept/screenshots/darkmode-audit/report-list.png",
+      "darkClassApplied": false,
+      "storedTheme": null,
+      "text": 0,
+      "placeholder": 0,
+      "border": 0,
+      "icon": 0,
+      "deduped": 0,
+      "hiddenByOpacity": [],
+      "intentionallyTransparent": [],
+      "unparsed": [],
+      "notes": []
+    },
+    {
+      "page": "budget",
+      "route": "/budget",
+      "screenshot": "accept/screenshots/darkmode-audit/budget.png",
+      "darkClassApplied": false,
+      "storedTheme": null,
+      "text": 0,
+      "placeholder": 0,
+      "border": 0,
+      "icon": 0,
+      "deduped": 0,
+      "hiddenByOpacity": [],
+      "intentionallyTransparent": [],
+      "unparsed": [],
+      "notes": []
+    },
+    {
+      "page": "discover",
+      "route": "/discover",
+      "screenshot": "accept/screenshots/darkmode-audit/discover.png",
+      "darkClassApplied": false,
+      "storedTheme": null,
+      "text": 0,
+      "placeholder": 0,
+      "border": 0,
+      "icon": 0,
+      "deduped": 0,
+      "hiddenByOpacity": [],
+      "intentionallyTransparent": [],
+      "unparsed": [],
+      "notes": []
+    },
+    {
+      "page": "settings",
+      "route": "/settings",
+      "screenshot": "accept/screenshots/darkmode-audit/settings.png",
+      "darkClassApplied": false,
+      "storedTheme": null,
+      "text": 0,
+      "placeholder": 0,
+      "border": 0,
+      "icon": 0,
+      "deduped": 0,
+      "hiddenByOpacity": [],
+      "intentionallyTransparent": [],
+      "unparsed": [],
+      "notes": []
+    },
+    {
+      "page": "ai",
+      "route": "/ai",
+      "screenshot": "accept/screenshots/darkmode-audit/ai.png",
+      "darkClassApplied": false,
+      "storedTheme": null,
+      "text": 0,
+      "placeholder": 0,
+      "border": 0,
+      "icon": 0,
+      "deduped": 0,
+      "hiddenByOpacity": [],
+      "intentionallyTransparent": [],
+      "unparsed": [],
+      "notes": []
+    }
+  ],
+  "modals": [
+    {
+      "modal": "transaction-create",
+      "route": "/transaction?create=1",
+      "opened": false,
+      "note": "URL ?create=1 自动打开新建流水",
+      "reason": "page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:5185/transaction?create=1\nCall log:\n  - navigating to \"http://127.0.0.1:5185/transaction?create=1\", waiting until \"domcontentloaded\"\n"
+    },
+    {
+      "modal": "transaction-edit",
+      "route": "/transaction",
+      "opened": false,
+      "note": "编辑已有流水（覆盖已填值 + 非法态校验文案）",
+      "reason": "page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:5185/transaction\nCall log:\n  - navigating to \"http://127.0.0.1:5185/transaction\", waiting until \"domcontentloaded\"\n"
+    },
+    {
+      "modal": "account-create-step1",
+      "route": "/account/list?create=1",
+      "opened": false,
+      "note": "新建账户第 1 步：选择账户类型",
+      "reason": "page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:5185/account/list?create=1\nCall log:\n  - navigating to \"http://127.0.0.1:5185/account/list?create=1\", waiting until \"domcontentloaded\"\n"
+    },
+    {
+      "modal": "account-create-step2",
+      "route": "/account/list?create=1",
+      "opened": false,
+      "note": "新建账户第 2 步：表单（label / placeholder / 辅助说明最密集）",
+      "reason": "page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:5185/account/list?create=1\nCall log:\n  - navigating to \"http://127.0.0.1:5185/account/list?create=1\", waiting until \"domcontentloaded\"\n"
+    },
+    {
+      "modal": "goal-create",
+      "route": "/goal/list?create=1",
+      "opened": false,
+      "note": "新建目标",
+      "reason": "page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:5185/goal/list?create=1\nCall log:\n  - navigating to \"http://127.0.0.1:5185/goal/list?create=1\", waiting until \"domcontentloaded\"\n"
+    },
+    {
+      "modal": "budget-create",
+      "route": "/budget?create=1",
+      "opened": false,
+      "note": "新建预算",
+      "reason": "page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:5185/budget?create=1\nCall log:\n  - navigating to \"http://127.0.0.1:5185/budget?create=1\", waiting until \"domcontentloaded\"\n"
+    },
+    {
+      "modal": "report-create",
+      "route": "/report/list",
+      "opened": false,
+      "note": "新建报表（无 ?create=1，只能点按钮）",
+      "reason": "page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:5185/report/list\nCall log:\n  - navigating to \"http://127.0.0.1:5185/report/list\", waiting until \"domcontentloaded\"\n"
+    },
+    {
+      "modal": "command-palette",
+      "route": "/home",
+      "opened": false,
+      "note": "命令面板，含搜索框 placeholder + 快捷键提示",
+      "reason": "page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:5185/home\nCall log:\n  - navigating to \"http://127.0.0.1:5185/home\", waiting until \"domcontentloaded\"\n"
+    },
+    {
+      "modal": "city-switch",
+      "route": "/home",
+      "opened": false,
+      "note": "天气城市切换，含城市搜索框 placeholder + 空态文案",
+      "reason": "page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:5185/home\nCall log:\n  - navigating to \"http://127.0.0.1:5185/home\", waiting until \"domcontentloaded\"\n"
+    }
+  ],
+  "issues": [],
+  "advisories": [],
+  "unparsedColors": []
+}

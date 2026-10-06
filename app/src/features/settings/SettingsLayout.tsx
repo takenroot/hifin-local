@@ -46,7 +46,7 @@ export function SettingsLayout({ active, onSelect, children }: SettingsLayoutPro
                         <span
                           className={clsx(
                             'flex-none',
-                            isActive ? 'text-brand' : 'text-text-muted dark:text-text-muted-dark',
+                            isActive ? 'text-brand dark:text-brand-dark' : 'text-text-muted dark:text-text-muted-dark',
                           )}
                         >
                           {item.icon}

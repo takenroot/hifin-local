@@ -125,7 +125,7 @@ async function newCtx(browser, theme, viewport = { width: 1440, height: 1000 }) 
 }
 
 async function openTx(page) {
-  await page.goto(`${BASE}/transaction`, { waitUntil: 'networkidle' });
+  await page.goto(`${BASE}/transaction`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('[data-testid="tx-search"]', { timeout: 25000 });
   await page.waitForSelector('[data-testid="tx-row"]', { timeout: 25000 });
   await page.waitForTimeout(600);
@@ -274,7 +274,7 @@ try {
     /* ═══ 8. 不持久化 ═══ */
     await typeKeyword(page, KW);
     const beforeReload = await searchBox(page).inputValue();
-    await page.reload({ waitUntil: 'networkidle' });
+    await page.reload({ waitUntil: 'domcontentloaded' });
     await page.waitForSelector('[data-testid="tx-search"]', { timeout: 25000 });
     await page.waitForTimeout(700);
     record(

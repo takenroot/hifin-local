@@ -89,7 +89,7 @@ function watchErrors(page, bucket, tag) {
 }
 
 async function openTx(page) {
-  await page.goto(`${BASE}/transaction`, { waitUntil: 'networkidle' });
+  await page.goto(`${BASE}/transaction`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('[data-testid="tx-list"]', { timeout: 20000 });
   await page.waitForTimeout(500);
 }
@@ -202,7 +202,7 @@ try {
       // 分组档位刷新持久性
       await page.click('[data-testid="tx-group-dim"] >> text=月');
       await page.waitForTimeout(300);
-      await page.reload({ waitUntil: 'networkidle' });
+      await page.reload({ waitUntil: 'domcontentloaded' });
       await page.waitForSelector('[data-testid="tx-list"]', { timeout: 20000 });
       await page.waitForTimeout(500);
       const dim = await page.getAttribute('[data-testid="tx-group-dim"]', 'data-dim');
@@ -270,7 +270,7 @@ try {
       await page.screenshot({ path: `${SHOTS}/stats-realdata-2026-08-${theme}.png`, fullPage: false });
 
       // 刷新后重新进入统计 Tab（视图本身不入 URL），月份必须仍是 2026-08
-      await page.reload({ waitUntil: 'networkidle' });
+      await page.reload({ waitUntil: 'domcontentloaded' });
       await page.waitForSelector('[data-testid="tx-list"]', { timeout: 20000 });
       await page.click('[data-testid="tx-view-tabs"] >> text=统计');
       await page.waitForSelector('[data-testid="tx-stats"]', { timeout: 20000 });
@@ -323,7 +323,7 @@ try {
       const ctx = await newCtx(browser, theme, { mode: 'empty' });
       const page = await ctx.newPage();
       watchErrors(page, consoleErrors, `${theme}/stats-empty`);
-      await page.goto(`${BASE}/transaction?import=1`, { waitUntil: 'networkidle' });
+      await page.goto(`${BASE}/transaction?import=1`, { waitUntil: 'domcontentloaded' });
       await page.waitForTimeout(400);
       await page.click('[data-testid="tx-view-tabs"] >> text=统计');
       await page.waitForSelector('[data-testid="tx-stats"]', { timeout: 20000 });

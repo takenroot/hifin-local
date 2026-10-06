@@ -17,7 +17,7 @@ const errors = [];
 page.on('pageerror', e => errors.push(String(e).slice(0,150)));
 
 // 1. 打开页面，选呼和浩特
-await page.goto(`${BASE}/home`, { waitUntil: 'networkidle' });
+await page.goto(`${BASE}/home`, { waitUntil: 'domcontentloaded' });
 await page.waitForTimeout(1500);
 await page.click('button[title="切换城市"]');
 await page.waitForTimeout(500);
@@ -29,7 +29,7 @@ const afterSelect = await page.textContent('[data-testid="weather-summary"]');
 console.log('选后:', afterSelect?.trim());
 
 // 2. 刷新页面，验证还是呼和浩特（不被定位覆盖）
-await page.reload({ waitUntil: 'networkidle' });
+await page.reload({ waitUntil: 'domcontentloaded' });
 await page.waitForTimeout(2500);
 const afterReload = await page.textContent('[data-testid="weather-summary"]');
 console.log('刷新后:', afterReload?.trim());

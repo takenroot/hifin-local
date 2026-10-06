@@ -524,8 +524,8 @@ function ConfigTrendArea({
             <AreaChart data={data} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="trendNet" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={CHART_COLORS.brand} stopOpacity={0.5} />
-                  <stop offset="100%" stopColor={CHART_COLORS.brand} stopOpacity={0.05} />
+                  <stop offset="0%" className="chart-brand" stopColor="currentColor" stopOpacity={0.5} />
+                  <stop offset="100%" className="chart-brand" stopColor="currentColor" stopOpacity={0.05} />
                 </linearGradient>
               </defs>
               <CartesianGrid
@@ -552,7 +552,8 @@ function ConfigTrendArea({
               <Area
                 type="monotone"
                 dataKey="net"
-                stroke={CHART_COLORS.brand}
+                stroke="currentColor"
+                className="chart-brand"
                 strokeWidth={2}
                 fill="url(#trendNet)"
                 animationDuration={600}
@@ -850,7 +851,8 @@ function YearlyTemplate() {
               <Line
                 type="monotone"
                 dataKey="net"
-                stroke={CHART_COLORS.brand}
+                stroke="currentColor"
+                className="chart-brand"
                 strokeWidth={2}
                 strokeDasharray="4 4"
                 dot={{ r: 3 }}
@@ -1214,7 +1216,8 @@ function BudgetTemplate() {
               <Legend
                 content={<ChartLegend formatter={(v) => (v === '预算' ? '预算' : '实际')} />}
               />
-              <Bar dataKey="预算" fill={CHART_COLORS.brand} radius={[4, 4, 0, 0]} animationDuration={600} animationEasing="ease-out" />
+              <Bar dataKey="预算" fill="currentColor"
+              className="chart-brand" radius={[4, 4, 0, 0]} animationDuration={600} animationEasing="ease-out" />
               <Bar dataKey="实际" fill={CHART_COLORS.expense} radius={[4, 4, 0, 0]} animationDuration={600} animationEasing="ease-out" />
             </BarChart>
           </ResponsiveContainer>

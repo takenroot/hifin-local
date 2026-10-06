@@ -433,7 +433,9 @@ function FormStep({
       {/* 类型徽标 */}
       <div
         className={clsx(
-          'inline-flex items-center gap-2 px-2.5 h-7 rounded-lg text-xs',
+          // 图标用 text-inherit 继承本行颜色：本行必须自带完整 dark 变体链，
+          // 否则暗色下次色底（income-soft-dark 等）上继承到亮色的 text.DEFAULT（DM-115）
+          'inline-flex items-center gap-2 px-2.5 h-7 rounded-lg text-xs text-text dark:text-text-dark',
           ACCOUNT_TONE_BG[type],
         )}
       >

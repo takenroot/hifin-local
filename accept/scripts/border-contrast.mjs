@@ -312,7 +312,7 @@ try {
 
     for (const p of PAGES) {
       const page = await ctx.newPage();
-      await page.goto(BASE + p.path, { waitUntil: 'networkidle', timeout: 60000 });
+      await page.goto(BASE + p.path, { waitUntil: 'domcontentloaded', timeout: 60000 });
       await page.waitForTimeout(1200);
 
       // 确认主题真的生效了

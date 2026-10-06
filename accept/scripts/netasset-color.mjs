@@ -14,7 +14,7 @@ import { chromium } from 'playwright';
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
-await page.goto('http://127.0.0.1:5199/home', { waitUntil: 'networkidle' });
+await page.goto('http://127.0.0.1:5199/home', { waitUntil: 'domcontentloaded' });
 await page.waitForTimeout(2500);
 
 const rows = await page.evaluate(() => {
@@ -46,8 +46,11 @@ for (const row of rows) {
   console.log(`${ok ? '✓' : '✗'} ${row.cls.padEnd(7)} ${row.color}  ${row.label}`);
   if (!ok) failed += 1;
 }
-if (rows.length < 3) {
-  console.log(`✗ 色块卡大金额只找到 ${rows.length} 个（预期 ≥3）`);
+// 2026-10-06 bento 重构后：净资产 hero 大卡改为炭黑中性大数字（设计 §3），
+// 带 income/expense-deep 的只剩收入/支出两张小卡——核心契约是「income=绿/expense=红
+// 令牌与实际渲染色一致」，数量下限随结构改为 ≥2
+if (rows.length < 2) {
+  console.log(`✗ 色块卡大金额只找到 ${rows.length} 个（预期 ≥2）`);
   failed += 1;
 }
 await browser.close();

@@ -46,7 +46,7 @@ for (const p of PAGES) {
     if (r.status() >= 400) failedReqs.push(`${r.status()} ${r.url()}`);
   });
 
-  await page.goto(BASE + p.path, { waitUntil: 'networkidle', timeout: 45000 });
+  await page.goto(BASE + p.path, { waitUntil: 'domcontentloaded', timeout: 45000 });
   await page.waitForTimeout(2500);
 
   // 渲染断言：正文非空 + 有可交互元素

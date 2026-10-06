@@ -6,6 +6,26 @@
 
 ## [unreleased]
 
+### 新增（2026-10-06 下午：Bento + Motion 前卫化——借鉴 MotionSites 方法论，内容自研）
+
+用户决策：当前 UI 属「旧时代」，要更大胆前卫；拆部分回归闸（hover 阴影放开、装饰对比度豁免；
+**reduced-motion 尊重保留**——安全底线）。设计语言五块规范见 docs/bento-motion-design.md
+（色板/字体/结构/动效/组件，动效哲学 Emil Kowalski：不该动的不动、动效用对配料）：
+
+- **Wave 1 动效基建**：--dur-enter/--dur-ambient 令牌；AuroraBackground（24s ±3% drift，reduced-motion
+  冻结）；BentoCard（40ms stagger 编排 + hover lift + 视口外不入场）；useInView；.glass（@supports 回退）；
+  Button press 0.98/120ms；toast 对称路径（commit 1f99646）
+- **Wave 2 Bento 重构**：看板 12 列网格——净资产 hero 大卡 + 收入/支出小卡 / 趋势 8+分布 4 /
+  日历 6+最近交易 6 / 右侧栏四卡折叠底部 3×4；暗色 aurora + 玻璃侧边栏/⌘K/通知；⌘K 零动画（铁律）；
+  toast 退出状态机收尾
+- **调度方验收修复**：暗色下炭黑图表线不可见（.chart-brand 暗色反转 #d4d4d8，currentColor 模式）；
+  SSE 长连接使 networkidle 永真——10 个 accept 脚本迁移 domcontentloaded；darkmode-audit 误报
+  recharts svg 根 UA 默认黑（加豁免）；DM-094/115 两处暗色变体缺失；report-create 选中圆点
+  暗色融底（transparent border 实芯盘）
+- **回归闸**：design-consistency 108/108（hover 阴影新契约：裸 hover:shadow-md 仍禁，
+  .bento-hover-lift 唯一合法来源）；darkmode-audit 0 issue/123 advisory；netasset-color 通过
+- 测试 293→303；tsc 干净；截图存 accept/screenshots/bento-motion/
+
 ### 新增（2026-10-06：主题还原——纠正「收入红」曲解，回归原版炭黑极简）
 
 用户反馈主题不满意、需求曾被曲解。对照复刻源（docs/exploration-originals §11.2「收入/净资产

@@ -7,7 +7,9 @@
  *   3. 空状态统一走 EmptyStateCard（.max-w-2xl.mx-auto > .card），
  *      空状态内的引导按钮为 secondary（与右上角 primary 形成主次层级）
  *   4. 卡片网格间距 gap-4（column-gap 16px）
- *   5. 卡片不再使用 hover:shadow-md
+ *   5. hover 阴影走 BentoCard 编排（2026-10-06 bento-motion：回归闸按用户决策拆开——
+ *      允许 hover 悬浮，但唯一合法来源是 .bento-hover-lift（transform+shadow.lift 组合）；
+ *      直写 hover:shadow-md 仍 = 0
  *   6. 内容最大宽度 max-w-[1400px]（1400px）
  *   7. 暗黑模式：html.dark 生效 + 空状态卡片深色背景
  *
@@ -119,7 +121,7 @@ async function auditPage(p, state, theme) {
   const pageErrors = [];
   page.on('pageerror', (e) => pageErrors.push(String(e).slice(0, 160)));
 
-  await page.goto(BASE + p.path, { waitUntil: 'networkidle' });
+  await page.goto(BASE + p.path, { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(900);
 
   const tag = `${p.label} · ${state === 'empty' ? '无数据' : '有数据'} · ${theme === 'dark' ? '暗黑' : '明亮'}`;
@@ -176,14 +178,17 @@ async function auditPage(p, state, theme) {
       });
       record(p, state, theme, 'grid-gap-4', gap === '16px', `column-gap = ${gap}（期望 16px）`);
     }
+    // 2026-10-06 bento-motion：hover 阴影闸从「全面禁止」改为「只许 BentoCard 编排」——
+    // 直写 hover:shadow-md 仍禁止（绕过 lift 的 translateY 组合会割裂动效），
+    // .bento-hover-lift 是唯一合法来源（index.css 里 transform+shadow.lift 成套出现）
     const shadow = await page.evaluate(() => {
-      let hits = 0;
+      let mdHits = 0;
       for (const el of document.querySelectorAll('*')) {
-        if (typeof el.className === 'string' && el.className.includes('hover:shadow-md')) hits++;
+        if (typeof el.className === 'string' && el.className.includes('hover:shadow-md')) mdHits++;
       }
-      return hits;
+      return mdHits;
     });
-    record(p, state, theme, 'no-hover-shadow-md', shadow === 0, `hover:shadow-md 元素 = ${shadow}`);
+    record(p, state, theme, 'no-raw-hover-shadow-md', shadow === 0, `裸 hover:shadow-md 元素 = ${shadow}`);
 
     const maxW = await page.evaluate(() => {
       const el = Array.from(document.querySelectorAll('div')).find((d) =>
