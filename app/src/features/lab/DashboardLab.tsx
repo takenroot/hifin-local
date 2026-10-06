@@ -218,7 +218,10 @@ export function DashboardLab() {
   const trend = useMemo(() => genLabTrend(), []);
 
   return (
-    <div className="space-y-6" data-testid="dashboard-lab">
+    <div className="p-4 lg:p-8">
+      {/* 页面骨架与生产契约对齐：p-4 lg:p-8 沟槽 + max-w-[1400px] 居中
+         （原裸 space-y-6 导致内容贴 rail/视口边缘——web-design-guidelines 审查项） */}
+      <div className="max-w-[1400px] mx-auto space-y-6" data-testid="dashboard-lab">
       {/* 实验室横幅：一眼认出这不是生产看板 */}
       <div className="flex items-center gap-2 rounded-xl border border-dashed border-border dark:border-border-dark px-4 py-2.5 text-xs text-text-muted dark:text-text-muted-dark">
         <IconFlask size={14} className="flex-none" />
@@ -348,6 +351,7 @@ export function DashboardLab() {
           </ul>
         </div>
       </section>
+      </div>
     </div>
   );
 }

@@ -188,7 +188,10 @@ export function ZenithLab() {
   );
 
   return (
-    <div className="space-y-6" data-testid="zenith-lab">
+    <div className="p-4 lg:p-8">
+      {/* 页面骨架与生产契约对齐：p-4 lg:p-8 沟槽 + max-w-[1400px] 居中
+         （原裸 space-y-6 导致内容贴 rail/视口边缘——web-design-guidelines 审查项） */}
+      <div className="max-w-[1400px] mx-auto space-y-6" data-testid="zenith-lab">
       {/* 局部样式：暗色下 income / expense 折线反转——chart-brand 已有，扩展两个 */}
       {/* ponytail: <style> 作用域仅限本组件实例，Tailwind JIT 看不到的字面类
         在这里手写——单点扩展比改 index.css 风险更小。 */}
@@ -485,6 +488,7 @@ export function ZenithLab() {
           </table>
         </div>
       </section>
+      </div>
     </div>
   );
 }
