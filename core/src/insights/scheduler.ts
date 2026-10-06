@@ -13,6 +13,7 @@
  */
 import type Database from 'better-sqlite3';
 import type { AiModelRow, KvRow } from '../db/schema.js';
+import { currentMonth, previousMonth } from '../routes/summary.js';
 import {
   createNotification,
   listNotifications,
@@ -58,24 +59,8 @@ export interface InsightRun {
   llmAttempted: boolean;
 }
 
-/** 把 month 转成 YYYY-MM：now 所在月 */
-export function currentMonth(now: Date): string {
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-}
-
-/** 把 month 转成 YYYY-MM 上一个月 */
-function previousMonth(month: string): string {
-  const m = /^(\d{4})-(\d{2})$/.exec(month);
-  if (!m) return month;
-  let year = Number(m[1]);
-  let mo = Number(m[2]);
-  mo -= 1;
-  if (mo === 0) {
-    mo = 12;
-    year -= 1;
-  }
-  return `${year}-${String(mo).padStart(2, '0')}`;
-}
+/** 把 month 转成 YYYY-MM：now 所在月（re-export：既有调用方/测试从 scheduler 导入） */
+export { currentMonth };
 
 /**
  * 同月份最近一条 ai-insight 通知（任意 status）。

@@ -16,7 +16,7 @@ import type {
   GoalRow,
   TransactionRow,
 } from '../db/schema.js';
-import { summaryHelpers } from '../routes/summary.js';
+import { previousMonth, summaryHelpers } from '../routes/summary.js';
 import {
   budgetAlerts,
   largestExpense,
@@ -72,38 +72,19 @@ export interface MonthMetrics {
   }>;
 }
 
-export interface ComputeOptions {
-  /** 预算告警阈值（百分比），默认 80。设计文档要求比 discover 的 90 更敏感 */
-  budgetThreshold?: number;
-  /** 异常大额倍数（默认 5） */
-  anomalyMultiple?: number;
-  /** 「30 天内到期」用 now 入参（默认 Date.now()） */
-  nowMs?: number;
-}
-
 /**
  * 聚合目标月份 + 上一月的指标。纯函数：只读 db，不写。
  *
  * ⚠️ 月份解析失败返回 null：调用方应先在 REST 层 / 调度层校验 YYYY-MM。
  * 与 summary.ts 不同，这里 monthRange 拿 null 时直接返回 null（让上层决定是 400 还是其它）。
+ *
+ * 预算告警阈值 80、异常大额倍数 5 写死（ponytail：除测试外没人改默认值）；
+ * nowMs 保留入参——时间注入是项目既有约定（yields/reminder 一脉相承）。
  */
-function previousMonth(monthStr: string): string {
-  const m = /^(\d{4})-(\d{2})$/.exec(monthStr);
-  if (!m) return monthStr;
-  let year = Number(m[1]);
-  let mo = Number(m[2]);
-  mo -= 1;
-  if (mo === 0) {
-    mo = 12;
-    year -= 1;
-  }
-  return `${year}-${String(mo).padStart(2, '0')}`;
-}
-
 export function computeMonthMetrics(
   db: Database.Database,
   month: string,
-  opts: ComputeOptions = {},
+  nowMs: number = Date.now(),
 ): MonthMetrics | null {
   const range = summaryHelpers.monthRange(month);
   if (range === null) return null;
@@ -177,13 +158,11 @@ export function computeMonthMetrics(
     3,
   );
   const largest = largestExpense(expenseTxs);
-  const threshold = opts.budgetThreshold ?? 80;
-  const alerts = budgetAlerts(budgets, transactions, threshold, new Date(range.start));
-  const goalsNear = upcomingGoals(goals, 30, opts.nowMs ?? Date.now());
-  const anomalyMultiple = opts.anomalyMultiple ?? 5;
+  const alerts = budgetAlerts(budgets, transactions, 80, new Date(range.start));
+  const goalsNear = upcomingGoals(goals, 30, nowMs);
   const avgPerTx = expenseTxs.length > 0 ? expense / expenseTxs.length : 0;
   const anomalyLarge = expenseTxs
-    .filter((t) => t.amount > avgPerTx * anomalyMultiple)
+    .filter((t) => t.amount > avgPerTx * 5)
     .sort((a, b) => b.amount - a.amount)
     .slice(0, 5)
     .map((t) => ({

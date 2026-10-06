@@ -23,7 +23,7 @@ import type { NotificationRow, NotificationStatus, NotificationType } from '../d
 export const notificationsRouter = Router();
 
 /** 解析 :id，非法返回 null（交给调用方回 400） */
-function parseId(raw: string): number | null {
+export function parseId(raw: string): number | null {
   const n = Number(raw);
   return Number.isInteger(n) && n > 0 ? n : null;
 }

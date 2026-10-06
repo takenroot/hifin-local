@@ -203,8 +203,8 @@ export function NotificationCenter() {
     setToasts((prev) => [
       ...prev,
       ...fresh.map((n) => {
-        const tone: Toast['tone'] =
-          n.type === 'import_success' ? 'success' : n.type === 'ai-insight' ? 'success' : 'error';
+        // ai-insight 与 import_success 都按 success 播；只剩 import_failed 走 error
+        const tone: Toast['tone'] = n.type === 'import_failed' ? 'error' : 'success';
         const text =
           n.type === 'import_success'
             ? importSuccessMessage(n)

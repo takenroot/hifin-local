@@ -34,6 +34,11 @@ function monthRange(monthStr: string): { start: number; end: number } | null {
   return { start, end };
 }
 
+/** now 所在月（YYYY-MM）；insights 调度与 MCP 工具共用，避免各抄一份 */
+export function currentMonth(now: Date): string {
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+}
+
 /**
  * 净资产：参考 calcNetAsset
  *
@@ -123,7 +128,8 @@ function monthOfToday(): string {
   return `${d.getFullYear()}-${m}`;
 }
 
-function previousMonth(monthStr: string): string {
+/** 上一个 YYYY-MM（跨年回退 12 月）；insights 调度与 MCP 工具共用 */
+export function previousMonth(monthStr: string): string {
   const m = /^(\d{4})-(\d{2})$/.exec(monthStr);
   if (!m) return monthStr;
   let year = Number(m[1]);

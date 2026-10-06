@@ -376,7 +376,8 @@ describe('hifin_import_bill', () => {
     const data = readJson<{ platform: string; imported: number; skipped: number; files: string[] }>(res);
     expect(data.platform).toBe('alipay');
     expect(data.imported).toBe(2);
-    expect(data.files).toEqual(['alipaybill.csv']);
+    // ponytail-review：files 原样返回（host 是 AI，不需要 basename 美化）
+    expect(data.files.map((f) => f.split(/[\\/]/).pop())).toEqual(['alipaybill.csv']);
   });
 
   it('错误密码 → isError + 文案包含"解压密码错误"', async () => {

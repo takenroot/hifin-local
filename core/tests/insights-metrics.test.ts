@@ -229,7 +229,7 @@ describe('computeMonthMetrics：聚合字段与异常大额定义', () => {
       `INSERT INTO goals (kind, name, targetAmount, currentAmount, deadline, spaceId, createdAt)
        VALUES ('saving', '旅行基金', 10000, 2000, ?, 1, 1)`,
     ).run(new Date(2026, 0, 25).getTime());
-    const m = computeMonthMetrics(db, '2026-01', { nowMs: new Date(2026, 0, 5).getTime() });
+    const m = computeMonthMetrics(db, '2026-01', new Date(2026, 0, 5).getTime());
     expect(m!.goalsNear).toHaveLength(1);
     expect(m!.goalsNear[0].name).toBe('旅行基金');
   });

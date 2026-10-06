@@ -192,13 +192,15 @@ describe('GET /api/ai-insights/:id', () => {
   });
 });
 
-describe('POST /:id/resolve & /:id/dismiss', () => {
+// ponytail-review 2026-10-05：ai-insights 路由不再抄 resolve/dismiss 两个端点，
+// 前端走 /api/notifications/:id/*（同一 store 函数）。这里测的是**真实生产路径**。
+describe('洞察通知的 resolve & dismiss（经 /api/notifications）', () => {
   it('resolve 后 status=resolved', async () => {
     seedModel();
     seedAccountAndExpense();
     const r = await http('/api/ai-insights/generate?month=2026-01', { method: 'POST' });
     const id = (r.data as { id: number }).id;
-    const res = await http(`/api/ai-insights/${id}/resolve`, { method: 'POST' });
+    const res = await http(`/api/notifications/${id}/resolve`, { method: 'POST' });
     expect(res.status).toBe(200);
     expect((res.data as { status: string }).status).toBe('resolved');
   });
@@ -208,15 +210,9 @@ describe('POST /:id/resolve & /:id/dismiss', () => {
     seedAccountAndExpense();
     const r = await http('/api/ai-insights/generate?month=2026-01', { method: 'POST' });
     const id = (r.data as { id: number }).id;
-    const res = await http(`/api/ai-insights/${id}/dismiss`, { method: 'POST' });
+    const res = await http(`/api/notifications/${id}/dismiss`, { method: 'POST' });
     expect(res.status).toBe(200);
     expect((res.data as { status: string }).status).toBe('dismissed');
-  });
-
-  it('非 ai-insight → 404；不存在 → 404；非法 id → 400', async () => {
-    expect((await http('/api/ai-insights/9999/resolve', { method: 'POST' })).status).toBe(404);
-    expect((await http('/api/ai-insights/abc/resolve', { method: 'POST' })).status).toBe(400);
-    expect((await http('/api/ai-insights/0/dismiss', { method: 'POST' })).status).toBe(400);
   });
 });
 

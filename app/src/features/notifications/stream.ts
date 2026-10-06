@@ -1,28 +1,15 @@
 /**
  * 通知模块 SSE 客户端
  * ---------------------------------------------------------------
- * 三件事：
- *  - nextBackoff   退避序列纯函数（仅用于"切回轮询前的判定"，EventSource 自带 3s 重连）
+ * 两件事：
  *  - upsertById    纯函数：按 id in-place 替换；新 id unshift 到队首
  *  - openNotificationStream  副作用入口：原生 EventSource，5 次 onerror 后回调 onClose
  *
  * 不引第三方库：浏览器原生 EventSource 已实现 RFC 5.1 自动重连（默认 3s 起步），
  * 我们只需要在"持续失败"时切回 30s 轮询兜底。
+ * ponytail: 没有自写退避序列——原生重连间隔浏览器说了算，"切轮询"只用次数判定足够。
  */
 import { toNotification, type AppNotification } from './types';
-
-/** 退避参数；原生 EventSource 不接受配置，这里 nextBackoff 仅作为切轮询前的判定 */
-export interface BackoffConfig {
-  initialMs: number; // 推荐 1000
-  maxMs: number; // 推荐 30000
-  factor: number; // 推荐 2
-}
-
-/** 退避序列：1s, 2s, 4s, 8s, 16s, 30s, 30s... */
-export function nextBackoff(attempts: number, cfg: BackoffConfig): number {
-  const ms = Math.min(cfg.maxMs, cfg.initialMs * Math.pow(cfg.factor, attempts));
-  return Math.round(ms);
-}
 
 /** 已有 id → in-place 替换；新 id → unshift 到队首；保持其它顺序不变 */
 export function upsertById(list: AppNotification[], n: AppNotification): AppNotification[] {

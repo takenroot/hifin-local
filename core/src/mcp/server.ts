@@ -23,9 +23,8 @@ import type {
   NotificationType,
   RuleRow,
   TransactionRow,
-  TransactionType,
 } from '../db/schema.js';
-import { summaryHelpers } from '../routes/summary.js';
+import { summaryHelpers, currentMonth, previousMonth } from '../routes/summary.js';
 import { listNotifications } from '../notifications/store.js';
 import { importBillZip } from '../bill/importer.js';
 import {
@@ -38,8 +37,6 @@ import { setBillPassword } from '../bill/password-store.js';
 
 const DEFAULT_TX_LIMIT = 100;
 const MAX_TX_LIMIT = 500;
-
-const VALID_TX_TYPES: TransactionType[] = ['expense', 'income', 'transfer', 'excluded'];
 
 /** tool 结果的 JSON 序列化：保持精度（不强制 stringify） */
 function textResult(payload: unknown): { content: Array<{ type: 'text'; text: string }> } {
@@ -198,9 +195,7 @@ export function createMcpServer(db: Database.Database): McpServer {
         params.push(args.to);
       }
       if (args.type !== undefined) {
-        if (!VALID_TX_TYPES.includes(args.type)) {
-          return badResult(`type 必须是 ${VALID_TX_TYPES.join('/')}`);
-        }
+        // zod z.enum 已在 handler 前拒绝非法值，这里直接拼 SQL
         where.push('type = ?');
         params.push(args.type);
       }
@@ -238,12 +233,7 @@ export function createMcpServer(db: Database.Database): McpServer {
       annotations: { readOnlyHint: true },
     },
     async (args) => {
-      const month =
-        args.month ??
-        (() => {
-          const d = new Date();
-          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-        })();
+      const month = args.month ?? currentMonth(new Date());
       const r = summaryHelpers.monthRange(month);
       if (!r) return badResult(`month 必须是 YYYY-MM，收到: ${month}`);
       const accounts = db.prepare('SELECT * FROM accounts').all() as AccountRow[];
@@ -254,15 +244,7 @@ export function createMcpServer(db: Database.Database): McpServer {
       const monthExpense = summaryHelpers.sumTx(txs, 'expense', r.start, r.end);
       const monthNet = monthIncome - monthExpense;
 
-      // 上一月：手工算一次，避免引入一个 previousMonth helper
-      const m = /^(\d{4})-(\d{2})$/.exec(month)!;
-      let py = Number(m[1]);
-      let pmo = Number(m[2]) - 1;
-      if (pmo === 0) {
-        py -= 1;
-        pmo = 12;
-      }
-      const prevMonth = `${py}-${String(pmo).padStart(2, '0')}`;
+      const prevMonth = previousMonth(month);
       const pr = summaryHelpers.monthRange(prevMonth)!;
       const prevTxs = db
         .prepare('SELECT * FROM transactions WHERE date >= ? AND date < ?')
@@ -388,7 +370,7 @@ export function createMcpServer(db: Database.Database): McpServer {
           platform: res.platform,
           imported: res.imported,
           skipped: res.skipped,
-          files: res.files.map((f) => f.split(/[\\/]/).pop() ?? f),
+          files: res.files,
         });
       } catch (e: unknown) {
         // 三类用户预期错误 → tool-level isError，不让 SDK 当 internal error

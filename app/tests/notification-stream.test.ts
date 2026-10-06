@@ -1,18 +1,16 @@
 /**
  * 通知 SSE 客户端纯函数测试
  * ---------------------------------------------------------------
- * 覆盖 docs/sse-design.md §2.5.2 的测点 F / G：
- *  - nextBackoff  退避序列正确（1s, 2s, 4s, 8s, 16s, 30s, 30s...）
+ * 覆盖 docs/sse-design.md §2.5.2 的测点 G：
  *  - upsertById   已有 id in-place 替换；新 id unshift；顺序保持
  *
  * openNotificationStream 的副作用放在 core 端测覆盖（同一份 bus + store），
  * 这里只测纯函数。
+ * ponytail: 不测退避序列——原生 EventSource 自己管重连间隔，我们没有自写退避。
  */
 import { describe, it, expect } from 'vitest';
-import { nextBackoff, upsertById } from '@/features/notifications/stream';
+import { upsertById } from '@/features/notifications/stream';
 import type { AppNotification } from '@/features/notifications/types';
-
-const CFG = { initialMs: 1000, maxMs: 30000, factor: 2 };
 
 /** 构造一条测试通知：复用真实 toNotification 之外的字段，最小够用 */
 function makeN(id: number, title = '通知'): AppNotification {
@@ -28,31 +26,6 @@ function makeN(id: number, title = '通知'): AppNotification {
     updatedAt: id * 1000,
   };
 }
-
-describe('nextBackoff', () => {
-  it('attempts=0 → initialMs', () => {
-    expect(nextBackoff(0, CFG)).toBe(1000);
-  });
-
-  it('attempts=5 → 1*2^5=32000 上限 → 30000', () => {
-    expect(nextBackoff(5, CFG)).toBe(30000);
-  });
-
-  it('attempts=10 → 永远 ≤ maxMs', () => {
-    expect(nextBackoff(10, CFG)).toBe(30000);
-  });
-
-  it('序列单调递增到上限', () => {
-    const seq = [0, 1, 2, 3, 4, 5, 6].map((a) => nextBackoff(a, CFG));
-    // 1s, 2s, 4s, 8s, 16s, 30s（32000 上限）, 30s
-    expect(seq).toEqual([1000, 2000, 4000, 8000, 16000, 30000, 30000]);
-  });
-
-  it('自定义 cfg 也按公式生效', () => {
-    expect(nextBackoff(2, { initialMs: 500, maxMs: 5000, factor: 3 })).toBe(4500);
-    expect(nextBackoff(5, { initialMs: 500, maxMs: 5000, factor: 3 })).toBe(5000);
-  });
-});
 
 describe('upsertById', () => {
   it('新 id → unshift 到队首，原列表顺序保持', () => {

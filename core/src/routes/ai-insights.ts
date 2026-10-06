@@ -1,26 +1,17 @@
 /**
  * /api/ai-insights 路由 — 自动财务洞察的 REST 接口
  * ---------------------------------------------------------------
- * 5 个端点：
+ * 3 个端点（resolve/dismiss 复用 /api/notifications/:id/*，前端本来就这么调，
+ * 这里不再抄一份——见 ponytail-review 2026-10-05）：
  *  - GET    /              列表（复用 listNotifications(type='ai-insight', status?)）
  *  - GET    /:id           单条详情
- *  - POST   /:id/resolve   标记已解决（复用 resolveNotification）
- *  - POST   /:id/dismiss   用户忽略（复用 dismissNotification）
  *  - POST   /generate?month=YYYY-MM   手动触发（复用 ensureManualInsight）
- *
- * 与 /api/notifications 完全同形：前端代码只需把 URL 前缀换一下。
  */
 import { Router, type Request, type Response } from 'express';
 import { getDb } from './_db.js';
-import {
-  getNotification,
-  listNotifications,
-  resolveNotification,
-  dismissNotification,
-  NotFoundError,
-  NOTIFICATION_STATUSES,
-} from '../notifications/store.js';
-import type { NotificationStatus, NotificationRow } from '../db/schema.js';
+import { parseId } from './notifications.js';
+import { getNotification, listNotifications, NOTIFICATION_STATUSES } from '../notifications/store.js';
+import type { NotificationStatus } from '../db/schema.js';
 import {
   ensureManualInsight,
   AI_INSIGHT_TYPE,
@@ -28,19 +19,6 @@ import {
 } from '../insights/scheduler.js';
 
 export const aiInsightsRouter = Router();
-
-function parseId(raw: string): number | null {
-  const n = Number(raw);
-  return Number.isInteger(n) && n > 0 ? n : null;
-}
-
-function respondStoreError(res: Response, err: unknown): void {
-  if (err instanceof NotFoundError) {
-    res.status(404).json({ error: err.message });
-    return;
-  }
-  res.status(500).json({ error: err instanceof Error ? err.message : 'internal error' });
-}
 
 /** GET /api/ai-insights?status=&limit= */
 aiInsightsRouter.get('/', (req: Request, res: Response) => {
@@ -75,56 +53,12 @@ aiInsightsRouter.get('/:id', (req: Request, res: Response) => {
     res.status(400).json({ error: 'id 必须是正整数' });
     return;
   }
-  const row: NotificationRow | undefined = getNotification(db, id);
+  const row = getNotification(db, id);
   if (!row || row.type !== AI_INSIGHT_TYPE) {
     res.status(404).json({ error: `洞察不存在：${id}` });
     return;
   }
   res.json(row);
-});
-
-/** POST /api/ai-insights/:id/resolve — 标记已解决 */
-aiInsightsRouter.post('/:id/resolve', (req: Request, res: Response) => {
-  const db = getDb();
-  const id = parseId(req.params.id);
-  if (id === null) {
-    res.status(400).json({ error: 'id 必须是正整数' });
-    return;
-  }
-  const target = getNotification(db, id);
-  if (!target || target.type !== AI_INSIGHT_TYPE) {
-    res.status(404).json({ error: `洞察不存在：${id}` });
-    return;
-  }
-  try {
-    resolveNotification(db, id);
-  } catch (err) {
-    respondStoreError(res, err);
-    return;
-  }
-  res.json(getNotification(db, id));
-});
-
-/** POST /api/ai-insights/:id/dismiss — 用户忽略 */
-aiInsightsRouter.post('/:id/dismiss', (req: Request, res: Response) => {
-  const db = getDb();
-  const id = parseId(req.params.id);
-  if (id === null) {
-    res.status(400).json({ error: 'id 必须是正整数' });
-    return;
-  }
-  const target = getNotification(db, id);
-  if (!target || target.type !== AI_INSIGHT_TYPE) {
-    res.status(404).json({ error: `洞察不存在：${id}` });
-    return;
-  }
-  try {
-    dismissNotification(db, id);
-  } catch (err) {
-    respondStoreError(res, err);
-    return;
-  }
-  res.json(getNotification(db, id));
 });
 
 /**

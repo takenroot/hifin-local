@@ -150,33 +150,8 @@ describe('llmRenderInsight：错误归类', () => {
   });
 });
 
-describe('llmRenderInsight：超时', () => {
-  it('caller 传 signal：外部 abort → fetch 收到 AbortError → kind=timeout', async () => {
-    // 模拟 fetch 立即抛 AbortError（与 node fetch 真实行为一致）
-    mockFetchOnce(async (_url: any, init: any) => {
-      // 把真实的 signal 转发到一个永远 pending 的 Promise，
-      // 但更直接的做法：直接抛 AbortError
-      return await new Promise((_, reject) => {
-        if (init?.signal?.aborted) {
-          const e: any = new Error('aborted');
-          e.name = 'AbortError';
-          reject(e);
-        } else {
-          init.signal.addEventListener('abort', () => {
-            const e: any = new Error('aborted');
-            e.name = 'AbortError';
-            reject(e);
-          });
-        }
-      });
-    });
-    const ac = new AbortController();
-    const promise = llmRenderInsight(MODEL_BASE, INPUT, { signal: ac.signal });
-    // 下一拍触发 abort
-    queueMicrotask(() => ac.abort());
-    await expect(promise).rejects.toMatchObject({ kind: 'timeout' });
-  });
-});
+// ponytail: 没有「外部 AbortSignal」用例——RenderOptions 只暴露 timeoutMs/maxTokens
+// （生产唯一调用方零 opts 调用；signal 转发是没人要的灵活性，已随源码删除）。
 
 describe('describeAiInsightError', () => {
   it('AiInsightError 形状 → 取 message', () => {

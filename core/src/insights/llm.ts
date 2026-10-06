@@ -44,10 +44,10 @@ export interface InsightPromptInput {
 }
 
 export interface RenderOptions {
-  signal?: AbortSignal;
-  maxTokens?: number;
+  /** 测试用：缩短超时；生产默认 30s */
   timeoutMs?: number;
-  temperature?: number;
+  /** 测试用：调小上限；生产默认 600（设计文档硬约束） */
+  maxTokens?: number;
 }
 
 function resolveUrl(endpoint: string): string {
@@ -136,11 +136,6 @@ export async function llmRenderInsight(
   const controller = new AbortController();
   const timeoutMs = opts.timeoutMs ?? 30_000;
   const timer = setTimeout(() => controller.abort(), timeoutMs);
-  // caller 可能传入自己的 signal；任一 signal 触发即中止
-  if (opts.signal) {
-    if (opts.signal.aborted) controller.abort();
-    else opts.signal.addEventListener('abort', () => controller.abort(), { once: true });
-  }
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -167,7 +162,7 @@ export async function llmRenderInsight(
         model: model.model,
         messages,
         stream: false,
-        temperature: opts.temperature ?? 0.4,
+        temperature: 0.4,
         max_tokens: opts.maxTokens ?? 600,
       }),
       signal: controller.signal,
