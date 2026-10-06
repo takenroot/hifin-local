@@ -75,7 +75,8 @@
   color: #d4d4d8;
 }
 
-/* Toast 入场（2026-10-06 bento-motion §4）：translateY(8px → 0) + opacity 0→1，
+@layer components {
+  /* Toast 入场（2026-10-06 bento-motion §4）：translateY(8px → 0) + opacity 0→1，
      220ms --dur-overlay ease-out。退出走对称路径（同一 transform/opacity，
      反向）——Emil Kowalski：toast 用 transition 而非 keyframes，否则连续触发
      时会从 0 重启；本类只覆盖入场，退出由调用方控制 data-state="closed"
