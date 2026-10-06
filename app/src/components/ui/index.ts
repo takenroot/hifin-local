@@ -48,7 +48,4 @@ export type { ProgressBarProps } from './ProgressBar';
 export { PageHeader } from './PageHeader';
 export type { PageHeaderProps } from './PageHeader';
 
-export { AuroraBackground } from './AuroraBackground';
 
-export { BentoCard, bentoDelayMs, BENTO_STAGGER_MS, BENTO_ENTER_OFFSET_PX, BENTO_HOVER_LIFT_PX } from './BentoCard';
-export type { BentoCardProps } from './BentoCard';
