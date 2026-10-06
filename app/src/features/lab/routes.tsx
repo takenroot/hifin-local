@@ -4,7 +4,11 @@
  */
 import type { RouteObject } from 'react-router-dom';
 import { DashboardLab } from './DashboardLab';
+import { ZenithLab } from './ZenithLab';
 
-export const routes: RouteObject[] = [{ path: 'lab', element: <DashboardLab /> }];
+export const routes: RouteObject[] = [
+  { path: 'lab', element: <DashboardLab /> },
+  { path: 'lab/zenith', element: <ZenithLab /> },
+];
 
 export default routes;

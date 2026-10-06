@@ -85,6 +85,106 @@ export const LAB_STATS = {
   expense: { label: '本月支出', amount: 8230.5, deltaPct: -3.1, tone: 'income' as const },
 };
 
+/* ───────────────────────── Zenith 变体扩展（2026-10-06） ─────────────────────────
+ * 静态确定性扩展，与上面 LAB_STATS 共用 LAB_ANCHOR，保证两个实验页可对照：
+ *   - genLabMonthly：12 个月收支结余序列，末月恰好 = LAB_STATS.income / .expense
+ *   - LAB_GOALS    ：3 条目标进度样例
+ *   - LAB_RECENT_TX：6 条最近交易样例（支出=负 / 收入=正）
+ * ponytail：数据生成器集中放在 DashboardLab.tsx，避免 ZenithLab 自带 mock
+ * 形成第二份真相；后续 DashboardLab 删除时一起处理。 */
+
+/** 单月收支结余点（顺序：旧→新；i=11 为锚定月份 2026-10） */
+export interface LabMonthlyPoint {
+  /** YYYY-MM（月份标签） */
+  month: string;
+  income: number;
+  expense: number;
+  /** 该月结余 = income - expense */
+  balance: number;
+}
+
+/** 把 YYYY-MM-DD 锚点归到当月 1 号再回退 i 个月，得到 YYYY-MM */
+function monthBefore(anchor: string, monthsBack: number): string {
+  const d = new Date(`${anchor}T00:00:00`);
+  d.setDate(1);
+  d.setMonth(d.getMonth() - monthsBack);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+/**
+ * 12 个月收支结余序列：纯正弦 + 月度微调，末月固定为 LAB_STATS.income / .expense。
+ * ponytail：确定性公式 + 末月对齐 LAB_STATS，保证 Overview 面积图与三卡数字
+ * 自洽（"本月收入"卡片显示的数字 = 序列末月的 income 字段）。
+ */
+export function genLabMonthly(anchor: string = LAB_ANCHOR): LabMonthlyPoint[] {
+  const out: LabMonthlyPoint[] = [];
+  for (let i = 0; i < 12; i++) {
+    const m = monthBefore(anchor, 11 - i); // i=0 → 11 月前；i=11 → 锚定月
+    // 前 11 月：基线 + 季节正弦 + 小数偏移；末月：严格等于 LAB_STATS
+    const income = i === 11
+      ? LAB_STATS.income.amount
+      : Math.round(11800 + Math.sin((i + 1) / 2.3) * 820 + ((i + 1) % 3 === 0 ? -580 : 60));
+    const expense = i === 11
+      ? LAB_STATS.expense.amount
+      : Math.round(7980 + Math.sin((i + 1) / 1.7) * 540 + ((i + 2) % 4 === 0 ? 320 : -120));
+    out.push({ month: m, income, expense, balance: income - expense });
+  }
+  return out;
+}
+
+/** 净资产时间序列：把 monthly balance 累加成"到当月为止的净资产"，末值等于 LAB_STATS.netAsset。
+ *  ponytail：用 O(12) 一次累加而不是 12 次函数调用——测试断言的是末值自洽，
+ *  不是中间过程，所以直接补差填到 LAB_STATS.netAsset 即可。 */
+export function genLabNetAssetSeries(anchor: string = LAB_ANCHOR): Array<{ month: string; value: number }> {
+  const monthly = genLabMonthly(anchor);
+  const sumBalances = monthly.reduce((acc, p) => acc + p.balance, 0);
+  const start = LAB_STATS.netAsset.amount - sumBalances;
+  let running = start;
+  return monthly.map((p) => {
+    running += p.balance;
+    return { month: p.month, value: Math.round(running * 100) / 100 };
+  });
+}
+
+/** 储蓄率时间序列：(income - expense) / income * 100，0..100 百分比。 */
+export function genLabSavingsRateSeries(anchor: string = LAB_ANCHOR): Array<{ month: string; value: number }> {
+  return genLabMonthly(anchor).map((p) => ({
+    month: p.month,
+    value: p.income > 0 ? Math.round(((p.income - p.expense) / p.income) * 10000) / 100 : 0,
+  }));
+}
+
+/** 3 条目标进度样例：当前/目标，渲染时计算百分比 */
+export const LAB_GOALS: ReadonlyArray<{ name: string; current: number; target: number }> = [
+  { name: '应急基金', current: 18500, target: 30000 },
+  { name: '旅行储蓄', current: 4200, target: 10000 },
+  { name: '装修预算', current: 32000, target: 50000 },
+];
+
+/** 6 条最近交易样例：amount > 0 收入（绿）/ < 0 支出（红） */
+export interface LabRecentTx {
+  date: string;
+  name: string;
+  category: string;
+  account: string;
+  amount: number;
+}
+
+export const LAB_RECENT_TX: ReadonlyArray<LabRecentTx> = [
+  { date: '2026-10-06', name: '午餐外卖', category: '餐饮', account: '零钱通', amount: -38.5 },
+  { date: '2026-10-05', name: '工资到账', category: '收入', account: '工行卡(1230)', amount: 6200 },
+  { date: '2026-10-04', name: '超市采购', category: '日用', account: '支付宝基金', amount: -186.4 },
+  { date: '2026-10-03', name: '打车通勤', category: '交通', account: '零钱通', amount: -45.0 },
+  { date: '2026-10-02', name: '咖啡', category: '餐饮', account: '零钱通', amount: -28.0 },
+  { date: '2026-10-01', name: '基金分红', category: '投资', account: '支付宝基金', amount: 320.0 },
+];
+
+/** 当前月份（"本月"）的储蓄率：与 Zenith 第四卡数字一致 */
+export const LAB_SAVINGS_RATE = (() => {
+  const last = genLabMonthly()[11];
+  return Math.round(((last.income - last.expense) / last.income) * 10000) / 100;
+})();
+
 /* ───────────────────────── 复刻 /home 的卡片表面契约 ───────────────────────── */
 
 /** 与 Dashboard.tsx STAT_SURFACE 同源：软色底、无边框、圆角 3xl */
