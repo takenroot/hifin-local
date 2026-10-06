@@ -66,6 +66,8 @@ import {
   type GoalRow,
   type SummaryRow,
 } from '@/lib/monthlyAgg';
+import { threePhaseEasing } from '@/lib/chartEasing';
+import { DashboardInsightCard, buildInsightContext } from './InsightCard';
 import type { Budget, Category, Goal, Account, Transaction } from '@/db';
 import { useSpaceId } from '@/db';
 import { useApi } from '@/hooks/useApi';
@@ -316,6 +318,19 @@ export default function Dashboard() {
     [budgets, transactions, today],
   );
 
+  // AI 建议卡上下文：只用概况级数字（纯函数可测），不塞原始流水
+  const insightContext = useMemo(
+    () =>
+      buildInsightContext({
+        netAsset: stats.netAsset.amount,
+        savingsRate: stats.savings.amount,
+        monthly,
+        budgets: budgetProgress.map((b) => ({ name: b.budget.name, spent: b.spent, amount: b.budget.amount })),
+        goals: goals.map((g) => ({ name: g.name, current: g.currentAmount, target: g.targetAmount })),
+      }),
+    [stats, monthly, budgetProgress, goals],
+  );
+
   /* 还款提醒：credit / debt 且余额为正（待还款） */
   const repayAccounts = useMemo(
     () => accounts.filter((a) => (a.type === 'credit' || a.type === 'debt') && a.balance > 0),
@@ -499,7 +514,8 @@ export default function Dashboard() {
               {/* Overview + 资产分布 + 目标进度（两栏：xl:8/4） */}
               <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
                 {/* Overview 大区 */}
-                <div className="card p-5 xl:col-span-8" data-testid="dash-overview">
+                {/* flex 列布局：图表区 flex-1 填满卡片，随右栏等高不留白（2026-10-06 空白修复） */}
+                <div className="card p-5 xl:col-span-8 flex flex-col" data-testid="dash-overview">
                   <div className="mb-3 flex items-start justify-between gap-3">
                     <div>
                       <h2 className="text-sm font-semibold text-text dark:text-text-dark">总览</h2>
@@ -628,8 +644,8 @@ export default function Dashboard() {
                       )}
                     </div>
                   ) : (
-                    /* 前 3 tab：12 月面积图 */
-                    <div className="h-64 -mx-2" data-testid={`dash-chart-${tab}`}>
+                    /* 前 3 tab：12 月面积图（flex-1 填满卡片剩余高度） */
+                    <div className="flex-1 min-h-64 -mx-2" data-testid={`dash-chart-${tab}`}>
                       <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={monthly} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
                           <defs>
@@ -681,7 +697,7 @@ export default function Dashboard() {
                             strokeWidth={2}
                             fill={`url(#${AREA_GRAD[tabColor]})`}
                             animationDuration={600}
-                            animationEasing="ease-out"
+                            animationEasing={threePhaseEasing as unknown as 'ease-out'}
                           />
                         </AreaChart>
                       </ResponsiveContainer>
@@ -900,6 +916,9 @@ export default function Dashboard() {
                       </ul>
                     )}
                   </div>
+
+                  {/* AI 财务建议：右栏底部，手动触发（见 InsightCard.tsx 头注） */}
+                  <DashboardInsightCard contextText={insightContext} />
                 </div>
               </section>
 

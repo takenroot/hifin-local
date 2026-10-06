@@ -94,15 +94,9 @@ export const LAB_STATS = {
  * ponytail：数据生成器集中放在 DashboardLab.tsx，避免 ZenithLab 自带 mock
  * 形成第二份真相；后续 DashboardLab 删除时一起处理。 */
 
-/** 单月收支结余点（顺序：旧→新；i=11 为锚定月份 2026-10） */
-export interface LabMonthlyPoint {
-  /** YYYY-MM（月份标签） */
-  month: string;
-  income: number;
-  expense: number;
-  /** 该月结余 = income - expense */
-  balance: number;
-}
+/** 单月收支结余点：定义已上移至 @/lib/monthlyAgg；本地 import + re-export 保持既有路径 */
+import type { LabMonthlyPoint } from '@/lib/monthlyAgg';
+export type { LabMonthlyPoint };
 
 /** 把 YYYY-MM-DD 锚点归到当月 1 号再回退 i 个月，得到 YYYY-MM */
 function monthBefore(anchor: string, monthsBack: number): string {

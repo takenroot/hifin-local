@@ -10,7 +10,16 @@
  * ponytail: labData.ts 仍保留 export * re-export，老的 import 路径
  * '@/features/lab/labData' 继续生效，避免一次性改 3+ 处现有引用。
  */
-import type { LabMonthlyPoint } from '@/features/lab/DashboardLab';
+
+/** 单月收支结余点（顺序：旧→新）——lab 与生产看板共用的序列形状 */
+export interface LabMonthlyPoint {
+  /** YYYY-MM（月份标签） */
+  month: string;
+  income: number;
+  expense: number;
+  /** 该月结余 = income - expense */
+  balance: number;
+}
 
 /* ── REST 行最小形状（不耦合全局 db 类型；看板/实验室共用一份最小形状） ── */
 
