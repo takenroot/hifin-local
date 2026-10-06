@@ -18,7 +18,7 @@
  * ponytail: 组件全部内联在本文件，不抽子组件——实验室页允许一次性堆叠，
  * 抽象边界由生产页（/home）提炼。
  */
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -41,17 +41,9 @@ import {
 } from '@tabler/icons-react';
 import { CHART_COLORS } from '@/lib/chartColors';
 import { formatMoney, PIE_COLORS } from '@/lib/format';
-import {
-  LAB_ANCHOR,
-  LAB_STATS,
-  LAB_SLICES,
-  LAB_GOALS,
-  LAB_RECENT_TX,
-  LAB_SAVINGS_RATE,
-  genLabMonthly,
-  genLabNetAssetSeries,
-  genLabSavingsRateSeries,
-} from './DashboardLab';
+import { LAB_ANCHOR } from './DashboardLab';
+import { useLabData } from './useLabData';
+import { LabDataSwitch } from './LabDataSwitch';
 
 /* ───────────────────────── 小组件（局部复用） ───────────────────────── */
 
@@ -173,19 +165,18 @@ type OverviewTab = 'income' | 'expense' | 'balance';
 export function ZenithLab() {
   const [tab, setTab] = useState<OverviewTab>('income');
 
-  const monthly = useMemo(() => genLabMonthly(), []);
-  const netAssetSeries = useMemo(() => genLabNetAssetSeries(), []);
-  const savingsRateSeries = useMemo(() => genLabSavingsRateSeries(), []);
+  // 统一数据源：静态样例 ↔ 真实数据（横幅开关切换，见 useLabData）
+  const lab = useLabData();
+  const monthly = lab.monthly;
+  const netAssetSeries = lab.netAssetMonthly;
+  const savingsRateSeries = lab.savingsRateSeries;
 
   // 当前 tab → 折线色（卡进 chart-* 类的 currentColor）
   const tabColor: 'brand' | 'income' | 'expense' =
     tab === 'income' ? 'income' : tab === 'expense' ? 'expense' : 'brand';
 
-  // 净资产总额：donut 中心叠加显示（用 LAB_SLICES 求和——视觉与资产分布同源）
-  const netAssetTotal = useMemo(
-    () => LAB_SLICES.reduce((acc, s) => acc + s.value, 0),
-    [],
-  );
+  // donut 中心总额：用切片求和（与资产分布同源；真实数据下 = 正余额账户合计）
+  const netAssetTotal = lab.slices.reduce((acc, sl) => acc + sl.value, 0);
 
   return (
     <div className="p-4 lg:p-8">
@@ -206,10 +197,13 @@ export function ZenithLab() {
         }
       `}</style>
 
-      {/* 实验室横幅——同 DashboardLab 的虚线盒，文案改 Zenith 变体 */}
-      <div className="flex items-center gap-2 rounded-xl border border-dashed border-border dark:border-border-dark px-4 py-2.5 text-xs text-text-muted dark:text-text-muted-dark">
-        <IconFlask size={14} className="flex-none" />
-        <span>视觉实验室 · Zenith 变体 · 静态样例数据（不发 API）· 四卡+Tab+donut 中心叠加</span>
+      {/* 实验室横幅——同 DashboardLab 的虚线盒；右侧数据源开关 */}
+      <div className="flex items-center justify-between gap-3 rounded-xl border border-dashed border-border dark:border-border-dark px-4 py-2.5 text-xs text-text-muted dark:text-text-muted-dark">
+        <span className="flex items-center gap-2 min-w-0">
+          <IconFlask size={14} className="flex-none" />
+          <span className="truncate">视觉实验室 · Zenith 变体 · 四卡+Tab+donut 中心叠加</span>
+        </span>
+        <LabDataSwitch error={lab.error} />
       </div>
 
       {/* 页面头：标题 + 问候副文案 */}
@@ -224,27 +218,27 @@ export function ZenithLab() {
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           testid="zenith-stat-netAsset"
-          label={LAB_STATS.netAsset.label}
-          amount={LAB_STATS.netAsset.amount}
-          deltaPct={LAB_STATS.netAsset.deltaPct}
+          label={lab.stats.netAsset.label}
+          amount={lab.stats.netAsset.amount}
+          deltaPct={lab.stats.netAsset.deltaPct}
           icon={<IconWallet size={18} />}
           spark={netAssetSeries}
           tone="brand"
         />
         <StatCard
           testid="zenith-stat-income"
-          label={LAB_STATS.income.label}
-          amount={LAB_STATS.income.amount}
-          deltaPct={LAB_STATS.income.deltaPct}
+          label={lab.stats.income.label}
+          amount={lab.stats.income.amount}
+          deltaPct={lab.stats.income.deltaPct}
           icon={<IconArrowUpRight size={18} />}
           spark={monthly.map((m) => ({ value: m.income }))}
           tone="income"
         />
         <StatCard
           testid="zenith-stat-expense"
-          label={LAB_STATS.expense.label}
-          amount={LAB_STATS.expense.amount}
-          deltaPct={LAB_STATS.expense.deltaPct}
+          label={lab.stats.expense.label}
+          amount={lab.stats.expense.amount}
+          deltaPct={lab.stats.expense.deltaPct}
           invert
           icon={<IconArrowDownRight size={18} />}
           spark={monthly.map((m) => ({ value: m.expense }))}
@@ -252,9 +246,9 @@ export function ZenithLab() {
         />
         <StatCard
           testid="zenith-stat-savings"
-          label="储蓄率"
-          amount={LAB_SAVINGS_RATE}
-          deltaPct={2.4}
+          label={lab.stats.savings.label}
+          amount={lab.stats.savings.amount}
+          deltaPct={lab.stats.savings.deltaPct}
           icon={<IconPigMoney size={18} />}
           spark={savingsRateSeries}
           tone="brand"
@@ -367,7 +361,7 @@ export function ZenithLab() {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={LAB_SLICES}
+                    data={lab.slices}
                     dataKey="value"
                     nameKey="name"
                     innerRadius="60%"
@@ -376,7 +370,7 @@ export function ZenithLab() {
                     animationDuration={600}
                     animationEasing="ease-out"
                   >
-                    {LAB_SLICES.map((_, i) => (
+                    {lab.slices.map((_, i) => (
                       <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                     ))}
                   </Pie>
@@ -392,7 +386,7 @@ export function ZenithLab() {
               </div>
             </div>
             <ul className="mt-2 space-y-1.5 text-xs">
-              {LAB_SLICES.map((s, i) => (
+              {lab.slices.map((s, i) => (
                 <li key={s.name} className="flex items-center gap-2">
                   <span
                     className="h-2 w-2 rounded-sm flex-none"
@@ -412,7 +406,7 @@ export function ZenithLab() {
             <h2 className="text-sm font-semibold text-text dark:text-text-dark">目标进度</h2>
             <p className="mt-0.5 text-xs text-text-muted dark:text-text-muted-dark">本季度追踪</p>
             <ul className="mt-3 space-y-3">
-              {LAB_GOALS.map((g) => {
+              {lab.goals.map((g) => {
                 const pct = Math.min(100, Math.round((g.current / g.target) * 100));
                 return (
                   <li key={g.name}>
@@ -462,7 +456,7 @@ export function ZenithLab() {
               </tr>
             </thead>
             <tbody>
-              {LAB_RECENT_TX.map((tx, i) => (
+              {lab.recentTx.map((tx, i) => (
                 <tr
                   key={i}
                   className="border-b border-border/60 dark:border-border-dark/60 last:border-b-0"

@@ -6,14 +6,15 @@
  * 成熟了再动生产页面——避免再次出现「bento 全量落地后回退」的代价。
  *
  * 铁规：
- *  - 数据全部静态（下方 mock 生成器），**不发任何 API 请求**——core 不在线也能开
+ *  - 数据默认静态（下方 mock 生成器），横幅开关可切真实数据（REST）——见 useLabData.ts
  *  - 视觉契约与 /home 对齐（surface.stat 软底卡 / panel 白卡 / income 绿 expense 红 /
  *    chart-brand 图表色），保证「对照实验」成立
  *  - 本页**不进 accept 回归闸的页面清单**（实验室允许有意违反规范来试效果）
  *  - 改动本页不需要回归脚本全绿，但 tsc + vitest 必须过
  *  - 想法沉淀后：要么合入生产（改 /home 并跑全套回归），要么连本页试验代码一起删
  */
-import { useMemo } from 'react';
+import { useLabData } from './useLabData';
+import { LabDataSwitch } from './LabDataSwitch';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -215,19 +216,24 @@ function DeltaLine({ deltaPct, invert = false }: { deltaPct: number; invert?: bo
 /* ───────────────────────── 页面 ───────────────────────── */
 
 export function DashboardLab() {
-  const trend = useMemo(() => genLabTrend(), []);
+  // 统一数据源：静态样例 ↔ 真实数据（横幅开关切换，见 useLabData）
+  const lab = useLabData();
+  const trend = lab.trend30;
 
   return (
     <div className="p-4 lg:p-8">
       {/* 页面骨架与生产契约对齐：p-4 lg:p-8 沟槽 + max-w-[1400px] 居中
          （原裸 space-y-6 导致内容贴 rail/视口边缘——web-design-guidelines 审查项） */}
       <div className="max-w-[1400px] mx-auto space-y-6" data-testid="dashboard-lab">
-      {/* 实验室横幅：一眼认出这不是生产看板 */}
-      <div className="flex items-center gap-2 rounded-xl border border-dashed border-border dark:border-border-dark px-4 py-2.5 text-xs text-text-muted dark:text-text-muted-dark">
-        <IconFlask size={14} className="flex-none" />
-        <span>
-          视觉实验室 · 看板复刻 · 静态样例数据（不发 API）· 想法在此先验，成熟了再动 /home
+      {/* 实验室横幅：一眼认出这不是生产看板；右侧数据源开关 */}
+      <div className="flex items-center justify-between gap-3 rounded-xl border border-dashed border-border dark:border-border-dark px-4 py-2.5 text-xs text-text-muted dark:text-text-muted-dark">
+        <span className="flex items-center gap-2 min-w-0">
+          <IconFlask size={14} className="flex-none" />
+          <span className="truncate">
+            视觉实验室 · 看板复刻 · 想法在此先验，成熟了再动 /home
+          </span>
         </span>
+        <LabDataSwitch error={lab.error} />
       </div>
 
       {/* 资产概览：复刻三卡色块带 */}
@@ -236,27 +242,27 @@ export function DashboardLab() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           {/* 净资产主卡：brand 中性面 + 左 3px 边条 */}
           <div className={`${STAT_SURFACE} ${STAT_PRIMARY_BAR} bg-surface-stat dark:bg-surface-stat-dark p-5`}>
-            <div className="text-xs text-text-muted dark:text-text-muted-dark">{LAB_STATS.netAsset.label}</div>
+            <div className="text-xs text-text-muted dark:text-text-muted-dark">{lab.stats.netAsset.label}</div>
             <div className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-text dark:text-text-dark">
-              ¥ {fmtMoney(LAB_STATS.netAsset.amount)}
+              ¥ {fmtMoney(lab.stats.netAsset.amount)}
             </div>
-            <DeltaLine deltaPct={LAB_STATS.netAsset.deltaPct} />
+            <DeltaLine deltaPct={lab.stats.netAsset.deltaPct} />
           </div>
           {/* 收入：income soft 绿 */}
           <div className={`${STAT_SURFACE} bg-surface-stat-income dark:bg-surface-stat-income-dark p-5`}>
-            <div className="text-xs text-text-muted dark:text-text-muted-dark">{LAB_STATS.income.label}</div>
+            <div className="text-xs text-text-muted dark:text-text-muted-dark">{lab.stats.income.label}</div>
             <div className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-income-deep dark:text-income">
-              ¥ {fmtMoney(LAB_STATS.income.amount)}
+              ¥ {fmtMoney(lab.stats.income.amount)}
             </div>
-            <DeltaLine deltaPct={LAB_STATS.income.deltaPct} />
+            <DeltaLine deltaPct={lab.stats.income.deltaPct} />
           </div>
           {/* 支出：expense soft 红 */}
           <div className={`${STAT_SURFACE} bg-surface-stat-expense dark:bg-surface-stat-expense-dark p-5`}>
-            <div className="text-xs text-text-muted dark:text-text-muted-dark">{LAB_STATS.expense.label}</div>
+            <div className="text-xs text-text-muted dark:text-text-muted-dark">{lab.stats.expense.label}</div>
             <div className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-expense-deep dark:text-expense">
-              ¥ {fmtMoney(LAB_STATS.expense.amount)}
+              ¥ {fmtMoney(lab.stats.expense.amount)}
             </div>
-            <DeltaLine deltaPct={LAB_STATS.expense.deltaPct} invert />
+            <DeltaLine deltaPct={lab.stats.expense.deltaPct} invert />
           </div>
         </div>
       </section>
@@ -318,7 +324,7 @@ export function DashboardLab() {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={LAB_SLICES}
+                  data={lab.slices}
                   dataKey="value"
                   nameKey="name"
                   innerRadius="55%"
@@ -327,7 +333,7 @@ export function DashboardLab() {
                   animationDuration={600}
                   animationEasing="ease-out"
                 >
-                  {LAB_SLICES.map((_, i) => (
+                  {lab.slices.map((_, i) => (
                     <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                   ))}
                 </Pie>
@@ -336,7 +342,7 @@ export function DashboardLab() {
             </ResponsiveContainer>
           </div>
           <ul className="w-full space-y-2 text-sm md:w-1/2">
-            {LAB_SLICES.map((s, i) => (
+            {lab.slices.map((s, i) => (
               <li key={s.name} className="flex items-center gap-2">
                 <span
                   className="h-2.5 w-2.5 rounded-sm flex-none"
