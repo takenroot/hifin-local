@@ -5,10 +5,12 @@
 import type { RouteObject } from 'react-router-dom';
 import { DashboardLab } from './DashboardLab';
 import { ZenithLab } from './ZenithLab';
+import ClassicLab from './ClassicLab';
 
 export const routes: RouteObject[] = [
   { path: 'lab', element: <DashboardLab /> },
   { path: 'lab/zenith', element: <ZenithLab /> },
+  { path: 'lab/classic', element: <ClassicLab /> },
 ];
 
 export default routes;

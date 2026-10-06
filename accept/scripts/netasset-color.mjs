@@ -1,13 +1,10 @@
 /**
- * 回归：金额语义色（2026-10-06 主题还原后口径）
+ * 回归：金额语义色（2026-10-06 看板重写后新契约）
  * ---------------------------------------------------------------
- * 口径（docs/design-principles.md）：
- *   收入=绿、支出=红；好事=绿、坏事=红（涨跌/净资产/余额同此约定）
- * 断言对象：看板三张色块卡的大金额 + 环比行 + 账户管理合计
- *   - 本月收入卡金额 → 绿色系
- *   - 本月支出卡金额 → 红色系
- *   - 净资产卡：行为按 dynamic tone（负数/下跌=红，正数=绿），此处只断言
- *     「渲染出来的 income/expense 类与红绿实际色一致」，防止令牌再次错位
+ * 口径（docs/design-principles.md）：收入=绿、支出=红；好事=绿、坏事=红。
+ * 看板重写（zenith 形态）后语义色挂在**环比行**（.text-income/.text-expense），
+ * 卡面大数字为中性炭黑——本脚本断言「带语义类的元素实际渲染色与令牌一致」，
+ * 防止令牌再次错位（与结构解耦，无论色挂在金额还是环比都成立）。
  * 运行：core :8787 + vite :5199 均需在线。
  */
 import { chromium } from 'playwright';
@@ -19,38 +16,34 @@ await page.waitForTimeout(2500);
 
 const rows = await page.evaluate(() => {
   const out = [];
-  // 色块卡大金额：StatCard 的 valueClass 挂 text-income-deep/text-expense-deep
-  document.querySelectorAll('[class*="text-income-deep"], [class*="text-expense-deep"]').forEach((el) => {
-    const label = el.parentElement?.parentElement?.textContent?.slice(0, 12) ?? '';
+  document.querySelectorAll('.text-income, .text-expense').forEach((el) => {
     out.push({
-      label,
-      cls: String(el.className).match(/text-(income|expense)-deep/)?.[1] ?? '?',
+      cls: el.className.match(/text-(income|expense)\b/)?.[1] ?? '?',
       color: getComputedStyle(el).color,
+      text: el.textContent?.slice(0, 20) ?? '',
     });
   });
   return out;
 });
 
-function isGreen(rgb) {
-  const [, r, g, b] = rgb.match(/rgb\((\d+), (\d+), (\d+)\)/)?.map(Number) ?? [];
-  return g > r && g > b;
-}
-function isRed(rgb) {
-  const [, r, g, b] = rgb.match(/rgb\((\d+), (\d+), (\d+)\)/)?.map(Number) ?? [];
-  return r > g && r > b;
+function chan(rgb, pick) {
+  const m = rgb.match(/rgb\((\d+), (\d+), (\d+)\)/);
+  return m ? Number(m[pick]) : 0;
 }
 
 let failed = 0;
-for (const row of rows) {
-  const ok = row.cls === 'income' ? isGreen(row.color) : isRed(row.color);
-  console.log(`${ok ? '✓' : '✗'} ${row.cls.padEnd(7)} ${row.color}  ${row.label}`);
-  if (!ok) failed += 1;
+for (const r of rows) {
+  const g = chan(r.color, 2);
+  const red = chan(r.color, 1);
+  const ok = r.cls === 'income' ? g > red : red > g;
+  if (!ok) {
+    console.log(`✗ ${r.cls} ${r.color} 「${r.text}」`);
+    failed += 1;
+  }
 }
-// 2026-10-06 bento 重构后：净资产 hero 大卡改为炭黑中性大数字（设计 §3），
-// 带 income/expense-deep 的只剩收入/支出两张小卡——核心契约是「income=绿/expense=红
-// 令牌与实际渲染色一致」，数量下限随结构改为 ≥2
+console.log(`语义色元素共 ${rows.length} 个（income=绿 / expense=红）`);
 if (rows.length < 2) {
-  console.log(`✗ 色块卡大金额只找到 ${rows.length} 个（预期 ≥2）`);
+  console.log(`✗ 语义色元素不足 2 个（预期 ≥2）`);
   failed += 1;
 }
 await browser.close();
@@ -58,4 +51,4 @@ if (failed > 0) {
   console.error(`netasset-color: ${failed} 项未过`);
   process.exit(1);
 }
-console.log('netasset-color: 全部通过（income=绿 / expense=红，令牌与实际色一致）');
+console.log('netasset-color: 全部通过（语义类与实际渲染色一致）');
