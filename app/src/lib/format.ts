@@ -21,8 +21,8 @@ export function formatMoney(value: number, withSymbol = true): string {
 /**
  * 账户余额 / 合计的配色类（统一口径：以 accounts 版为准）。
  *
- * 沿用全局财务约定：红=好事（有钱），绿=坏事（欠钱）。
- * 余额为负（透支 / 欠款）用绿色 text-expense，为正（有钱）用红色 text-income，
+ * 沿用全局财务约定（2026-10-06 主题还原）：绿=好事（有钱），红=坏事（欠钱）。
+ * 余额为负（透支 / 欠款）用红色 text-expense，为正（有钱）用绿色 text-income，
  * 零值走 muted（既不"有钱"也不"欠钱"，不渲染情绪色）。
  */
 export function balanceToneClass(balance: number): string {

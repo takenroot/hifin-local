@@ -1234,7 +1234,7 @@ export function StatCard({
   hide,
   testId,
 }: StatCardProps) {
-  // dynamic：净资产专用——负数=坏事=绿，正数=好事=红；delta 辅助判断趋势
+  // dynamic：净资产专用——负数=坏事=红，正数=好事=绿（2026-10-06 起绿好红坏）；delta 辅助判断趋势
   const effectiveTone =
     tone === 'dynamic'
       ? amount < 0 || delta < 0
@@ -1248,7 +1248,8 @@ export function StatCard({
     effectiveTone === 'income'
       ? 'text-income-deep dark:text-income'
       : 'text-expense-deep dark:text-expense';
-  // 环比：涨红跌绿沿用既有口径（支出场景"减少"算好事），0 走 muted 并补 dark 变体，
+  // 环比：正=好事=绿、负=坏事=红（2026-10-06 统一口径；支出场景"减少"算好事，
+  // 由 trendToneClass 的 expenseMode 处理），0 走 muted 并补 dark 变体，
   // 否则色块卡上会留下一行暗色模式对比度不足的深灰。
   const deltaTone =
     delta === 0

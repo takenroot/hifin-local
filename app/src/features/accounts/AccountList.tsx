@@ -225,7 +225,8 @@ function AccountCard({ account, tags }: { account: Account; tags: Tag[] }) {
    * 口径（见 features/accounts/yield.ts）：负债账户不展示、没填过不展示、
    * 这里只显示"当年实际赚了多少"，不再有"余额 × 收益率"的预计推算。
    *
-   * 配色跟着项目约定走：红=好事（赚到了）→ text-income，绿=坏事（当年亏损）→ text-expense。
+   * 配色跟着项目约定走（2026-10-06 起）：绿=好事（赚到了）→ text-income，
+   * 红=坏事（当年亏损）→ text-expense。
    */
   const yieldDisplay = accountYieldDisplay(account);
 

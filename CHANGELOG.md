@@ -6,6 +6,23 @@
 
 ## [unreleased]
 
+### 新增（2026-10-06：主题还原——纠正「收入红」曲解，回归原版炭黑极简）
+
+用户反馈主题不满意、需求曾被曲解。对照复刻源（docs/exploration-originals §11.2「收入/净资产
+绿色系、支出红色系」）确认 REST 迁移批次写入的「收入=红色（用户直觉）」为曲解，全站还原：
+- **语义色互换**：收入=绿 #10b981 / 支出=红 #ef4444（tailwind 令牌换值不换名，调用方零改动；
+  deep/soft/soft-dark 全套同源互换；SOFT 常量同步）
+- **炭黑极简主色**：brand 靛蓝→炭黑 #26262b（原版登录页/AI 设置页实测），dark 反转 #d4d4d8；
+  Button primary/danger 归位（danger 走状态轴）；图表/图标 chip/头像占位等硬编码色全量清扫，
+  新增 lib/chartColors.ts 作为令牌 JS 镜像（recharts 消费）
+- **好坏语义统一**：好事=绿、坏事=红（涨跌/净资产/余额/年收益）——全站本就经
+  income/expense 令牌映射，令牌一换行为自动正确，本次修正全部过时注释
+- /ai 页按用户决策只换皮不动布局（紫按钮→炭黑）
+- 用户色板（分类/标签/目标可选颜色）是用户数据，不动
+- 回归：accept/scripts/netasset-color.mjs 从 archive 恢复并改为断言式（income=绿/expense=红
+  令牌与实际渲染色一致），已复跑通过；tsc 干净、vitest 283 全过、五页截图验证
+- 文档：design-principles.md 硬约定重写、README 更正（历史 CHANGELOG 条目按史料原则不动）
+
 ### 新增（2026-10-05 晚：路线图三件套落地——调研 → minimax 两波实现 → 调度方逐文件验收）
 
 三路可行性调研（docs/mcp-design.md / ai-insights-design.md / sse-design.md，minimax 并行产出、
