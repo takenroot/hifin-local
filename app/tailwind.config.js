@@ -8,9 +8,12 @@
  * 会覆盖同名键，把 income.DEFAULT 从金额红顶成浅色底，整站金额跟着变淡。
  */
 const SOFT = {
-  brand: { light: '#eef2ff', dark: 'rgba(99,102,241,0.18)' },
-  income: { light: '#fee2e2', dark: 'rgba(239,68,68,0.18)' },
-  expense: { light: '#d1fae5', dark: 'rgba(16,185,129,0.18)' },
+  // brand 中性灰：炭黑极简语言（复刻源 §11.2），原靛蓝 accent 已废
+  brand: { light: '#f4f4f5', dark: 'rgba(255,255,255,0.08)' },
+  // 金额语义（2026-10-06 还原复刻源 §11.2）：收入=绿、支出=红。
+  // 此前「收入=红（用户直觉）」是 REST 迁移批次的曲解，已与用户对齐还原。
+  income: { light: '#d1fae5', dark: 'rgba(16,185,129,0.18)' },
+  expense: { light: '#fee2e2', dark: 'rgba(239,68,68,0.18)' },
 };
 
 /** @type {import('tailwindcss').Config} */
@@ -41,19 +44,19 @@ export default {
           muted: '#6b7280',
           'muted-dark': '#9ca3af',
         },
-        // 收入=红色（用户直觉），支出=绿色
+        // 收入=绿 / 支出=红（复刻源 §11.2；2026-10-06 还原，纠正「收入红」曲解）
         // deep 变体：同色加深一档，专供「色块数据卡」（surface.stat）上的大金额文字——
-        // 原色在 soft 底上对比度不足（绿 2.24:1 / 红 3.08:1，28px 大字号门槛 3:1），
-        // deep 实测 绿 #047857=4.84:1 / 红 #dc2626=3.95:1。白底场景仍用原色（用户约定 hue）。
+        // 原色在 soft 底上对比度不足（红 2.24:1 / 绿 3.08:1，28px 大字号门槛 3:1），
+        // deep 实测 红 #dc2626=3.95:1 / 绿 #047857=4.84:1。白底场景仍用原色。
         income: {
-          DEFAULT: '#ef4444',
-          deep: '#dc2626',
+          DEFAULT: '#10b981',
+          deep: '#047857',
           soft: SOFT.income.light,
           'soft-dark': SOFT.income.dark,
         },
         expense: {
-          DEFAULT: '#10b981',
-          deep: '#047857',
+          DEFAULT: '#ef4444',
+          deep: '#dc2626',
           soft: SOFT.expense.light,
           'soft-dark': SOFT.expense.dark,
         },
@@ -69,8 +72,8 @@ export default {
           soft: '#fef2f2',
           'soft-dark': 'rgba(220,38,38,0.16)',
         },
-        // success 取 green-500 #22c55e：与支出祖母绿 #10b981 错开半档，
-        // 避免"成功 toast"与"支出数字"同 hue 混淆；文字场景配 dark 变体
+        // success 取 green-500 #22c55e：与收入祖母绿 #10b981 错开半档，
+        // 避免"成功 toast"与"收入数字"同 hue 混淆；文字场景配 dark 变体
         success: {
           DEFAULT: '#22c55e',
           soft: '#f0fdf4',
@@ -81,9 +84,12 @@ export default {
           soft: '#fffbeb',
           'soft-dark': 'rgba(217,119,6,0.16)',
         },
+        // 品牌主色：炭黑（原版登录页/AI 设置页实测 #26262B）。
+        // 语言基调 = HeroUI 式极简：彩色只留给钱（income/expense），
+        // 按钮/链接/强调位一律炭黑，暗色模式反转为浅灰白。
         brand: {
-          DEFAULT: '#6366f1',
-          dark: '#a5b4fc',
+          DEFAULT: '#26262b',
+          dark: '#d4d4d8',
           soft: SOFT.brand.light,
           'soft-dark': SOFT.brand.dark,
         },

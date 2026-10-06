@@ -13,12 +13,13 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantClass: Record<ButtonVariant, string> = {
-  // primary = 品牌靛蓝（2026-10-05 用户决策，替代近黑 bg-text）
+  // primary = 炭黑（2026-10-06 主题还原决策，对齐复刻源极简语言；brand 令牌已指向 #26262b）
   primary: 'bg-brand text-white hover:opacity-90 disabled:opacity-40',
   secondary:
     'bg-bg-card dark:bg-bg-card-dark text-text dark:text-text-dark border border-border dark:border-border-dark hover:bg-bg dark:hover:bg-bg-dark',
   ghost: 'text-text-muted hover:bg-bg dark:hover:bg-bg-card-dark',
-  danger: 'bg-expense text-white hover:opacity-90',
+  // danger 走状态轴（与金额语义正交），不吃 expense/income 令牌
+  danger: 'bg-danger text-white hover:opacity-90',
 };
 
 const sizeClass: Record<ButtonSize, string> = {
