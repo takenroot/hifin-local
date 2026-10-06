@@ -67,6 +67,13 @@ export const spaceIdAtom = atomWithStorage<number>('hifin:spaceId', 1);
  */
 export const spaceAtom = atomWithStorage<string>('hifin:space', '默认空间');
 
+/**
+ * 桌面侧边栏折叠态（false=展开 200px，true=收起 56px icon rail）。
+ * 仅 lg 及以上生效；移动端抽屉不读此值。持久化，刷新保持。
+ * 2026-10-06：收起态各段形态见 AppLayout SidebarBody 的 collapsed 分支。
+ */
+export const sidebarCollapsedAtom = atomWithStorage<boolean>('hifin:sidebarCollapsed', false);
+
 /* ───────────────── 交易流水：分组维度 / 统计月份 ───────────────── */
 
 /**

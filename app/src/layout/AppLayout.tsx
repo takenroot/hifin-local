@@ -17,12 +17,15 @@ import {
   IconCheck,
   IconMenu2,
   IconX,
+  IconLayoutSidebarLeftCollapse,
+  IconLayoutSidebarLeftExpand,
 } from '@tabler/icons-react';
 import clsx from 'clsx';
 import {
   menuVisibilityAtom,
   spaceIdAtom,
   commandPaletteOpenAtom,
+  sidebarCollapsedAtom,
 } from '@/store/atoms';
 import type { Space } from '@/db';
 import { useApi, apiFetch } from '@/hooks/useApi';
@@ -73,6 +76,8 @@ export default function AppLayout() {
   const setPaletteOpen = useAtom(commandPaletteOpenAtom)[1];
   // 移动端侧栏抽屉
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  // 桌面侧边栏折叠态（仅 lg+ 生效，持久化；收起形态约定见 atoms.ts 注释）
+  const [sidebarCollapsed, setSidebarCollapsed] = useAtom(sidebarCollapsedAtom);
 
   // 全局 ⌘K / Ctrl+K 切换命令面板
   useEffect(() => {
@@ -154,8 +159,13 @@ export default function AppLayout() {
       className="flex h-dvh w-screen overflow-hidden bg-bg dark:bg-bg-dark text-text dark:text-text-dark"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
-      {/* 桌面侧边栏（lg 及以上常驻） */}
-      <aside className="hidden lg:flex w-[200px] flex-none border-r border-border dark:border-border-dark flex-col bg-bg-card dark:bg-bg-card-dark">
+      {/* 桌面侧边栏（lg 及以上常驻；可折叠为 icon rail，宽度 200ms 过渡） */}
+      <aside
+        className={clsx(
+          'hidden lg:flex flex-none border-r border-border dark:border-border-dark flex-col bg-bg-card dark:bg-bg-card-dark transition-[width] duration-200 ease-out',
+          sidebarCollapsed ? 'w-14' : 'w-[200px]',
+        )}
+      >
         <SidebarBody
           spaces={spaces}
           spaceId={spaceId}
@@ -167,6 +177,8 @@ export default function AppLayout() {
           visibleItems={visibleItems}
           pathname={location.pathname}
           hasPendingAiInsight={hasPendingAiInsight}
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed((v) => !v)}
         />
       </aside>
 
@@ -265,6 +277,9 @@ interface SidebarBodyProps {
   pathname: string;
   /** 看板有未处理 AI 洞察通知时挂小红点 */
   hasPendingAiInsight?: boolean;
+  /** 桌面折叠态：收起为 icon rail（仅桌面传，移动端抽屉恒为展开） */
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 function SidebarBody({
@@ -278,6 +293,8 @@ function SidebarBody({
   visibleItems,
   pathname,
   hasPendingAiInsight,
+  collapsed = false,
+  onToggleCollapse,
 }: SidebarBodyProps) {
   return (
     <>
@@ -287,22 +304,30 @@ function SidebarBody({
         spaceId={spaceId}
         onPick={onPick}
         onRefreshSpaces={onRefreshSpaces}
+        collapsed={collapsed}
       />
 
-      {/* Search */}
-      <div className="px-3 pt-1 pb-3">
+      {/* Search：收起态退化为纯图标按钮，tooltip 用原生 title（Kowalski：低频操作不上悬浮层框架） */}
+      <div className={clsx('pt-1 pb-3', collapsed ? 'px-2.5' : 'px-3')}>
         <button
           type="button"
           onClick={onOpenPalette}
-          className="w-full flex items-center justify-between gap-2 h-9 px-3 rounded-xl bg-bg dark:bg-bg-dark text-text-muted hover:text-text dark:hover:text-text-dark transition"
+          title="搜索（⌘K）"
+          aria-label="搜索（⌘K）"
+          className={clsx(
+            'flex items-center rounded-xl bg-bg dark:bg-bg-dark text-text-muted hover:text-text dark:hover:text-text-dark transition',
+            collapsed ? 'w-9 h-9 justify-center' : 'w-full justify-between gap-2 h-9 px-3',
+          )}
         >
-          <span className="flex items-center gap-2">
+          <span className={clsx('flex items-center', !collapsed && 'gap-2')}>
             <IconSearch size={14} />
-            <span className="text-sm">搜索</span>
+            {!collapsed && <span className="text-sm">搜索</span>}
           </span>
-          <span className="flex items-center gap-1 text-xs">
-            <IconCommand size={12} />K
-          </span>
+          {!collapsed && (
+            <span className="flex items-center gap-1 text-xs">
+              <IconCommand size={12} />K
+            </span>
+          )}
         </button>
       </div>
 
@@ -316,41 +341,87 @@ function SidebarBody({
             <NavLink
               key={it.label}
               to={it.to}
+              title={collapsed ? it.label : undefined}
               className={clsx(
-                'flex items-center gap-2.5 h-9 px-3 rounded-xl text-sm transition',
+                'flex items-center h-9 rounded-xl text-sm transition',
+                collapsed ? 'justify-center px-0' : 'gap-2.5 px-3',
                 active
                   ? 'bg-bg dark:bg-bg-dark font-medium text-text dark:text-text-dark'
                   : 'text-text-muted hover:bg-bg dark:hover:bg-bg-dark hover:text-text dark:hover:text-text-dark',
               )}
             >
-              <span className="flex-none text-text-muted">{it.icon}</span>
-              <span className="truncate flex-1">{it.label}</span>
-              {showBadge && (
-                <span
-                  aria-label="有新的财务洞察通知"
-                  className="flex-none w-2 h-2 rounded-full bg-danger dark:bg-danger-dark"
-                />
+              <span className={clsx('flex-none text-text-muted', collapsed && 'relative')}>
+                {it.icon}
+                {/* 收起态红点挂图标右上角（原位置的文字让位了） */}
+                {collapsed && showBadge && (
+                  <span
+                    aria-label="有新的财务洞察通知"
+                    className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-danger dark:bg-danger-dark"
+                  />
+                )}
+              </span>
+              {!collapsed && (
+                <>
+                  <span className="truncate flex-1">{it.label}</span>
+                  {showBadge && (
+                    <span
+                      aria-label="有新的财务洞察通知"
+                      className="flex-none w-2 h-2 rounded-full bg-danger dark:bg-danger-dark"
+                    />
+                  )}
+                </>
               )}
             </NavLink>
           );
         })}
       </nav>
 
-      {/* Settings & profile */}
-      <div className="px-3 pt-2 pb-3 border-t border-border dark:border-border-dark space-y-1">
+      {/* Settings & profile：折叠切换按钮放设置上方（桌面专属；移动端不传 onToggleCollapse 自然隐藏） */}
+      <div
+        className={clsx(
+          'pt-2 pb-3 border-t border-border dark:border-border-dark space-y-1',
+          collapsed ? 'px-2.5' : 'px-3',
+        )}
+      >
+        {onToggleCollapse && (
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            title={collapsed ? '展开侧边栏' : '折叠侧边栏'}
+            aria-label={collapsed ? '展开侧边栏' : '折叠侧边栏'}
+            className={clsx(
+              'flex items-center rounded-xl text-sm text-text-muted hover:bg-bg dark:hover:bg-bg-dark hover:text-text dark:hover:text-text-dark transition',
+              collapsed ? 'w-9 h-9 justify-center' : 'w-full gap-2.5 h-9 px-3',
+            )}
+          >
+            {collapsed ? (
+              <IconLayoutSidebarLeftExpand size={18} />
+            ) : (
+              <IconLayoutSidebarLeftCollapse size={18} />
+            )}
+            {!collapsed && <span>折叠</span>}
+          </button>
+        )}
         <button
           type="button"
           onClick={onNavigateSettings}
-          className="w-full flex items-center gap-2.5 h-9 px-3 rounded-xl text-sm text-text-muted hover:bg-bg dark:hover:bg-bg-dark hover:text-text dark:hover:text-text-dark transition"
+          title={collapsed ? '设置' : undefined}
+          className={clsx(
+            'flex items-center rounded-xl text-sm text-text-muted hover:bg-bg dark:hover:bg-bg-dark hover:text-text dark:hover:text-text-dark transition',
+            collapsed ? 'w-9 h-9 justify-center' : 'w-full gap-2.5 h-9 px-3',
+          )}
         >
           <IconSettings size={18} />
-          <span>设置</span>
+          {!collapsed && <span>设置</span>}
         </button>
-        <div className="flex items-center gap-2 px-2 pt-1">
-          {/* ponytail: 头像占位中性化（Wave B），原粉→紫渐变是历史 palette 残留，与品牌炭黑极简语言不一致 */}
-          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-text-muted to-text flex-none" />
-          <div className="text-xs text-text-muted truncate">{currentSpaceName}</div>
-        </div>
+        {/* 收起态名片隐藏（rail 宽度放不下，空间名仍在展开态与弹层里可达） */}
+        {!collapsed && (
+          <div className="flex items-center gap-2 px-2 pt-1">
+            {/* ponytail: 头像占位中性化（Wave B），原粉→紫渐变是历史 palette 残留，与品牌炭黑极简语言不一致 */}
+            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-text-muted to-text flex-none" />
+            <div className="text-xs text-text-muted truncate">{currentSpaceName}</div>
+          </div>
+        )}
       </div>
     </>
   );
@@ -364,9 +435,11 @@ interface SpaceSwitcherProps {
   onPick: (id: number) => void;
   /** 新建成功后重新拉取 GET /api/spaces */
   onRefreshSpaces: () => void;
+  /** 收起态：头部退化为单个 icon 按钮，弹层改为向右飞出（rail 内放不下原宽度） */
+  collapsed?: boolean;
 }
 
-function SpaceSwitcher({ spaces, spaceId, onPick, onRefreshSpaces }: SpaceSwitcherProps) {
+function SpaceSwitcher({ spaces, spaceId, onPick, onRefreshSpaces, collapsed = false }: SpaceSwitcherProps) {
   const [open, setOpen] = useState(false);
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState('');
@@ -410,24 +483,36 @@ function SpaceSwitcher({ spaces, spaceId, onPick, onRefreshSpaces }: SpaceSwitch
   }
 
   return (
-    <div className="relative px-3 pt-4 pb-2">
+    <div className={clsx('relative pt-4 pb-2', collapsed ? 'px-2.5' : 'px-3')}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between gap-2 h-10 px-3 rounded-xl hover:bg-bg dark:hover:bg-bg-dark transition"
+        title={collapsed ? headerLabel : undefined}
+        aria-label={collapsed ? `切换空间（当前：${headerLabel}）` : undefined}
+        className={clsx(
+          'flex items-center rounded-xl hover:bg-bg dark:hover:bg-bg-dark transition',
+          collapsed
+            ? 'w-9 h-9 justify-center mx-auto'
+            : 'w-full justify-between gap-2 h-10 px-3',
+        )}
       >
-        <div className="flex items-center gap-2 min-w-0">
+        <div className={clsx('flex items-center min-w-0', !collapsed && 'gap-2')}>
           <div className="w-7 h-7 rounded-lg bg-text text-bg-card dark:bg-bg-card-dark dark:text-text-dark flex items-center justify-center flex-none">
             <IconLayersIntersect size={14} />
           </div>
-          <span className="text-sm font-medium truncate">{headerLabel}</span>
+          {!collapsed && <span className="text-sm font-medium truncate">{headerLabel}</span>}
         </div>
-        <IconChevronDown size={14} className="text-text-muted" />
+        {!collapsed && <IconChevronDown size={14} className="text-text-muted" />}
       </button>
 
       {open && (
+        // 收起态弹层飞出 rail 右侧（aside 无 overflow 裁剪，z-30 压主内容）；
+        // 展开态保持原下拉形态
         <div
-          className="absolute left-3 right-3 mt-1 z-30 card !p-1 !rounded-xl"
+          className={clsx(
+            'absolute z-30 card !p-1 !rounded-xl',
+            collapsed ? 'left-full top-0 ml-2 w-56' : 'left-3 right-3 mt-1',
+          )}
           onMouseLeave={() => {
             if (!adding) setOpen(false);
           }}
