@@ -73,9 +73,6 @@ import {
   Tabs,
   ProgressBar,
   PageHeader,
-  AuroraBackground,
-  BentoCard,
-  EmptyStateCard,
 } from '@/components/ui';
 import { useSpaceId } from '@/db';
 import type { Budget, Category, Goal } from '@/db';
@@ -433,10 +430,7 @@ export default function Dashboard() {
   const budgetsLoading = budgetsRes.loading && budgets.length === 0;
 
   return (
-    <div className="relative min-h-full bg-bg dark:bg-bg-dark">
-      {/* Aurora 氛围层：纯装饰，aria-hidden，绝不拦截指针（背景层规范 §1）。 */}
-      <AuroraBackground />
-
+    <div className="min-h-full bg-bg dark:bg-bg-dark">
       <PageHeader
         title="数据看板"
         icon={<IconLayoutDashboard size={18} />}
@@ -457,26 +451,26 @@ export default function Dashboard() {
       />
 
       <div className="p-4 lg:p-8">
-        <div className="max-w-[1440px] mx-auto space-y-6">
+        <div className="flex flex-col lg:flex-row gap-6 max-w-[1440px] mx-auto">
           {loadError ? (
-            <EmptyStateCard
+            <EmptyState
               title="数据加载失败"
               description={`无法从服务端读取看板数据：${loadError}`}
             />
           ) : loading ? (
-            <div className="space-y-6">
+            <div className="flex-1 min-w-0 space-y-6">
               <div className="h-24 rounded-xl bg-bg-card dark:bg-bg-card-dark animate-pulse" />
               {/* 骨架用 stat 中性色块，与真卡同一形状（圆角 3xl），避免加载完成时"换形" */}
-              <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
-                <div className="xl:col-span-8 h-28 rounded-3xl bg-surface-stat dark:bg-surface-stat-dark animate-pulse" />
-                <div className="xl:col-span-2 h-28 rounded-3xl bg-surface-stat dark:bg-surface-stat-dark animate-pulse" />
-                <div className="xl:col-span-2 h-28 rounded-3xl bg-surface-stat dark:bg-surface-stat-dark animate-pulse" />
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+                <div className="h-28 rounded-3xl bg-surface-stat dark:bg-surface-stat-dark animate-pulse" />
+                <div className="h-28 rounded-3xl bg-surface-stat dark:bg-surface-stat-dark animate-pulse" />
+                <div className="h-28 rounded-3xl bg-surface-stat dark:bg-surface-stat-dark animate-pulse" />
               </div>
               <div className="h-64 rounded-xl bg-bg-card dark:bg-bg-card-dark animate-pulse" />
             </div>
           ) : (
-          <>
-            {/* 欢迎区（无 card 包裹，整块单列不参与 bento） */}
+          <div className="flex-1 min-w-0 space-y-6">
+            {/* 欢迎区 */}
             <section>
               <div className="flex items-baseline gap-3">
                 <div className="text-2xl font-medium">
@@ -521,49 +515,22 @@ export default function Dashboard() {
               </div>
             </section>
 
-            {/* bento 12 列网格（≥1280px 生效；以下单列堆叠）
-                ponytail：delayStep 由调用方编排，本组件只把 step 折算成 ms；
-                折线以上 7 张首屏 fade-up，折线以下 4 张靠 useInView 触发。 */}
-            <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 xl:gap-4">
-              {/* row 1：净资产 hero span 8 + 收入 span 2 + 支出 span 2 */}
-              <BentoCard delayStep={0} className="xl:col-span-8">
-                <div className="flex flex-col h-full">
-                  <div className="flex items-baseline justify-between gap-2">
-                    <span className="text-xs text-text-muted dark:text-text-muted-dark flex items-center gap-1.5">
-                      <span aria-hidden>💰</span>净资产
-                    </span>
-                    <span className="text-[11px] text-text-muted dark:text-text-muted-dark">含负债抵消</span>
-                  </div>
-                  <div
-                    className={clsx(
-                      // 净资产 hero 是白/玻璃大卡 + 深数字 + 环比（规范 §3）
-                      'mt-3 font-semibold tabular-nums tracking-[-0.02em]',
-                      // clamp(40px, 5vw, 56px) — 设计 §2
-                      'text-[clamp(40px,5vw,56px)] leading-[1.1]',
-                      netAsset < 0 ? 'text-expense-deep dark:text-expense' : 'text-text dark:text-text-dark',
-                    )}
-                    data-testid="stat-net-asset-hero"
-                  >
-                    {hideAmounts ? <MaskMoney value={netAsset} hide /> : formatMoney(netAsset)}
-                  </div>
-                  <div className="mt-auto pt-4 flex items-baseline gap-1.5 text-xs">
-                    <span className="text-text-muted dark:text-text-muted-dark">较上月</span>
-                    <span
-                      className={clsx(
-                        'inline-flex items-center gap-0.5 font-medium',
-                        netAssetMoM === 0
-                          ? 'text-text-muted dark:text-text-muted-dark'
-                          : trendToneClass(netAssetMoM, false),
-                      )}
-                    >
-                      {netAssetMoM > 0 && <IconArrowUpRight size={12} />}
-                      {netAssetMoM < 0 && <IconArrowDownLeft size={12} />}
-                      {formatPercent(netAssetMoM)}
-                    </span>
-                  </div>
-                </div>
-              </BentoCard>
-              <BentoCard delayStep={1} className="!bg-transparent !border-0 !shadow-none xl:col-span-2">
+            {/* 资产概览三卡 */}
+            <section>
+              <h2 className="section-title mb-3">资产概览</h2>
+              {/* 三列起点定在 xl：lg 起右侧栏占掉 280px，768~1279 之间主区
+                  （456~712px）塞不下三个 28px 金额，md 就分三列必然挤爆。 */}
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+                <StatCard
+                  label="净资产"
+                  icon="💰"
+                  tone="dynamic"
+                  surface="brand"
+                  primary
+                  amount={netAsset}
+                  delta={netAssetMoM}
+                  hide={hideAmounts}
+                />
                 <StatCard
                   label="本月收入"
                   icon="📥"
@@ -574,8 +541,6 @@ export default function Dashboard() {
                   hide={hideAmounts}
                   testId="stat-month-income"
                 />
-              </BentoCard>
-              <BentoCard delayStep={2} className="!bg-transparent !border-0 !shadow-none xl:col-span-2">
                 <StatCard
                   label="本月支出"
                   icon="📤"
@@ -587,518 +552,514 @@ export default function Dashboard() {
                   hide={hideAmounts}
                   testId="stat-month-expense"
                 />
-              </BentoCard>
+              </div>
+            </section>
 
-              {/* row 2：资产趋势 span 8 + 资产分布 span 4 */}
-              <BentoCard delayStep={3} className="!bg-transparent !border-0 !shadow-none xl:col-span-8">
-                <Card flush title="资产趋势" extra={<span className="text-xs text-text-muted dark:text-text-muted-dark">近 30 天</span>}>
-                  {hasTrend ? (
-                    <div className="h-64 -mx-2">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={trendData} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
-                          <defs>
-                            <linearGradient id="dashNetGradient" x1="0" y1="0" x2="0" y2="1">
-                              {/* ponytail: 资产趋势是净资产线（不是钱的方向），用 brand 炭黑与全站极简语言一致；软底渐变保深度即可 */}
-                              <stop offset="0%" className="chart-brand" stopColor="currentColor" stopOpacity={0.4} />
-                              <stop offset="100%" className="chart-brand" stopColor="currentColor" stopOpacity={0} />
-                            </linearGradient>
-                          </defs>
-                          <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-border dark:text-border-dark" />
-                          <XAxis
-                            dataKey="date"
-                            tick={{ fontSize: 11, fill: 'currentColor' }}
-                            className="text-text-muted dark:text-text-muted-dark"
-                            tickFormatter={(v: string) => dayjs(v).format('MM/DD')}
-                            minTickGap={28}
-                          />
-                          <YAxis
-                            tick={{ fontSize: 11, fill: 'currentColor' }}
-                            className="text-text-muted dark:text-text-muted-dark"
-                            width={60}
-                            tickFormatter={(v: number) => {
-                              if (Math.abs(v) >= 10000) return `${(v / 10000).toFixed(1)}万`;
-                              return String(v);
-                            }}
-                          />
-                          <Tooltip
-                            content={<ChartTooltip />}
-                            cursor={LINE_CURSOR}
-                            formatter={(value: number | string) => [formatMoney(Number(value)), '净资产']}
-                            labelFormatter={(label: string) => dayjs(label).format('YYYY-MM-DD')}
-                          />
-                          <Area
-                            type="monotone"
-                            dataKey="value"
-                            stroke="currentColor"
+            {/* 资产趋势 */}
+            <section>
+              <Card title="资产趋势" extra={<span className="text-xs text-text-muted dark:text-text-muted-dark">近 30 天</span>}>
+                {hasTrend ? (
+                  <div className="h-64 -mx-2">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={trendData} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="dashNetGradient" x1="0" y1="0" x2="0" y2="1">
+                            {/* ponytail: 资产趋势是净资产线（不是钱的方向），用 brand 炭黑与全站极简语言一致；软底渐变保深度即可 */}
+                            <stop offset="0%" className="chart-brand" stopColor="currentColor" stopOpacity={0.4} />
+                            <stop offset="100%" className="chart-brand" stopColor="currentColor" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-border dark:text-border-dark" />
+                        <XAxis
+                          dataKey="date"
+                          tick={{ fontSize: 11, fill: 'currentColor' }}
+                          className="text-text-muted dark:text-text-muted-dark"
+                          tickFormatter={(v: string) => dayjs(v).format('MM/DD')}
+                          minTickGap={28}
+                        />
+                        <YAxis
+                          tick={{ fontSize: 11, fill: 'currentColor' }}
+                          className="text-text-muted dark:text-text-muted-dark"
+                          width={60}
+                          tickFormatter={(v: number) => {
+                            if (Math.abs(v) >= 10000) return `${(v / 10000).toFixed(1)}万`;
+                            return String(v);
+                          }}
+                        />
+                        <Tooltip
+                          content={<ChartTooltip />}
+                          cursor={LINE_CURSOR}
+                          formatter={(value: number | string) => [formatMoney(Number(value)), '净资产']}
+                          labelFormatter={(label: string) => dayjs(label).format('YYYY-MM-DD')}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="value"
+                          stroke="currentColor"
                           className="chart-brand"
-                            strokeWidth={2}
-                            fill="url(#dashNetGradient)"
+                          strokeWidth={2}
+                          fill="url(#dashNetGradient)"
+                          animationDuration={600}
+                          animationEasing="ease-out"
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <EmptyState title="暂无数据" description="添加账户和交易后，这里会显示资产走势" />
+                )}
+              </Card>
+            </section>
+
+            {/* 资产分布 */}
+            <section>
+              <Card
+                title="资产分布"
+                extra={
+                  <Tabs
+                    items={[
+                      { key: 'account', label: '按账户' },
+                      { key: 'type', label: '按交易方式' },
+                    ]}
+                    activeKey={distTab}
+                    onChange={(k) => setDistTab(k as 'account' | 'type')}
+                    variant="line"
+                  />
+                }
+              >
+                {hasDistribution ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                    <div className="h-64">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={distData}
+                            dataKey="value"
+                            nameKey="name"
+                            cx="50%"
+                            cy="50%"
+                            innerRadius="55%"
+                            outerRadius="85%"
+                            paddingAngle={2}
                             animationDuration={600}
                             animationEasing="ease-out"
+                          >
+                            {distData.map((_, i) => (
+                              <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            content={<ChartTooltip />}
+                            formatter={(value: number | string) => formatMoney(Number(value))}
                           />
-                        </AreaChart>
+                        </PieChart>
                       </ResponsiveContainer>
                     </div>
-                  ) : (
-                    <EmptyState title="暂无数据" description="添加账户和交易后，这里会显示资产走势" />
-                  )}
-                </Card>
-              </BentoCard>
-              <BentoCard delayStep={4} className="!bg-transparent !border-0 !shadow-none xl:col-span-4">
-                <Card
-                  flush
-                  title="资产分布"
-                  extra={
-                    <Tabs
-                      items={[
-                        { key: 'account', label: '按账户' },
-                        { key: 'type', label: '按交易方式' },
-                      ]}
-                      activeKey={distTab}
-                      onChange={(k) => setDistTab(k as 'account' | 'type')}
-                      variant="line"
-                    />
-                  }
-                >
-                  {hasDistribution ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-                      <div className="h-64">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <PieChart>
-                            <Pie
-                              data={distData}
-                              dataKey="value"
-                              nameKey="name"
-                              cx="50%"
-                              cy="50%"
-                              innerRadius="55%"
-                              outerRadius="85%"
-                              paddingAngle={2}
-                              animationDuration={600}
-                              animationEasing="ease-out"
-                            >
-                              {distData.map((_, i) => (
-                                <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                              ))}
-                            </Pie>
-                            <Tooltip
-                              content={<ChartTooltip />}
-                              formatter={(value: number | string) => formatMoney(Number(value))}
-                            />
-                          </PieChart>
-                        </ResponsiveContainer>
-                      </div>
-                      <div className="space-y-2">
-                        {distData.map((d, i) => {
-                          const sum = distData.reduce((s, x) => s + x.value, 0);
-                          const pct = sum > 0 ? (d.value / sum) * 100 : 0;
-                          return (
-                            <div key={d.name} className="flex items-center gap-3 text-sm">
-                              <span
-                                className="w-3 h-3 rounded-sm flex-none"
-                                style={{ background: PIE_COLORS[i % PIE_COLORS.length] }}
-                              />
-                              <span className="flex-1 truncate">{d.name}</span>
-                              <span className="text-text-muted dark:text-text-muted-dark tabular-nums">{pct.toFixed(1)}%</span>
-                              <span className="font-medium tabular-nums w-24 text-right">
-                                {formatMoney(d.value, false)}
-                              </span>
-                            </div>
-                          );
-                        })}
-
-                        {/*
-                         * 对账说明：饼图只画正余额的资产账户，负余额账户与负债账户
-                         * 画不进去。多账户之后（花呗还款把银行卡扣成负数）这不再是个
-                         * 理论问题，不说出来用户就会觉得"饼图和净资产对不上"。
-                         */}
-                        {(dist.excludedNegative < 0 || dist.excludedDebt !== 0) && (
-                          <div className="pt-2 mt-2 border-t border-border dark:border-border-dark text-xs text-text-muted dark:text-text-muted-dark space-y-1">
-                            {dist.excludedNegative < 0 && (
-                              <div>
-                                另有 {formatMoney(dist.excludedNegative)} 的账户余额为负，未计入上方占比
-                              </div>
-                            )}
-                            {dist.excludedDebt !== 0 && (
-                              <div>
-                                负债账户合计 {formatMoney(dist.excludedDebt)}
-                                （负值为实际欠款，正值为退款在途），不计入资产分布
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    <EmptyState
-                      title="暂无数据"
-                      description={
-                        distTab === 'account'
-                          ? '添加账户并设置余额后，这里会显示各账户资产占比'
-                          : '添加账户并设置余额后，这里会显示各交易方式资产占比'
-                      }
-                    />
-                  )}
-                </Card>
-              </BentoCard>
-
-              {/* row 3：收支日历 span 6 + 最近交易 span 6
-                  日历有 ‹› 翻页交互 → 关 lift（hover 抖动会让翻页按钮"飘"） */}
-              <BentoCard delayStep={5} lift={false} className="!bg-transparent !border-0 !shadow-none xl:col-span-6">
-                <Card
-                  flush
-                  title="收支日历"
-                  extra={
-                    <div className="flex items-center gap-1" data-testid="dash-calendar-nav">
-                      <button
-                        type="button"
-                        onClick={() => stepCalendarMonth(-1)}
-                        title="上一月"
-                        aria-label="上一月"
-                        data-testid="dash-calendar-prev"
-                        disabled={calendarAtMin}
-                        className={clsx(
-                          'w-7 h-7 sm:w-8 sm:h-8 flex-none flex items-center justify-center rounded-lg transition',
-                          'text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark hover:bg-bg dark:hover:bg-bg-card-dark',
-                          calendarAtMin && 'opacity-40 cursor-not-allowed hover:bg-transparent',
-                        )}
-                      >
-                        <IconChevronLeft size={16} />
-                      </button>
-                      {/* 月份文字本身是选择器入口（‹ › 翻页器保持原样，另留一个按钮位） */}
-                      <button
-                        type="button"
-                        onClick={() => setMonthPickerOpen(true)}
-                        title="选择月份"
-                        aria-label={`选择月份，当前 ${monthLabelCn(calendarMonth)}`}
-                        aria-haspopup="dialog"
-                        aria-expanded={monthPickerOpen}
-                        data-testid="dash-calendar-label"
-                        className="min-w-[4.75rem] sm:min-w-[7.5rem] -mx-1.5 px-1.5 inline-flex items-center justify-center gap-0.5 rounded-lg text-center text-xs sm:text-sm font-medium text-text dark:text-text-dark tabular-nums hover:bg-bg dark:hover:bg-bg-card-dark transition-colors cursor-pointer"
-                      >
-                        {monthLabelCn(calendarMonth)}
-                        <IconChevronDown size={12} aria-hidden className="flex-none opacity-60" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => stepCalendarMonth(1)}
-                        title="下一月"
-                        aria-label="下一月"
-                        data-testid="dash-calendar-next"
-                        disabled={calendarAtMax}
-                        className={clsx(
-                          'w-7 h-7 sm:w-8 sm:h-8 flex-none flex items-center justify-center rounded-lg transition',
-                          'text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark hover:bg-bg dark:hover:bg-bg-card-dark',
-                          calendarAtMax && 'opacity-40 cursor-not-allowed hover:bg-transparent',
-                        )}
-                      >
-                        <IconChevronRight size={16} />
-                      </button>
-                      {/* 仅在离开当前月时出现，避免常驻一个做不了事的按钮 */}
-                      {!calendarAtMax && (
-                        <button
-                          type="button"
-                          onClick={backToCurrentMonth}
-                          title="回到当前月"
-                          aria-label="回到当前月"
-                          data-testid="dash-calendar-today"
-                          className="ml-0.5 flex-none text-[11px] sm:text-xs text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark transition-colors cursor-pointer"
-                        >
-                          今天
-                        </button>
-                      )}
-                    </div>
-                  }
-                >
-                  <div data-testid="dash-calendar">
-                    <MonthCalendar
-                      month={calendarMonth}
-                      days={calendarDays}
-                      onSelect={(d) => setSelectedDay(d)}
-                    />
-                  </div>
-                </Card>
-              </BentoCard>
-              <BentoCard delayStep={6} className="!bg-transparent !border-0 !shadow-none xl:col-span-6">
-                <Card
-                  flush
-                  title="最近交易"
-                  extra={
-                    recentTransactions.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => navigate('/transaction')}
-                        className="text-xs text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark inline-flex items-center gap-1"
-                      >
-                        详情 <IconArrowRight size={12} />
-                      </button>
-                    )
-                  }
-                >
-                  {recentTransactions.length === 0 ? (
-                    <button
-                      type="button"
-                      onClick={() => navigate('/transaction?create=1')}
-                      className="w-full flex flex-col items-center justify-center py-6 text-sm text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark transition"
-                    >
-                      <span className="w-10 h-10 rounded-full bg-bg dark:bg-bg-card-dark flex items-center justify-center mb-2">
-                        <IconArrowUpRight size={18} />
-                      </span>
-                      <span>快捷添加首个交易</span>
-                    </button>
-                  ) : (
                     <div className="space-y-2">
-                      {recentTransactions.map((t) => {
-                        const cat = categories.find((c) => c.id === t.categoryId);
-                        const sign = t.type === 'income' ? '+' : t.type === 'expense' ? '-' : '';
-                        const tone =
-                          t.type === 'income' ? 'text-income' : t.type === 'expense' ? 'text-expense' : 'text-text-muted dark:text-text-muted-dark';
+                      {distData.map((d, i) => {
+                        const sum = distData.reduce((s, x) => s + x.value, 0);
+                        const pct = sum > 0 ? (d.value / sum) * 100 : 0;
                         return (
-                          <div
-                            key={t.id}
-                            className="flex items-center gap-2 py-1.5 text-sm"
-                          >
-                            <span className="w-7 h-7 rounded-lg bg-bg dark:bg-bg-card-dark flex items-center justify-center text-base flex-none">
-                              {cat?.icon || (t.type === 'transfer' ? '🔁' : '💸')}
-                            </span>
-                            <div className="flex-1 min-w-0">
-                              <div className="truncate">{t.name || cat?.name || '未命名'}</div>
-                              <div className="text-xs text-text-muted dark:text-text-muted-dark">
-                                {dayjs(t.date).format('MM-DD')}
-                              </div>
-                            </div>
-                            <span className={clsx('tabular-nums font-medium', tone)}>
-                              {hideAmounts ? (
-                                <MaskMoney value={t.amount} hide withSymbol={false} />
-                              ) : (
-                                <>
-                                  {sign}
-                                  {formatMoney(t.amount, false)}
-                                </>
-                              )}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </Card>
-              </BentoCard>
-
-              {/* row 4（折线以下 → inView 触发 fade-up）：右侧栏四卡折叠为 span 3×4 */}
-              <BentoCard inView className="!bg-transparent !border-0 !shadow-none xl:col-span-3">
-                <Card flush title="还款提醒">
-                  {repayAccounts.length === 0 ? (
-                    <EmptyState title="暂无待还款" className="!py-8" />
-                  ) : (
-                    <div className="space-y-2">
-                      {repayAccounts.map((a) => (
-                        <div
-                          key={a.id}
-                          className="flex items-center justify-between gap-2 text-sm py-1.5"
-                        >
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span className="w-7 h-7 rounded-lg bg-expense-soft dark:bg-expense-soft-dark flex items-center justify-center text-expense">
-                              <IconAlertTriangle size={14} />
-                            </span>
-                            <div className="min-w-0">
-                              <div className="truncate">{a.name}</div>
-                              <div className="text-xs text-text-muted dark:text-text-muted-dark">
-                                {a.type === 'credit' ? '信用卡' : '债务'}
-                              </div>
-                            </div>
-                          </div>
-                          <span className="text-expense tabular-nums font-medium">
-                            <MaskMoney value={a.balance} hide={hideAmounts} withSymbol={false} />
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </Card>
-              </BentoCard>
-              <BentoCard inView className="!bg-transparent !border-0 !shadow-none xl:col-span-3">
-                <Card
-                  flush
-                  title="账户管理"
-                  extra={
-                    accounts.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => navigate('/account/list')}
-                        className="text-xs text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark inline-flex items-center gap-1"
-                      >
-                        详情 <IconArrowRight size={12} />
-                      </button>
-                    )
-                  }
-                >
-                  {accounts.length === 0 ? (
-                    <button
-                      type="button"
-                      onClick={() => navigate('/account/list?create=1')}
-                      className="w-full flex flex-col items-center justify-center py-6 text-sm text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark transition"
-                    >
-                      <span className="w-10 h-10 rounded-full bg-bg dark:bg-bg-card-dark flex items-center justify-center mb-2">
-                        <IconWallet size={18} />
-                      </span>
-                      <span>快捷添加首个账户</span>
-                    </button>
-                  ) : (
-                    <div>
-                      <div className="flex items-baseline justify-between">
-                        <span className="text-xs text-text-muted dark:text-text-muted-dark">共 {accounts.length} 个账户</span>
-                        <span className={clsx('tabular-nums font-medium', balanceToneClass(accountTotal))}>
-                          <MaskMoney value={accountTotal} hide={hideAmounts} withSymbol={false} />
-                        </span>
-                      </div>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        block
-                        className="mt-3"
-                        icon={<IconPlus size={14} />}
-                        onClick={() => navigate('/account/list?create=1')}
-                      >
-                        添加账户
-                      </Button>
-                    </div>
-                  )}
-                </Card>
-              </BentoCard>
-              <BentoCard inView className="!bg-transparent !border-0 !shadow-none xl:col-span-3">
-                <Card
-                  flush
-                  title="目标管理"
-                  extra={
-                    goals.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => navigate('/goal/list')}
-                        className="text-xs text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark inline-flex items-center gap-1"
-                      >
-                        详情 <IconArrowRight size={12} />
-                      </button>
-                    )
-                  }
-                >
-                  {goals.length === 0 ? (
-                    <button
-                      type="button"
-                      onClick={() => navigate('/goal/list?create=1')}
-                      className="w-full flex flex-col items-center justify-center py-6 text-sm text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark transition"
-                    >
-                      <span className="w-10 h-10 rounded-full bg-bg dark:bg-bg-card-dark flex items-center justify-center mb-2">
-                        <IconTargetArrow size={18} />
-                      </span>
-                      <span>快捷添加首个目标</span>
-                    </button>
-                  ) : (
-                    <div className="space-y-3">
-                      {goals.slice(0, 3).map((g) => {
-                        const pct = g.targetAmount > 0 ? (g.currentAmount / g.targetAmount) * 100 : 0;
-                        return (
-                          <div key={g.id} className="text-sm">
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="truncate flex-1">{g.name}</span>
-                              <span className="text-xs text-text-muted dark:text-text-muted-dark ml-2 tabular-nums">
-                                {pct.toFixed(0)}%
-                              </span>
-                            </div>
-                            <ProgressBar value={Math.max(0, Math.min(100, pct))} tone="income" size="sm" />
-                          </div>
-                        );
-                      })}
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        block
-                        icon={<IconPlus size={14} />}
-                        onClick={() => navigate('/goal/list?create=1')}
-                      >
-                        添加目标
-                      </Button>
-                    </div>
-                  )}
-                </Card>
-              </BentoCard>
-              <BentoCard inView className="!bg-transparent !border-0 !shadow-none xl:col-span-3">
-                <Card
-                  flush
-                  title="预算管理"
-                  extra={
-                    budgets.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => navigate('/budget')}
-                        className="text-xs text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark inline-flex items-center gap-1"
-                      >
-                        详情 <IconArrowRight size={12} />
-                      </button>
-                    )
-                  }
-                >
-                  {budgetsLoading ? (
-                    <div className="space-y-3" data-testid="dash-budget-skeleton" aria-hidden>
-                      {[0, 1].map((i) => (
-                        <div key={i} className="h-8 rounded-lg bg-bg dark:bg-bg-card-dark animate-pulse" />
-                      ))}
-                    </div>
-                  ) : budgetProgress.length === 0 ? (
-                    <button
-                      type="button"
-                      onClick={() => navigate('/budget')}
-                      data-testid="dash-budget-empty"
-                      className="w-full flex flex-col items-center justify-center py-6 text-sm text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark transition"
-                    >
-                      <span className="w-10 h-10 rounded-full bg-bg dark:bg-bg-card-dark flex items-center justify-center mb-2">
-                        <IconCircleDashed size={18} />
-                      </span>
-                      <span>设置本月预算</span>
-                    </button>
-                  ) : (
-                    <div className="space-y-3" data-testid="dash-budget-list">
-                      {budgetProgress.slice(0, 3).map(({ budget, spent, pct, overspent }) => (
-                        <div key={budget.id} className="text-sm" data-testid="dash-budget-item">
-                          <div className="flex items-baseline justify-between gap-2">
-                            <span className="truncate">{budget.name}</span>
+                          <div key={d.name} className="flex items-center gap-3 text-sm">
                             <span
-                              className={clsx(
-                                'flex-none text-xs tabular-nums',
-                                overspent
-                                  ? 'text-danger dark:text-danger-dark'
-                                  : 'text-text-muted dark:text-text-muted-dark',
-                              )}
-                            >
-                              {formatMoney(spent, false)} / {formatMoney(budget.amount, false)}
+                              className="w-3 h-3 rounded-sm flex-none"
+                              style={{ background: PIE_COLORS[i % PIE_COLORS.length] }}
+                            />
+                            <span className="flex-1 truncate">{d.name}</span>
+                            <span className="text-text-muted dark:text-text-muted-dark tabular-nums">{pct.toFixed(1)}%</span>
+                            <span className="font-medium tabular-nums w-24 text-right">
+                              {formatMoney(d.value, false)}
                             </span>
                           </div>
-                          {/* 进度条配色沿用 /budget 页同一套语义：正常=支出绿，超支=收入红 */}
-                          <ProgressBar
-                            className="mt-1.5"
-                            value={Math.max(0, Math.min(100, pct))}
-                            tone={overspent ? 'income' : 'expense'}
-                            size="sm"
-                          />
-                          {overspent && (
-                            <div className="mt-1 text-[11px] text-danger dark:text-danger-dark">
-                              已超支 {formatMoney(spent - budget.amount, false)}
+                        );
+                      })}
+
+                      {/*
+                       * 对账说明：饼图只画正余额的资产账户，负余额账户与负债账户
+                       * 画不进去。多账户之后（花呗还款把银行卡扣成负数）这不再是个
+                       * 理论问题，不说出来用户就会觉得"饼图和净资产对不上"。
+                       */}
+                      {(dist.excludedNegative < 0 || dist.excludedDebt !== 0) && (
+                        <div className="pt-2 mt-2 border-t border-border dark:border-border-dark text-xs text-text-muted dark:text-text-muted-dark space-y-1">
+                          {dist.excludedNegative < 0 && (
+                            <div>
+                              另有 {formatMoney(dist.excludedNegative)} 的账户余额为负，未计入上方占比
+                            </div>
+                          )}
+                          {dist.excludedDebt !== 0 && (
+                            <div>
+                              负债账户合计 {formatMoney(dist.excludedDebt)}
+                              （负值为实际欠款，正值为退款在途），不计入资产分布
                             </div>
                           )}
                         </div>
-                      ))}
-                      {budgetProgress.length > 3 && (
-                        <div className="text-xs text-text-muted dark:text-text-muted-dark">
-                          另有 {budgetProgress.length - 3} 个预算，见预算页
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <EmptyState
+                    title="暂无数据"
+                    description={
+                      distTab === 'account'
+                        ? '添加账户并设置余额后，这里会显示各账户资产占比'
+                        : '添加账户并设置余额后，这里会显示各交易方式资产占比'
+                    }
+                  />
+                )}
+              </Card>
+            </section>
+
+            {/* 收支日历 */}
+            <section>
+              <Card
+                title="收支日历"
+                extra={
+                  <div className="flex items-center gap-1" data-testid="dash-calendar-nav">
+                    <button
+                      type="button"
+                      onClick={() => stepCalendarMonth(-1)}
+                      title="上一月"
+                      aria-label="上一月"
+                      data-testid="dash-calendar-prev"
+                      disabled={calendarAtMin}
+                      className={clsx(
+                        'w-7 h-7 sm:w-8 sm:h-8 flex-none flex items-center justify-center rounded-lg transition',
+                        'text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark hover:bg-bg dark:hover:bg-bg-card-dark',
+                        calendarAtMin && 'opacity-40 cursor-not-allowed hover:bg-transparent',
+                      )}
+                    >
+                      <IconChevronLeft size={16} />
+                    </button>
+                    {/* 月份文字本身是选择器入口（‹ › 翻页器保持原样，另留一个按钮位） */}
+                    <button
+                      type="button"
+                      onClick={() => setMonthPickerOpen(true)}
+                      title="选择月份"
+                      aria-label={`选择月份，当前 ${monthLabelCn(calendarMonth)}`}
+                      aria-haspopup="dialog"
+                      aria-expanded={monthPickerOpen}
+                      data-testid="dash-calendar-label"
+                      className="min-w-[4.75rem] sm:min-w-[7.5rem] -mx-1.5 px-1.5 inline-flex items-center justify-center gap-0.5 rounded-lg text-center text-xs sm:text-sm font-medium text-text dark:text-text-dark tabular-nums hover:bg-bg dark:hover:bg-bg-card-dark transition-colors cursor-pointer"
+                    >
+                      {monthLabelCn(calendarMonth)}
+                      <IconChevronDown size={12} aria-hidden className="flex-none opacity-60" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => stepCalendarMonth(1)}
+                      title="下一月"
+                      aria-label="下一月"
+                      data-testid="dash-calendar-next"
+                      disabled={calendarAtMax}
+                      className={clsx(
+                        'w-7 h-7 sm:w-8 sm:h-8 flex-none flex items-center justify-center rounded-lg transition',
+                        'text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark hover:bg-bg dark:hover:bg-bg-card-dark',
+                        calendarAtMax && 'opacity-40 cursor-not-allowed hover:bg-transparent',
+                      )}
+                    >
+                      <IconChevronRight size={16} />
+                    </button>
+                    {/* 仅在离开当前月时出现，避免常驻一个做不了事的按钮 */}
+                    {!calendarAtMax && (
+                      <button
+                        type="button"
+                        onClick={backToCurrentMonth}
+                        title="回到当前月"
+                        aria-label="回到当前月"
+                        data-testid="dash-calendar-today"
+                        className="ml-0.5 flex-none text-[11px] sm:text-xs text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark transition-colors cursor-pointer"
+                      >
+                        今天
+                      </button>
+                    )}
+                  </div>
+                }
+              >
+                <div data-testid="dash-calendar">
+                  <MonthCalendar
+                    month={calendarMonth}
+                    days={calendarDays}
+                    onSelect={(d) => setSelectedDay(d)}
+                  />
+                </div>
+              </Card>
+            </section>
+          </div>
+          )}
+
+          {/* 右侧栏 280px */}
+          <aside className="w-full lg:w-[280px] flex-none space-y-4">
+            {/* 还款提醒 */}
+            <Card title="还款提醒">
+              {repayAccounts.length === 0 ? (
+                <EmptyState title="暂无待还款" className="!py-8" />
+              ) : (
+                <div className="space-y-2">
+                  {repayAccounts.map((a) => (
+                    <div
+                      key={a.id}
+                      className="flex items-center justify-between gap-2 text-sm py-1.5"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="w-7 h-7 rounded-lg bg-expense-soft dark:bg-expense-soft-dark flex items-center justify-center text-expense">
+                          <IconAlertTriangle size={14} />
+                        </span>
+                        <div className="min-w-0">
+                          <div className="truncate">{a.name}</div>
+                          <div className="text-xs text-text-muted dark:text-text-muted-dark">
+                            {a.type === 'credit' ? '信用卡' : '债务'}
+                          </div>
+                        </div>
+                      </div>
+                      <span className="text-expense tabular-nums font-medium">
+                        <MaskMoney value={a.balance} hide={hideAmounts} withSymbol={false} />
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+
+            {/* 账户管理 */}
+            <Card
+              title="账户管理"
+              extra={
+                accounts.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => navigate('/account/list')}
+                    className="text-xs text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark inline-flex items-center gap-1"
+                  >
+                    详情 <IconArrowRight size={12} />
+                  </button>
+                )
+              }
+            >
+              {accounts.length === 0 ? (
+                <button
+                  type="button"
+                  onClick={() => navigate('/account/list?create=1')}
+                  className="w-full flex flex-col items-center justify-center py-6 text-sm text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark transition"
+                >
+                  <span className="w-10 h-10 rounded-full bg-bg dark:bg-bg-card-dark flex items-center justify-center mb-2">
+                    <IconWallet size={18} />
+                  </span>
+                  <span>快捷添加首个账户</span>
+                </button>
+              ) : (
+                <div>
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-xs text-text-muted dark:text-text-muted-dark">共 {accounts.length} 个账户</span>
+                    <span className={clsx('tabular-nums font-medium', balanceToneClass(accountTotal))}>
+                      <MaskMoney value={accountTotal} hide={hideAmounts} withSymbol={false} />
+                    </span>
+                  </div>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    block
+                    className="mt-3"
+                    icon={<IconPlus size={14} />}
+                    onClick={() => navigate('/account/list?create=1')}
+                  >
+                    添加账户
+                  </Button>
+                </div>
+              )}
+            </Card>
+
+            {/* 目标管理 */}
+            <Card
+              title="目标管理"
+              extra={
+                goals.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => navigate('/goal/list')}
+                    className="text-xs text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark inline-flex items-center gap-1"
+                  >
+                    详情 <IconArrowRight size={12} />
+                  </button>
+                )
+              }
+            >
+              {goals.length === 0 ? (
+                <button
+                  type="button"
+                  onClick={() => navigate('/goal/list?create=1')}
+                  className="w-full flex flex-col items-center justify-center py-6 text-sm text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark transition"
+                >
+                  <span className="w-10 h-10 rounded-full bg-bg dark:bg-bg-card-dark flex items-center justify-center mb-2">
+                    <IconTargetArrow size={18} />
+                  </span>
+                  <span>快捷添加首个目标</span>
+                </button>
+              ) : (
+                <div className="space-y-3">
+                  {goals.slice(0, 3).map((g) => {
+                    const pct = g.targetAmount > 0 ? (g.currentAmount / g.targetAmount) * 100 : 0;
+                    return (
+                      <div key={g.id} className="text-sm">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="truncate flex-1">{g.name}</span>
+                          <span className="text-xs text-text-muted dark:text-text-muted-dark ml-2 tabular-nums">
+                            {pct.toFixed(0)}%
+                          </span>
+                        </div>
+                        <ProgressBar value={Math.max(0, Math.min(100, pct))} tone="income" size="sm" />
+                      </div>
+                    );
+                  })}
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    block
+                    icon={<IconPlus size={14} />}
+                    onClick={() => navigate('/goal/list?create=1')}
+                  >
+                    添加目标
+                  </Button>
+                </div>
+              )}
+            </Card>
+
+            {/* 预算管理 */}
+            <Card
+              title="预算管理"
+              extra={
+                budgets.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => navigate('/budget')}
+                    className="text-xs text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark inline-flex items-center gap-1"
+                  >
+                    详情 <IconArrowRight size={12} />
+                  </button>
+                )
+              }
+            >
+              {budgetsLoading ? (
+                <div className="space-y-3" data-testid="dash-budget-skeleton" aria-hidden>
+                  {[0, 1].map((i) => (
+                    <div key={i} className="h-8 rounded-lg bg-bg dark:bg-bg-card-dark animate-pulse" />
+                  ))}
+                </div>
+              ) : budgetProgress.length === 0 ? (
+                <button
+                  type="button"
+                  onClick={() => navigate('/budget')}
+                  data-testid="dash-budget-empty"
+                  className="w-full flex flex-col items-center justify-center py-6 text-sm text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark transition"
+                >
+                  <span className="w-10 h-10 rounded-full bg-bg dark:bg-bg-card-dark flex items-center justify-center mb-2">
+                    <IconCircleDashed size={18} />
+                  </span>
+                  <span>设置本月预算</span>
+                </button>
+              ) : (
+                <div className="space-y-3" data-testid="dash-budget-list">
+                  {budgetProgress.slice(0, 3).map(({ budget, spent, pct, overspent }) => (
+                    <div key={budget.id} className="text-sm" data-testid="dash-budget-item">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="truncate">{budget.name}</span>
+                        <span
+                          className={clsx(
+                            'flex-none text-xs tabular-nums',
+                            overspent
+                              ? 'text-danger dark:text-danger-dark'
+                              : 'text-text-muted dark:text-text-muted-dark',
+                          )}
+                        >
+                          {formatMoney(spent, false)} / {formatMoney(budget.amount, false)}
+                        </span>
+                      </div>
+                      {/* 进度条配色沿用 /budget 页同一套语义：正常=支出绿，超支=收入红 */}
+                      <ProgressBar
+                        className="mt-1.5"
+                        value={Math.max(0, Math.min(100, pct))}
+                        tone={overspent ? 'income' : 'expense'}
+                        size="sm"
+                      />
+                      {overspent && (
+                        <div className="mt-1 text-[11px] text-danger dark:text-danger-dark">
+                          已超支 {formatMoney(spent - budget.amount, false)}
                         </div>
                       )}
                     </div>
+                  ))}
+                  {budgetProgress.length > 3 && (
+                    <div className="text-xs text-text-muted dark:text-text-muted-dark">
+                      另有 {budgetProgress.length - 3} 个预算，见预算页
+                    </div>
                   )}
-                </Card>
-              </BentoCard>
-            </div>
-          </>
-          )}
+                </div>
+              )}
+            </Card>
+
+            {/* 最近交易 */}
+            <Card
+              title="最近交易"
+              extra={
+                recentTransactions.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => navigate('/transaction')}
+                    className="text-xs text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark inline-flex items-center gap-1"
+                  >
+                    详情 <IconArrowRight size={12} />
+                  </button>
+                )
+              }
+            >
+              {recentTransactions.length === 0 ? (
+                <button
+                  type="button"
+                  onClick={() => navigate('/transaction?create=1')}
+                  className="w-full flex flex-col items-center justify-center py-6 text-sm text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark transition"
+                >
+                  <span className="w-10 h-10 rounded-full bg-bg dark:bg-bg-card-dark flex items-center justify-center mb-2">
+                    <IconArrowUpRight size={18} />
+                  </span>
+                  <span>快捷添加首个交易</span>
+                </button>
+              ) : (
+                <div className="space-y-2">
+                  {recentTransactions.map((t) => {
+                    const cat = categories.find((c) => c.id === t.categoryId);
+                    const sign = t.type === 'income' ? '+' : t.type === 'expense' ? '-' : '';
+                    const tone =
+                      t.type === 'income' ? 'text-income' : t.type === 'expense' ? 'text-expense' : 'text-text-muted dark:text-text-muted-dark';
+                    return (
+                      <div
+                        key={t.id}
+                        className="flex items-center gap-2 py-1.5 text-sm"
+                      >
+                        <span className="w-7 h-7 rounded-lg bg-bg dark:bg-bg-card-dark flex items-center justify-center text-base flex-none">
+                          {cat?.icon || (t.type === 'transfer' ? '🔁' : '💸')}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="truncate">{t.name || cat?.name || '未命名'}</div>
+                          <div className="text-xs text-text-muted dark:text-text-muted-dark">
+                            {dayjs(t.date).format('MM-DD')}
+                          </div>
+                        </div>
+                        <span className={clsx('tabular-nums font-medium', tone)}>
+                          {hideAmounts ? (
+                            <MaskMoney value={t.amount} hide withSymbol={false} />
+                          ) : (
+                            <>
+                              {sign}
+                              {formatMoney(t.amount, false)}
+                            </>
+                          )}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </Card>
+          </aside>
         </div>
       </div>
 

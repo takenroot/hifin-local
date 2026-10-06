@@ -195,9 +195,7 @@ export function CommandPaletteView({
           'fixed left-1/2 -translate-x-1/2 top-[12vh] z-50',
           'w-[560px] max-w-[92vw]',
           'rounded-2xl overflow-hidden border border-border dark:border-border-dark',
-          // bento-motion §1 玻璃面板（侧边栏/⌘K/通知共享）：无开/关动画
-          // Kowalski：100+/日键盘动作，绝对不要动画。
-          'glass shadow-soft dark:shadow-soft-dark',
+          'bg-bg-card dark:bg-bg-card-dark shadow-soft dark:shadow-soft-dark',
         )}
       >
         {/* 输入栏 */}

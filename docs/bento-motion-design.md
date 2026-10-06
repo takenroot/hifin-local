@@ -1,5 +1,11 @@
 # HiFin Bento + Motion 设计语言（2026-10-06）
 
+> **状态：看板 Bento 重构已按用户决策回退（2026-10-06）**——§3 网格与玻璃/aurora 挂载
+> 已下线（Dashboard/AssistantPage/AppLayout/CommandPaletteView 恢复至 81006d3 形态，
+> 见 revert 提交）。本文保留作为设计档案；Wave 1 动效基建（BentoCard/AuroraBackground/
+> useInView/.glass/shadow-lift/toast 对称路径）代码保留但**无挂载点**（ dormant ），
+> 若确认不再启用应删除（ponytail：不留死代码）。
+
 > 方法论借鉴 MotionSites 的「设计语言骨架」五块结构（色板/字体/结构/动效/组件），
 > 内容全部自研。动效哲学遵循 Emil Kowalski（animate 技能）：
 > **不该动的绝不动，动的东西用对配料**。

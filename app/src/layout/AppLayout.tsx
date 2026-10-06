@@ -154,10 +154,8 @@ export default function AppLayout() {
       className="flex h-dvh w-screen overflow-hidden bg-bg dark:bg-bg-dark text-text dark:text-text-dark"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
-      {/* 桌面侧边栏（lg 及以上常驻）
-          玻璃面（bento-motion §1 规范）：white 72% + 16px backdrop-blur。
-          Kowalski 铁律：⌘K/通知的开关 100+/日，不要任何动画——这里只换玻璃底。 */}
-      <aside className="hidden lg:flex w-[200px] flex-none border-r border-border dark:border-border-dark flex-col glass">
+      {/* 桌面侧边栏（lg 及以上常驻） */}
+      <aside className="hidden lg:flex w-[200px] flex-none border-r border-border dark:border-border-dark flex-col bg-bg-card dark:bg-bg-card-dark">
         <SidebarBody
           spaces={spaces}
           spaceId={spaceId}

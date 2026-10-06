@@ -24,7 +24,6 @@ import {
   IconRefresh,
 } from '@tabler/icons-react';
 import {
-  AuroraBackground,
   Button,
   Card,
   EmptyState,
@@ -302,9 +301,7 @@ export default function AssistantPage() {
   // 1) 未配置模型 → 配置引导（不发起任何请求）
   if (hydrated && models.length === 0) {
     return (
-      <div className="relative min-h-full bg-bg dark:bg-bg-dark">
-        {/* Aurora 氛围层（玻璃+氛围挂载规范 §3）：aria-hidden、不拦截指针。 */}
-        <AuroraBackground />
+      <div className="min-h-full bg-bg dark:bg-bg-dark">
         <PageHeader
           title="AI 助手"
           icon={<IconRobot size={18} />}
@@ -344,9 +341,7 @@ export default function AssistantPage() {
   }));
 
   return (
-    <div className="relative min-h-full bg-bg dark:bg-bg-dark flex flex-col">
-      {/* Aurora 氛围层（玻璃+氛围挂载规范 §3）：aria-hidden、不拦截指针。 */}
-      <AuroraBackground />
+    <div className="min-h-full bg-bg dark:bg-bg-dark flex flex-col">
       <PageHeader
         title="AI 助手"
         icon={<IconRobot size={18} />}

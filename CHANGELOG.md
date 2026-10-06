@@ -26,6 +26,15 @@
   .bento-hover-lift 唯一合法来源）；darkmode-audit 0 issue/123 advisory；netasset-color 通过
 - 测试 293→303；tsc 干净；截图存 accept/screenshots/bento-motion/
 
+### 回退（2026-10-06 晚：Bento 看板重构下线）
+
+用户看实际效果后决策回退：Dashboard/AssistantPage/AppLayout/CommandPaletteView 恢复至
+81006d3（主题还原后）形态。**保留**与 bento 无关的真修复：.chart-brand 暗色反转（重挂回
+回退后的 Dashboard）、accept 脚本 domcontentloaded 迁移（SSE 适配）、DM-094/115 与
+report-create 圆点对比度修复、toast 退出状态机（NotificationCenter 未回退）。
+Wave 1 基建组件（BentoCard/AuroraBackground/useInView）无挂载点保留待用——若确认不
+再启用应删除，见 docs/bento-motion-design.md 头部状态注记。
+
 ### 新增（2026-10-06：主题还原——纠正「收入红」曲解，回归原版炭黑极简）
 
 用户反馈主题不满意、需求曾被曲解。对照复刻源（docs/exploration-originals §11.2「收入/净资产
