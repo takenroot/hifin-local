@@ -36,6 +36,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     icon,
     iconRight,
     className,
+    style,
     children,
     ...rest
   },
@@ -46,15 +47,20 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       ref={ref}
       className={clsx(
         'inline-flex items-center justify-center font-medium transition select-none',
-        // 触觉反馈：transform 走合成层，transition 已含 transform 属性；
-        // motion-safe 前缀让 prefers-reduced-motion 用户拿不到缩放
-        'motion-safe:active:scale-[0.97]',
+        // 触觉反馈（2026-10-06 bento-motion §4）：scale(0.98) + 120ms --dur-press。
+        // motion-safe 前缀让 prefers-reduced-motion 用户拿不到缩放——reduced-motion
+        // 仍保留颜色/阴影过渡（focus-visible 环），只是不位移（Emil Kowalski：
+        // reduced = 更少更温和，非零）。
+        'motion-safe:active:scale-[0.98]',
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/50',
         variantClass[variant],
         sizeClass[size],
         block && 'w-full',
         className,
       )}
+      // transition-duration 显式覆盖 Tailwind 的 150ms 默认：press 用 --dur-press=120ms
+      // 是有意的，0.97→0.98 一档差更轻，120ms 防止"按下去又弹回"的颤动。
+      style={{ transitionDuration: 'var(--dur-press)', ...style }}
       {...rest}
     >
       {icon}

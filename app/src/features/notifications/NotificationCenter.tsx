@@ -512,7 +512,8 @@ function ToastStack({ toasts, onClose }: { toasts: Toast[]; onClose: (key: numbe
       {toasts.map((t) => (
         <div
           key={t.key}
-          className="card !rounded-xl flex items-start gap-2.5 px-4 py-3 shadow-soft dark:shadow-soft-dark"
+          data-state="open"
+          className="card !rounded-xl flex items-start gap-2.5 px-4 py-3 shadow-soft dark:shadow-soft-dark toast-card"
         >
           {/*
            * 2026-10-05 设计审查决策：toast 成功=success 绿 / 错误=danger 红。

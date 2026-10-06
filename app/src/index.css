@@ -61,8 +61,109 @@
   --dur-overlay: 220ms; /* modal / 下拉 / 抽屉 / toast 统一 */
   --dur-data: 700ms; /* 数字滚动等数据动画 */
   --dur-chart: 600ms; /* recharts series */
+  /* 2026-10-06 bento-motion：低频入场动画时长（看板/AI/发现页首次加载）。
+     首屏卡片 fade-up 12px→0 + opacity，stagger 40ms/step。 */
+  --dur-enter: 480ms;
+  /* 2026-10-06 bento-motion：aurora 背景常驻漂移周期。24s linear，
+     ±3% 位移；reduced-motion 下冻结单帧（见 @media 块）。 */
+  --dur-ambient: 24s;
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+/* 玻璃面板（2026-10-06 bento-motion §1）：侧边栏 / ⌘K 面板 / 通知弹窗 / toast 共享面。
+   亮色：白 72% + 16px backdrop-blur；暗色：#171a21 72% 同 blur。
+   @supports 兜底：老浏览器无 backdrop-filter 时退化为纯色，仍保留语义色边界。 */
+.glass {
+  background-color: rgba(255, 255, 255, 0.72);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
+.dark .glass {
+  background-color: rgba(23, 26, 33, 0.72);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  /* 无 backdrop-filter 兜底：去掉半透明，改用纯色面，保留边框/阴影区分层次 */
+  .glass {
+    background-color: #ffffff;
+  }
+  .dark .glass {
+    background-color: #171a21;
+  }
+}
+
+/* hover lift 阴影（2026-10-06 bento-motion §1）：仅 BentoCard 在 hover 时引用。
+   回归闸已放开 hover 阴影——本类是唯一合法来源，避免 shadow.soft 被滥用。 */
+.shadow-lift {
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+}
+.dark .shadow-lift {
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
+}
+
+/* BentoCard 入场 / hover（2026-10-06 bento-motion §4）：
+   - .bento-enter 初始态：translateY(12px) + opacity:0
+   - .bento-enter-active 终态：translateY(0) + opacity:1，--dur-enter ease-out
+   - 触发 delay 由 BentoCard 透传 --bento-enter-delay（每张卡不同）
+   - reduced-motion 已在下方 @media 块把 transform 砍掉，只跑 opacity
+   这三行在 @layer components 里——防止 Tailwind JIT 在源文件找不到时 tree-shake */
+@layer components {
+  .bento-enter {
+    opacity: 0;
+    transform: translateY(12px);
+    transition-property: opacity, transform;
+    transition-duration: var(--dur-enter);
+    transition-timing-function: var(--ease-out);
+    transition-delay: var(--bento-enter-delay, 0ms);
+    will-change: opacity, transform;
+  }
+  /* 进入终态：把 delay 清零、will-change 释放——避免后续 hover 触发时被
+     残留的入场 delay 顶一下，体感"抖一下" */
+  .bento-enter-active {
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: 0ms;
+    will-change: auto;
+  }
+  .bento-hover-lift {
+    transition-property: opacity, transform, box-shadow;
+    transition-duration: var(--dur-surface);
+    transition-timing-function: var(--ease-out);
+  }
+  /* Toast 入场（2026-10-06 bento-motion §4）：translateY(8px → 0) + opacity 0→1，
+     220ms --dur-overlay ease-out。退出走对称路径（同一 transform/opacity，
+     反向）——Emil Kowalski：toast 用 transition 而非 keyframes，否则连续触发
+     时会从 0 重启；本类只覆盖入场，退出由调用方控制 data-state="closed"
+     时切到反向态。toast-card 必须写在 @layer components 里，否则 Tailwind
+     JIT 在源码扫不到类名会 tree-shake 掉。 */
+  .toast-card {
+    opacity: 0;
+    transform: translateY(8px);
+    transition-property: opacity, transform;
+    transition-duration: var(--dur-overlay);
+    transition-timing-function: var(--ease-out);
+    will-change: opacity, transform;
+  }
+  .toast-card[data-state="open"] {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .toast-card[data-state="closed"] {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+/* hover lift：精确指针才启用（设计 §4）；触屏假触 :hover 会让页面
+   跟着手指抖动，禁用即可 */
+@media (hover: hover) and (pointer: fine) {
+  .bento-hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+  }
+  .dark .bento-hover-lift:hover {
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
+  }
 }
 
 /* prefers-reduced-motion（WCAG 2.2.2 / 2.3.3）：
@@ -73,5 +174,16 @@
   .animate-pulse,
   .animate-bounce {
     animation: none;
+  }
+  /* 2026-10-06 bento-motion：aurora 常驻漂移冻结单帧——线性 24s 漂移
+     对前庭敏感者是持续背景运动，必须停掉。 */
+  .aurora-layer {
+    animation: none !important;
+  }
+  /* 入场 transform 降级为 opacity-only：12px 位移在 reduced-motion 下
+     属于位置变化（Kowalski：reduced = 更少更温和，非零），但 opacity 淡入
+     仍保留以辅助空间定位（设计 §4 验收项）。 */
+  .bento-enter {
+    transform: none !important;
   }
 }

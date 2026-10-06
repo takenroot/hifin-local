@@ -41,7 +41,15 @@ describe('Button', () => {
   });
 
   it('按压反馈走 motion-safe，reduced-motion 用户拿不到缩放', () => {
-    expect(html(h(Button, null, '保存'))).toContain('motion-safe:active:scale-[0.97]');
+    // 2026-10-06 bento-motion §4：scale 值由 0.97 改为 0.98——一档差更轻，
+    // 配合 120ms --dur-press 防止"按下去又弹回"的颤动（Emil Kowalski：
+    // UI 动画 ≤ 300ms，press 类 100~160ms）。
+    expect(html(h(Button, null, '保存'))).toContain('motion-safe:active:scale-[0.98]');
+  });
+
+  it('press 用 --dur-press=120ms（设计 §4），覆盖 Tailwind transition 默认 150ms', () => {
+    const out = html(h(Button, null, '保存'));
+    expect(out).toContain('transition-duration:var(--dur-press)');
   });
 
   it('透传原生属性与自定义 class', () => {
