@@ -162,3 +162,19 @@ describe('describeAiInsightError', () => {
     expect(describeAiInsightError(new Error('boom'))).toBe('boom');
   });
 });
+// ── Anthropic 协议支持（2026-10-07，MiniMax /anthropic 端点） ──
+describe('Anthropic 协议纯函数', () => {
+  it('isAnthropicEndpoint 按路径分流', async () => {
+    const { isAnthropicEndpoint } = await import('../src/insights/llm.js');
+    expect(isAnthropicEndpoint('https://api.minimax.cn/anthropic')).toBe(true);
+    expect(isAnthropicEndpoint('https://api.minimax.cn/v1')).toBe(false);
+  });
+
+  it('buildAnthropicPayload：system 顶级 + max_tokens 2048 地板', async () => {
+    const { buildAnthropicPayload } = await import('../src/insights/llm.js');
+    const p = buildAnthropicPayload('sys', 'user', 8);
+    expect(p.system).toBe('sys');
+    expect(p.messages).toEqual([{ role: 'user', content: 'user' }]);
+    expect(p.max_tokens).toBe(2048);
+  });
+});

@@ -1,7 +1,10 @@
 /**
  * AI 助手 → OpenAI 兼容端点客户端
  *
- * 支持：POST {endpoint}/chat/completions
+ * 双协议（2026-10-07）：
+ *   - OpenAI 兼容：POST {endpoint}/chat/completions（endpoint 以 /v1 结尾）
+ *   - Anthropic 协议：endpoint 路径含 /anthropic 时自动走 {endpoint}/v1/messages
+ *     （x-api-key + anthropic-version；MiniMax 的 anthropic 端点即此形态）
  * 非流式（stream: false）。
  *
  * 错误归类（友好提示）：
@@ -66,7 +69,8 @@ interface OpenAiChatResponse {
 
 function readError(bodyText: string, status: number): string {
   try {
-    const j = JSON.parse(bodyText) as OpenAiChatResponse;
+    // OpenAI 与 Anthropic 的错误体同为 {error:{message}}，一个读取两边覆盖
+    const j = JSON.parse(bodyText) as OpenAiChatResponse & { error?: { message?: string } };
     return j.error?.message ?? bodyText;
   } catch {
     return bodyText || `HTTP ${status}`;
@@ -128,6 +132,53 @@ function describeError(e: unknown, status?: number): AiError {
   return { kind: 'unknown', message: (e as Error)?.message ?? String(e) };
 }
 
+/**
+ * 协议识别（2026-10-07）：MiniMax 等厂商提供 Anthropic 协议端点
+ * （路径含 /anthropic，消息 API 为 /v1/messages）。用户明确使用此协议，
+ * 按 endpoint 路径自动分流——比加配置项省一次 schema 迁移。
+ * ponytail 已知上限：其它厂商的 anthropic 兼容端点若 URL 不含 "anthropic"
+ * 会走 OpenAI 分支；届时再引入显式 protocol 字段。
+ */
+export function isAnthropicEndpoint(endpoint: string): boolean {
+  return /anthropic/i.test(endpoint ?? '');
+}
+
+/** Anthropic Messages API 的响应形状（只取 text 块） */
+interface AnthropicChatResponse {
+  content?: Array<{ type?: string; text?: string }>;
+  error?: { message?: string };
+}
+
+/**
+ * 从 OpenAI 风格 messages 构造 Anthropic payload：
+ * Anthropic 禁止 system 出现在 messages 数组里——抽出第一条 system 作顶级
+ * system 参数。max_tokens 是 Anthropic 必填项。
+ */
+export function buildAnthropicPayload(
+  messages: ChatMessage[],
+  maxTokens?: number,
+): { system?: string; messages: Array<{ role: 'user' | 'assistant'; content: string }>; max_tokens: number } {
+  const rest = [...messages];
+  let system: string | undefined;
+  if (rest.length > 0 && rest[0].role === 'system') {
+    system = rest.shift()!.content;
+  }
+  return {
+    ...(system !== undefined ? { system } : {}),
+    messages: rest.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+    // max_tokens 是上限不是计费——MiniMax M3.1 强制 adaptive thinking（实测禁止
+    // disabled），thinking 会吃掉预算，剩余不够就返回空 text。地板 2048 保 thinking+回答。
+    max_tokens: Math.max(maxTokens ?? 1024, 2048),
+  };
+}
+
+/** 从 Anthropic 响应体提取纯文本（无 text 块返回 null） */
+export function parseAnthropicText(body: unknown): string | null {
+  const b = body as AnthropicChatResponse;
+  const text = b.content?.find((c) => c.type === 'text' && typeof c.text === 'string')?.text;
+  return text ? text.trim() : null;
+}
+
 /** 构造完整 URL（用户可填完整地址或仅 path） */
 function resolveUrl(endpoint: string): string {
   const trimmed = (endpoint || '').trim();
@@ -150,25 +201,38 @@ async function postChat(
     } satisfies AiError;
   }
 
+  const anthropic = isAnthropicEndpoint(url);
   const start = performance.now();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     Accept: 'application/json',
   };
-  if (model.apiKey) headers['Authorization'] = `Bearer ${model.apiKey}`;
+  let requestBody: unknown;
+  let requestUrl = url;
+  if (anthropic) {
+    // Anthropic 协议：/v1/messages + x-api-key + anthropic-version；
+    // 不支持 temperature/stream（忽略），MiniMax 实测 Bearer/x-api-key 均可
+    requestUrl = `${url.replace(/\/+$/, '')}/v1/messages`;
+    if (model.apiKey) headers['x-api-key'] = model.apiKey;
+    headers['anthropic-version'] = '2023-06-01';
+    requestBody = { model: model.model, ...buildAnthropicPayload(messages, opts.maxTokens) };
+  } else {
+    if (model.apiKey) headers['Authorization'] = `Bearer ${model.apiKey}`;
+    requestBody = {
+      model: model.model,
+      messages,
+      stream: false,
+      temperature: opts.temperature ?? 0.5,
+      ...(opts.maxTokens ? { max_tokens: opts.maxTokens } : {}),
+    };
+  }
 
   let res: Response;
   try {
-    res = await fetch(url, {
+    res = await fetch(requestUrl, {
       method: 'POST',
       headers,
-      body: JSON.stringify({
-        model: model.model,
-        messages,
-        stream: false,
-        temperature: opts.temperature ?? 0.5,
-        ...(opts.maxTokens ? { max_tokens: opts.maxTokens } : {}),
-      }),
+      body: JSON.stringify(requestBody),
       signal: opts.signal,
     });
   } catch (e) {
@@ -183,18 +247,20 @@ async function postChat(
     throw err;
   }
 
-  let body: OpenAiChatResponse;
+  let parsed: unknown;
   try {
-    body = JSON.parse(text) as OpenAiChatResponse;
+    parsed = JSON.parse(text);
   } catch {
     throw {
       kind: 'bad_response',
-      message: '返回内容不是合法 JSON（请检查 endpoint 是否为 chat/completions 路径）。',
+      message: anthropic
+        ? '返回内容不是合法 JSON（请检查 /anthropic 端点是否可达）。'
+        : '返回内容不是合法 JSON（请检查 endpoint 是否为 chat/completions 路径）。',
       status: res.status,
     } satisfies AiError;
   }
 
-  const content = body.choices?.[0]?.message?.content?.trim();
+  const content = anthropic ? parseAnthropicText(parsed) : (parsed as OpenAiChatResponse).choices?.[0]?.message?.content?.trim();
   if (!content) {
     throw {
       kind: 'bad_response',

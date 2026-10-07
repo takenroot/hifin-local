@@ -95,8 +95,9 @@ export function AiSection() {
             <div className="text-base font-medium">AI 模型</div>
             <div className="text-xs text-text-muted dark:text-text-muted-dark mt-1">
               配置 AI 模型参数。本地版本默认关闭，仅在您主动添加模型后才会触发调用。
-              地址需为 OpenAI 兼容端点（以 /v1 结尾，HiFin 会自行拼接 /chat/completions）——
-              例如 MiniMax 用 https://api.minimax.cn/v1，不要填 /anthropic 协议地址。
+              双协议自动识别：OpenAI 兼容端点（如 https://api.minimax.cn/v1）走
+              /chat/completions；地址含 /anthropic 的端点（如 https://api.minimax.cn/anthropic）
+              自动走 Anthropic 协议的 /v1/messages。
             </div>
           </div>
         }

@@ -38,6 +38,40 @@ const SYSTEM_PROMPT = `你是 HiFin 的财务助手「小账」。基于下方�
 - 重点指出 1) 收支异常 2) 预算/目标风险 3) 一个改进建议；
 - 若规则版摘要已足够清楚，原样返回。`;
 
+/** Anthropic 协议识别：endpoint 路径含 /anthropic（与前端 client.ts 同一约定） */
+export function isAnthropicEndpoint(endpoint: string): boolean {
+  return /anthropic/i.test(endpoint ?? '');
+}
+
+/** Anthropic 响应形状（取 text 块） */
+interface AnthropicChatResponse {
+  content?: Array<{ type?: string; text?: string }>;
+}
+
+/**
+ * 构造 Anthropic Messages payload：system 抽为顶级参数（Anthropic 禁止 system
+ * 出现在 messages 数组）；max_tokens 地板 2048——MiniMax M3.1 强制 adaptive
+ * thinking，thinking 会吃预算，剩余不够返回空 text（实测 2026-10-07）。
+ */
+export function buildAnthropicPayload(
+  system: string,
+  userContent: string,
+  maxTokens?: number,
+): { system: string; messages: Array<{ role: 'user'; content: string }>; max_tokens: number } {
+  return {
+    system,
+    messages: [{ role: 'user', content: userContent }],
+    max_tokens: Math.max(maxTokens ?? 600, 2048),
+  };
+}
+
+/** 从 Anthropic 响应体提取纯文本（无 text 块返回 null） */
+export function parseAnthropicText(body: unknown): string | null {
+  const b = body as AnthropicChatResponse;
+  const text = b.content?.find((c) => c.type === 'text' && typeof c.text === 'string')?.text;
+  return text ? text.trim() : null;
+}
+
 export interface InsightPromptInput {
   metrics: MonthMetrics;
   ruleNarrative: string;
@@ -133,6 +167,7 @@ export async function llmRenderInsight(
     throw err;
   }
 
+  const anthropic = isAnthropicEndpoint(url);
   const controller = new AbortController();
   const timeoutMs = opts.timeoutMs ?? 30_000;
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -141,30 +176,40 @@ export async function llmRenderInsight(
     'Content-Type': 'application/json',
     Accept: 'application/json',
   };
-  if (model.apiKey) headers['Authorization'] = `Bearer ${model.apiKey}`;
+  const userContent =
+    `规则版摘要：${input.ruleNarrative}\n\n` +
+    `结构化指标(JSON):\n${JSON.stringify(input.metrics)}`;
 
-  const messages = [
-    { role: 'system', content: SYSTEM_PROMPT },
-    {
-      role: 'user',
-      content:
-        `规则版摘要：${input.ruleNarrative}\n\n` +
-        `结构化指标(JSON):\n${JSON.stringify(input.metrics)}`,
-    },
-  ];
+  let requestUrl = url;
+  let requestBody: unknown;
+  if (anthropic) {
+    requestUrl = `${url.replace(/\/+$/, '')}/v1/messages`;
+    if (model.apiKey) headers['x-api-key'] = model.apiKey;
+    headers['anthropic-version'] = '2023-06-01';
+    requestBody = {
+      model: model.model,
+      ...buildAnthropicPayload(SYSTEM_PROMPT, userContent, opts.maxTokens),
+    };
+  } else {
+    if (model.apiKey) headers['Authorization'] = `Bearer ${model.apiKey}`;
+    requestBody = {
+      model: model.model,
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: userContent },
+      ],
+      stream: false,
+      temperature: 0.4,
+      max_tokens: opts.maxTokens ?? 600,
+    };
+  }
 
   let res: Response;
   try {
-    res = await fetch(url, {
+    res = await fetch(requestUrl, {
       method: 'POST',
       headers,
-      body: JSON.stringify({
-        model: model.model,
-        messages,
-        stream: false,
-        temperature: 0.4,
-        max_tokens: opts.maxTokens ?? 600,
-      }),
+      body: JSON.stringify(requestBody),
       signal: controller.signal,
     });
   } catch (e) {
@@ -178,19 +223,23 @@ export async function llmRenderInsight(
     throw classifyStatus(res.status, pickErrorText(text));
   }
 
-  let body: OpenAiChatResponse;
+  let parsed: unknown;
   try {
-    body = JSON.parse(text) as OpenAiChatResponse;
+    parsed = JSON.parse(text);
   } catch {
     const err: AiInsightError = {
       kind: 'bad_response',
-      message: '返回内容不是合法 JSON（请检查 endpoint 是否为 chat/completions 路径）。',
+      message: anthropic
+        ? '返回内容不是合法 JSON（请检查 /anthropic 端点是否可达）。'
+        : '返回内容不是合法 JSON（请检查 endpoint 是否为 chat/completions 路径）。',
       status: res.status,
     };
     throw err;
   }
 
-  const content = body.choices?.[0]?.message?.content?.trim();
+  const content = anthropic
+    ? parseAnthropicText(parsed)
+    : (parsed as OpenAiChatResponse).choices?.[0]?.message?.content?.trim();
   if (!content) {
     const err: AiInsightError = {
       kind: 'bad_response',
