@@ -108,6 +108,22 @@
 }
 
 @layer components {
+  /* AI 财务建议段落入场（2026-10-07）：逐段 fade-up，步进由 --insight-delay 控制；
+     reduced-motion 下纯淡入（transform 砍掉，与全局降级块同口径） */
+  @keyframes insight-fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .insight-para {
+    animation: insight-fade-up 400ms var(--ease-out) both;
+    animation-delay: var(--insight-delay, 0ms);
+  }
   /* Toast 入场（2026-10-06 bento-motion §4）：translateY(8px → 0) + opacity 0→1，
      220ms --dur-overlay ease-out。退出走对称路径（同一 transform/opacity，
      反向）——Emil Kowalski：toast 用 transition 而非 keyframes，否则连续触发
@@ -140,5 +156,9 @@
   .animate-pulse,
   .animate-bounce {
     animation: none;
+  }
+  /* AI 建议段落：reduced-motion 下砍位移只留淡入（Kowalski：更少更温和非零） */
+  .insight-para {
+    transform: none !important;
   }
 }

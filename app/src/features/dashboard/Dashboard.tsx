@@ -331,6 +331,22 @@ export default function Dashboard() {
     [stats, monthly, budgetProgress, goals],
   );
 
+  // AI 卡右侧指标 chip：净资产/本月结余/储蓄率（Hero 摘要位）
+  const insightChips = useMemo(() => {
+    const last = monthly[monthly.length - 1];
+    // 值不带货币符号（单位进 label）——chip 窄格塞不下 "¥ 37,033.25"，会触发截断
+    const num = (n: number) => n.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return [
+      { label: '净资产（元）', value: num(stats.netAsset.amount) },
+      {
+        label: '本月结余（元）',
+        value: num(last.balance),
+        tone: (last.balance >= 0 ? 'income' : 'expense') as 'income' | 'expense' | undefined,
+      },
+      { label: '储蓄率', value: `${stats.savings.amount.toFixed(1)}%` },
+    ];
+  }, [stats, monthly]);
+
   /* 还款提醒：credit / debt 且余额为正（待还款） */
   const repayAccounts = useMemo(
     () => accounts.filter((a) => (a.type === 'credit' || a.type === 'debt') && a.balance > 0),
@@ -916,9 +932,6 @@ export default function Dashboard() {
                       </ul>
                     )}
                   </div>
-
-                  {/* AI 财务建议：右栏底部，手动触发（见 InsightCard.tsx 头注） */}
-                  <DashboardInsightCard contextText={insightContext} />
                 </div>
               </section>
 
@@ -989,6 +1002,9 @@ export default function Dashboard() {
                   </div>
                 )}
               </section>
+
+              {/* AI 财务建议：全宽 Hero 摘要卡（右栏窄条会拉长 Overview 图——2026-10-07 重构） */}
+              <DashboardInsightCard contextText={insightContext} chips={insightChips} />
             </>
           )}
         </div>

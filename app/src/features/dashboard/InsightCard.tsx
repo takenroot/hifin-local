@@ -1,16 +1,19 @@
 /**
- * 看板「AI 财务建议」卡（2026-10-06 用户立项）
+ * 看板「AI 财务建议」卡（2026-10-07 C 方案：Hero 摘要卡 + 折叠全文 + 段落入场）
  * ---------------------------------------------------------------
- * 手动触发的 AI 分析控件：点「分析现状」→ 把看板已有数据拼成上下文 →
- * 走 ai-assistant 的 chat() 生成「现状总结 + 三条建议」→ 结果缓存 kv
- * （ai.dashboard.advice，{text, at}）并展示生成时间。
+ * 结构（替代初版"右栏窄条"——长文本撑高 grid 行把 Overview 图拉长，是布局错配）：
+ *   全宽卡，「最近交易」之后。左文右数：
+ *   - 左侧：标题 + 状态机（未配置引导/就绪/分析中/错误）+ 触发按钮
+ *   - 右侧：3 枚指标 chip（净资产/本月结余/储蓄率）——Vuexy hero 的"指标化"
+ *     借鉴，皮肤仍走我们的令牌（无营销页色块）
+ *   - 完整分析文本默认折叠（「查看完整分析」展开），行宽 max-w-3xl，
+ *     按段落 stagger 淡入上浮（--insight-delay 步进，reduced-motion 纯淡入）
  *
- * 状态机：checking（探测模型/缓存）→ no-model（引导去设置）/ ready /
- * loading（分析中，纯文字省略号）/ done（结果）/ error（可重试）。
- * 不做自动触发——用户掌控 token 消耗；不做硬配额——本地单用户，按需重分析。
+ * 其余不变：手动触发（用户掌控 token）、kv 缓存（ai.dashboard.advice）、
+ * 复用 ai-assistant 的 chat()/getDefaultModelId()、上下文只用概况级数字。
  */
-import { useCallback, useEffect, useState } from 'react';
-import { IconSparkles } from '@tabler/icons-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { IconSparkles, IconChevronDown, IconChevronUp } from '@tabler/icons-react';
 import { chat } from '@/features/ai-assistant/client';
 import { getDefaultModelId } from '@/features/ai-assistant/storage';
 import type { LabMonthlyPoint } from '@/lib/monthlyAgg';
@@ -21,6 +24,14 @@ export const INSIGHT_KV_KEY = 'ai.dashboard.advice';
 export interface InsightCache {
   text: string;
   at: number;
+}
+
+/** 右侧指标 chip 的数据形状（由看板用 stats/monthly 拼装） */
+export interface InsightChip {
+  label: string;
+  value: string;
+  /** 'income' | 'expense' | 缺省中性 */
+  tone?: 'income' | 'expense';
 }
 
 /** 提示词中给模型的固定任务指令（口径：不编造数据） */
@@ -70,6 +81,14 @@ export function buildInsightContext(input: {
   return lines.join('\n');
 }
 
+/** 把模型文本按空行拆成段落（stagger 淡入的渲染单位）；无空行整篇一段 */
+export function splitInsightParagraphs(text: string): string[] {
+  return text
+    .split(/\n{2,}/)
+    .map((p) => p.trim())
+    .filter((p) => p.length > 0);
+}
+
 async function fetchModel(id: number): Promise<ModelRow | undefined> {
   const r = await fetch('/api/ai-models?hideApiKey=0');
   if (!r.ok) throw new Error(`GET /api/ai-models → ${r.status}`);
@@ -99,10 +118,17 @@ async function saveCache(cache: InsightCache): Promise<void> {
 
 type Status = 'checking' | 'no-model' | 'ready' | 'loading' | 'done' | 'error';
 
-export function DashboardInsightCard({ contextText }: { contextText: string }) {
+export function DashboardInsightCard({
+  contextText,
+  chips,
+}: {
+  contextText: string;
+  chips: InsightChip[];
+}) {
   const [status, setStatus] = useState<Status>('checking');
   const [result, setResult] = useState<InsightCache | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
+  const [expanded, setExpanded] = useState(false);
 
   // 启动探测：默认模型 → 模型存在才允许分析；缓存优先展示
   useEffect(() => {
@@ -138,15 +164,11 @@ export function DashboardInsightCard({ contextText }: { contextText: string }) {
       }
       const model = await fetchModel(modelId);
       if (!model) throw new Error('默认模型已不存在，请到设置重新选择');
-      const res = await chat(
-        model as Parameters<typeof chat>[0],
-        contextText,
-        [],
-        INSIGHT_TASK,
-      );
+      const res = await chat(model as Parameters<typeof chat>[0], contextText, [], INSIGHT_TASK);
       const cache: InsightCache = { text: res.text, at: Date.now() };
       await saveCache(cache);
       setResult(cache);
+      setExpanded(true); // 新生成的结果直接展开（stagger 入场是它的一部分）
       setStatus('done');
     } catch (e) {
       setErrorMsg(e instanceof Error ? e.message : String(e));
@@ -154,74 +176,136 @@ export function DashboardInsightCard({ contextText }: { contextText: string }) {
     }
   }, [contextText]);
 
+  const paragraphs = useMemo(() => (result ? splitInsightParagraphs(result.text) : []), [result]);
+
   return (
-    <div className="card p-5" data-testid="dash-insight">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-sm font-semibold text-text dark:text-text-dark">AI 财务建议</h2>
+    <section className="card p-5" data-testid="dash-insight">
+      <div className="flex flex-col gap-6 md:flex-row md:items-start">
+        {/* 左文：标题 + 状态机 + 触发 */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-semibold text-text dark:text-text-dark">AI 财务建议</h2>
+            <IconSparkles size={14} className="text-text-muted dark:text-text-muted-dark" aria-hidden />
+          </div>
           <p className="mt-0.5 text-xs text-text-muted dark:text-text-muted-dark">
             基于当前看板数据生成
           </p>
-        </div>
-        <IconSparkles size={16} className="text-text-muted dark:text-text-muted-dark" aria-hidden />
-      </div>
 
-      <div className="mt-3 text-sm" aria-live="polite">
-        {status === 'checking' && (
-          <div className="py-4 text-center text-text-muted dark:text-text-muted-dark">检测模型配置…</div>
-        )}
-        {status === 'no-model' && (
-          <div className="py-4 text-center">
-            <div className="text-text-muted dark:text-text-muted-dark">尚未配置 AI 模型</div>
-            <a
-              href="/settings"
-              className="mt-2 inline-block text-brand dark:text-brand-dark underline underline-offset-2"
-            >
-              去设置 → AI 配置 添加模型
-            </a>
-          </div>
-        )}
-        {(status === 'ready' || status === 'error') && (
-          <div className="py-2">
-            {status === 'error' && (
-              <div className="mb-2 text-expense dark:text-expense-dark" role="alert">
-                {errorMsg || '分析失败'}
+          <div className="mt-3 text-sm" aria-live="polite">
+            {status === 'checking' && (
+              <div className="text-text-muted dark:text-text-muted-dark">检测模型配置…</div>
+            )}
+            {status === 'no-model' && (
+              <div>
+                <span className="text-text-muted dark:text-text-muted-dark">尚未配置 AI 模型。</span>
+                <a
+                  href="/settings"
+                  className="ml-1 text-brand dark:text-brand-dark underline underline-offset-2"
+                >
+                  去设置 → AI 配置
+                </a>
               </div>
             )}
-            <button
-              type="button"
-              onClick={() => void analyze()}
-              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-brand text-white text-xs hover:opacity-90 transition"
+            {(status === 'ready' || status === 'error') && (
+              <div className="flex items-center gap-3">
+                {status === 'error' && (
+                  <span className="text-expense dark:text-expense-dark" role="alert">
+                    {errorMsg || '分析失败'}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => void analyze()}
+                  className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-brand text-white text-xs hover:opacity-90 transition whitespace-nowrap"
+                >
+                  <IconSparkles size={14} aria-hidden />
+                  {status === 'error' ? '重试分析' : '分析现状'}
+                </button>
+              </div>
+            )}
+            {status === 'loading' && (
+              <div className="text-text-muted dark:text-text-muted-dark">分析中…</div>
+            )}
+            {status === 'done' && result && (
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-muted dark:text-text-muted-dark">
+                <span>生成于 {new Date(result.at).toLocaleString('zh-CN', { hour12: false })}</span>
+                <button
+                  type="button"
+                  onClick={() => void analyze()}
+                  className="text-brand dark:text-brand-dark hover:underline underline-offset-2 whitespace-nowrap"
+                >
+                  重新分析
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 右数：指标 chip（Hero 摘要位；Vuexy 的"指标化"借鉴，皮肤走我们的令牌） */}
+        <div className="grid grid-cols-3 gap-3 md:w-96 flex-none" data-testid="dash-insight-chips">
+          {chips.map((c) => (
+            <div
+              key={c.label}
+              className="rounded-xl bg-bg dark:bg-bg-dark px-3 py-2.5 text-center"
             >
-              <IconSparkles size={14} aria-hidden />
-              {status === 'error' ? '重试分析' : '分析现状'}
-            </button>
-          </div>
-        )}
-        {status === 'loading' && (
-          <div className="py-4 text-center text-text-muted dark:text-text-muted-dark">分析中…</div>
-        )}
-        {status === 'done' && result && (
-          <div>
-            <p className="whitespace-pre-wrap leading-relaxed text-text dark:text-text-dark">
-              {result.text}
-            </p>
-            <div className="mt-3 flex items-center justify-between">
-              <span className="text-[11px] text-text-muted dark:text-text-muted-dark">
-                生成于 {new Date(result.at).toLocaleString('zh-CN', { hour12: false })}
-              </span>
-              <button
-                type="button"
-                onClick={() => void analyze()}
-                className="text-xs text-brand dark:text-brand-dark hover:underline underline-offset-2"
+              <div className="text-[11px] text-text-muted dark:text-text-muted-dark truncate">
+                {c.label}
+              </div>
+              <div
+                className={
+                  'mt-0.5 text-sm font-semibold tabular-nums truncate ' +
+                  (c.tone === 'income'
+                    ? 'text-income'
+                    : c.tone === 'expense'
+                      ? 'text-expense'
+                      : 'text-text dark:text-text-dark')
+                }
+                title={c.value}
               >
-                重新分析
-              </button>
+                {c.value}
+              </div>
             </div>
-          </div>
-        )}
+          ))}
+        </div>
       </div>
-    </div>
+
+      {/* 全文折叠区：max-w-3xl 限行长；按段落 stagger 淡入（CSS 见 index.css .insight-para） */}
+      {status === 'done' && result && (
+        <div className="mt-4 border-t border-border dark:border-border-dark pt-3">
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            aria-expanded={expanded}
+            className="inline-flex items-center gap-1 text-xs text-text-muted dark:text-text-muted-dark hover:text-text dark:hover:text-text-dark transition whitespace-nowrap"
+          >
+            {expanded ? (
+              <>
+                收起分析 <IconChevronUp size={12} />
+              </>
+            ) : (
+              <>
+                查看完整分析（{paragraphs.length} 段） <IconChevronDown size={12} />
+              </>
+            )}
+          </button>
+          {expanded && (
+            <div className="mt-2 max-w-3xl">
+              {paragraphs.map((p, i) => (
+                <p
+                  key={i}
+                  className="insight-para whitespace-pre-wrap leading-relaxed text-text dark:text-text-dark mb-3 last:mb-0"
+                  style={{ '--insight-delay': `${i * 120}ms` } as React.CSSProperties}
+                >
+                  {/* 模型常输出 markdown 标题记号（### 1) …）——渲染时剥掉井号，
+                     保留序号文本；正文其它 markdown 不做解析（YAGNI） */}
+                  {p.replace(/^#{1,6}\s*/, '')}
+                </p>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </section>
   );
 }
 
