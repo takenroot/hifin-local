@@ -23,6 +23,7 @@ import { txStatsMonthAtom } from '@/store/atoms';
 import { formatMoney } from './format';
 import { PIE_COLORS } from '@/lib/format';
 import { toTransaction, type RestTransaction } from './api';
+import { CHART_ANIMATION_MS } from '@/lib/chartEasing';
 import {
   STATS_TYPES,
   STATS_TYPE_LABELS,
@@ -172,7 +173,7 @@ export function TransactionStatsView({ version = 0 }: Props) {
                     innerRadius="55%"
                     outerRadius="85%"
                     paddingAngle={2}
-                    animationDuration={600}
+                    animationDuration={CHART_ANIMATION_MS}
                     animationEasing="ease-out"
                   >
                     {pieData.map((_, i) => (

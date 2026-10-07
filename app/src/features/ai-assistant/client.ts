@@ -110,10 +110,14 @@ function describeError(e: unknown, status?: number): AiError {
     const msg = e.message || '';
     // 浏览器跨域拦截 → fetch reject with TypeError
     if (/Failed to fetch|NetworkError|load failed/i.test(msg)) {
+      // 2026-10-07 修正：Failed to fetch 不止 CORS——常见根因是端点协议不配
+      // （HiFin 拼 /chat/completions，OpenAI 兼容地址以 /v1 结尾；MiniMax 的
+      // /anthropic 是 Anthropic 协议，该路径 404 也会被浏览器报成网络错误）。
+      // 文案给排查路径而不是单一归因。
       return {
         kind: 'cors',
         message:
-          '请求被浏览器拦截，可能是 CORS（跨域）问题。请确认 endpoint 配置了允许跨域（Access-Control-Allow-Origin），或使用本地代理。',
+          '请求未能到达服务端（网络错误/被浏览器拦截）。排查：① 地址是否为 OpenAI 兼容端点（如 MiniMax 用 https://api.minimax.cn/v1，/anthropic 协议地址不通）；② 浏览器控制台 Network 面板看真实失败原因；③ 该端点是否允许浏览器跨域。',
       };
     }
     return { kind: 'network', message: `网络错误：${msg}` };

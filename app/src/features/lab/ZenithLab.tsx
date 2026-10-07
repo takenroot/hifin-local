@@ -44,6 +44,7 @@ import { formatMoney, PIE_COLORS } from '@/lib/format';
 import { LAB_ANCHOR } from './DashboardLab';
 import { useLabData } from './useLabData';
 import { LabDataSwitch } from './LabDataSwitch';
+import { CHART_ANIMATION_MS } from '@/lib/chartEasing';
 
 /* ───────────────────────── 小组件（局部复用） ───────────────────────── */
 
@@ -343,7 +344,7 @@ export function ZenithLab() {
                   className={toneChartClass(tabColor)}
                   strokeWidth={2}
                   fill={`url(#${AREA_GRAD[tabColor]})`}
-                  animationDuration={600}
+                  animationDuration={CHART_ANIMATION_MS}
                   animationEasing="ease-out"
                 />
               </AreaChart>
@@ -367,7 +368,7 @@ export function ZenithLab() {
                     innerRadius="60%"
                     outerRadius="85%"
                     paddingAngle={2}
-                    animationDuration={600}
+                    animationDuration={CHART_ANIMATION_MS}
                     animationEasing="ease-out"
                   >
                     {lab.slices.map((_, i) => (

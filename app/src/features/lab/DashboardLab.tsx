@@ -96,6 +96,7 @@ export const LAB_STATS = {
 
 /** 单月收支结余点：定义已上移至 @/lib/monthlyAgg；本地 import + re-export 保持既有路径 */
 import type { LabMonthlyPoint } from '@/lib/monthlyAgg';
+import { CHART_ANIMATION_MS } from '@/lib/chartEasing';
 export type { LabMonthlyPoint };
 
 /** 把 YYYY-MM-DD 锚点归到当月 1 号再回退 i 个月，得到 YYYY-MM */
@@ -302,7 +303,7 @@ export function DashboardLab() {
                 className="chart-brand"
                 strokeWidth={2}
                 fill="url(#labTrendGradient)"
-                animationDuration={600}
+                animationDuration={CHART_ANIMATION_MS}
                 animationEasing="ease-out"
               />
             </AreaChart>
@@ -324,7 +325,7 @@ export function DashboardLab() {
                   innerRadius="55%"
                   outerRadius="85%"
                   paddingAngle={2}
-                  animationDuration={600}
+                  animationDuration={CHART_ANIMATION_MS}
                   animationEasing="ease-out"
                 >
                   {lab.slices.map((_, i) => (

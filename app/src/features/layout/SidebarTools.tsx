@@ -25,9 +25,12 @@ export function SidebarTools({ collapsed = false }: SidebarToolsProps) {
         collapsed ? 'justify-center px-2.5' : 'justify-start px-3'
       }`}
     >
-      <AccentPicker collapsed={collapsed} />
+      {/* 收起态 rail 宽度放不下四件（用户 2026-10-07）：只保留主题切换，
+         调色盘/铃铛/头像在展开态可用 */}
+      {!collapsed && <AccentPicker collapsed={collapsed} />}
       <ThemeToggle collapsed={collapsed} />
-      <NotificationBell collapsed={collapsed} />
+      {!collapsed && <NotificationBell collapsed={collapsed} />}
+      {!collapsed && (
       <button
         type="button"
         onClick={() => navigate('/settings')}
@@ -41,6 +44,7 @@ export function SidebarTools({ collapsed = false }: SidebarToolsProps) {
           className="w-6 h-6 rounded-full bg-gradient-to-br from-text-muted to-text dark:from-text-muted-dark dark:to-text-dark"
         />
       </button>
+      )}
     </div>
   );
 }

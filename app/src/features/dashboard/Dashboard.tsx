@@ -66,7 +66,7 @@ import {
   type GoalRow,
   type SummaryRow,
 } from '@/lib/monthlyAgg';
-import { threePhaseEasing } from '@/lib/chartEasing';
+import { threePhaseEasing, CHART_ANIMATION_MS } from '@/lib/chartEasing';
 import { DashboardInsightCard, buildInsightContext } from './InsightCard';
 import type { Budget, Category, Goal, Account, Transaction } from '@/db';
 import { useSpaceId } from '@/db';
@@ -606,7 +606,7 @@ export default function Dashboard() {
                                   innerRadius="55%"
                                   outerRadius="85%"
                                   paddingAngle={2}
-                                  animationDuration={600}
+                                  animationDuration={CHART_ANIMATION_MS}
                                 >
                                   {categoryRows.items.map((_, i) => (
                                     <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
@@ -696,7 +696,7 @@ export default function Dashboard() {
                             className={toneChartClass(tabColor)}
                             strokeWidth={2}
                             fill={`url(#${AREA_GRAD[tabColor]})`}
-                            animationDuration={600}
+                            animationDuration={CHART_ANIMATION_MS}
                             animationEasing={threePhaseEasing as unknown as 'ease-out'}
                           />
                         </AreaChart>
@@ -760,7 +760,7 @@ export default function Dashboard() {
                                 innerRadius="60%"
                                 outerRadius="85%"
                                 paddingAngle={2}
-                                animationDuration={600}
+                                animationDuration={CHART_ANIMATION_MS}
                               >
                                 {slices.map((_, i) => (
                                   <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />

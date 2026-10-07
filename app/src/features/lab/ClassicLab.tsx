@@ -91,6 +91,7 @@ import {
   earliestTransactionMonth,
 } from '../dashboard/format';
 import { PIE_COLORS } from '@/lib/format';
+import { CHART_ANIMATION_MS } from '@/lib/chartEasing';
 
 /* 隐藏金额时显示的占位字符（与币种符号宽度接近） */
 const AMOUNT_HIDDEN_PREFIX = '¥ ';
@@ -576,7 +577,7 @@ export default function ClassicLab() {
                           className="chart-brand"
                           strokeWidth={2}
                           fill="url(#dashNetGradient)"
-                          animationDuration={600}
+                          animationDuration={CHART_ANIMATION_MS}
                           animationEasing="ease-out"
                         />
                       </AreaChart>
@@ -618,7 +619,7 @@ export default function ClassicLab() {
                             innerRadius="55%"
                             outerRadius="85%"
                             paddingAngle={2}
-                            animationDuration={600}
+                            animationDuration={CHART_ANIMATION_MS}
                             animationEasing="ease-out"
                           >
                             {distData.map((_, i) => (

@@ -7,7 +7,8 @@ import { useEffect, useRef, useState } from 'react';
  *  - prefers-reduced-motion 用户直接跳到终值
  *  - 传 0 再传回原值可强制重滚（StatCard 用它实现"取消隐藏时重滚"）
  */
-export function useAnimatedNumber(target: number, duration = 700): number {
+/** 默认滚动时长 5000ms（2026-10-07 用户决策：数字跳动不要太快） */
+export function useAnimatedNumber(target: number, duration = 5000): number {
   const [display, setDisplay] = useState(0);
   // 动画中断时记住已滚到的值，下一段从断点续滚，不跳变
   const fromRef = useRef(0);

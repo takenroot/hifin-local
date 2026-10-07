@@ -13,6 +13,13 @@
  * 视觉仍成立（本函数在 0/0.5/1 与标准缓动同值）。
  */
 
+/**
+ * 图表/饼图动画时长（2026-10-07 用户决策：原 600ms 感觉太快，拉到 5 秒左右）。
+ * 数字滚动见 hooks/useAnimatedNumber 默认 duration（同决策 5000ms）。
+ * 想回调手感只改这一处。
+ */
+export const CHART_ANIMATION_MS = 5000;
+
 /** 分段节点（导出供测试与文档） */
 export const THREE_PHASE_KNOTS = {
   fastEnd: 0.3,

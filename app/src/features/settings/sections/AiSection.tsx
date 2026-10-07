@@ -95,6 +95,8 @@ export function AiSection() {
             <div className="text-base font-medium">AI 模型</div>
             <div className="text-xs text-text-muted dark:text-text-muted-dark mt-1">
               配置 AI 模型参数。本地版本默认关闭，仅在您主动添加模型后才会触发调用。
+              地址需为 OpenAI 兼容端点（以 /v1 结尾，HiFin 会自行拼接 /chat/completions）——
+              例如 MiniMax 用 https://api.minimax.cn/v1，不要填 /anthropic 协议地址。
             </div>
           </div>
         }
@@ -257,8 +259,12 @@ function ModelsTable({
                     )}
                   </div>
                 </td>
-                <td className="py-3 pr-4 text-text-muted dark:text-text-muted-dark align-top">
-                  {m.model || '—'}
+                {/* 模型名单元格 truncate：模型 ID 可很长（MiniMax-M3.1-Flash-Preview），
+                   不截断会把行撑成三行（用户 2026-10-07） */}
+                <td className="py-3 pr-4 text-text-muted dark:text-text-muted-dark align-top max-w-[180px]">
+                  <span className="block truncate" title={m.model ?? undefined}>
+                    {m.model || '—'}
+                  </span>
                 </td>
                 <td className="py-3 pr-4 text-text-muted dark:text-text-muted-dark truncate max-w-[320px] align-top">
                   {m.endpoint || '—'}
