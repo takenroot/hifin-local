@@ -210,11 +210,12 @@ async function postChat(
   let requestBody: unknown;
   let requestUrl = url;
   if (anthropic) {
-    // Anthropic 协议：/v1/messages + x-api-key + anthropic-version；
-    // 不支持 temperature/stream（忽略），MiniMax 实测 Bearer/x-api-key 均可
+    // Anthropic 协议：/v1/messages。鉴权用 Authorization: Bearer 而非 x-api-key——
+    // MiniMax 的 CORS 白名单(ACA-H)不含 x-api-key/anthropic-version，带自定义头
+    // 预检会被拒（实测 2026-10-07：浏览器 Failed to fetch 的真因）；Bearer 在白名单
+    // 内且 MiniMax 不强制 anthropic-version 头（curl 实测 200）
     requestUrl = `${url.replace(/\/+$/, '')}/v1/messages`;
-    if (model.apiKey) headers['x-api-key'] = model.apiKey;
-    headers['anthropic-version'] = '2023-06-01';
+    if (model.apiKey) headers['Authorization'] = `Bearer ${model.apiKey}`;
     requestBody = { model: model.model, ...buildAnthropicPayload(messages, opts.maxTokens) };
   } else {
     if (model.apiKey) headers['Authorization'] = `Bearer ${model.apiKey}`;

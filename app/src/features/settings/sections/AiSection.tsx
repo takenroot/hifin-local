@@ -78,10 +78,12 @@ export function AiSection() {
   const isEmpty = !loading && models.length === 0;
 
   const headerActions = (
+    // whitespace-nowrap flex-none：防「建/模」竖排断行（容器窄时按钮文字被挤压换行）
     <Button
       variant="primary"
       icon={<IconPlus size={16} />}
       onClick={() => setCreating(true)}
+      className="whitespace-nowrap flex-none"
     >
       新建模型
     </Button>
@@ -93,7 +95,8 @@ export function AiSection() {
         title={
           <div>
             <div className="text-base font-medium">AI 模型</div>
-            <div className="text-xs text-text-muted dark:text-text-muted-dark mt-1">
+            {/* max-w：长文案在按钮前换行，不与右上角「新建模型」挤压（用户 2026-10-07 截图） */}
+            <div className="text-xs text-text-muted dark:text-text-muted-dark mt-1 max-w-3xl">
               配置 AI 模型参数。本地版本默认关闭，仅在您主动添加模型后才会触发调用。
               双协议自动识别：OpenAI 兼容端点（如 https://api.minimax.cn/v1）走
               /chat/completions；地址含 /anthropic 的端点（如 https://api.minimax.cn/anthropic）
@@ -295,7 +298,7 @@ function ModelsTable({
                       onClick={() => void runTest(m)}
                       disabled={state?.status === 'loading'}
                       className={clsx(
-                        'inline-flex items-center gap-1 px-2 h-8 rounded-lg text-xs',
+                        'inline-flex items-center gap-1 px-2 h-8 rounded-lg text-xs whitespace-nowrap flex-none',
                         'border border-border dark:border-border-dark text-text-muted dark:text-text-muted-dark hover:bg-bg dark:hover:bg-bg-card-dark hover:text-text dark:hover:text-text-dark',
                         'disabled:opacity-50 disabled:cursor-not-allowed',
                       )}
@@ -345,7 +348,7 @@ function TestBadge({ state }: { state?: TestState }) {
   }
   if (state.status === 'ok') {
     return (
-      <span className="inline-flex items-center gap-1 text-xs text-income">
+      <span className="inline-flex items-center gap-1 text-xs text-income whitespace-nowrap">
         <IconClock size={12} />
         {state.latencyMs} ms
       </span>

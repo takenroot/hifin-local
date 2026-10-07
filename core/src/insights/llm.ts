@@ -183,9 +183,10 @@ export async function llmRenderInsight(
   let requestUrl = url;
   let requestBody: unknown;
   if (anthropic) {
+    // 同前端 client.ts：Bearer 走 CORS 白名单，x-api-key/anthropic-version 会被
+    // MiniMax 的预检拒绝
     requestUrl = `${url.replace(/\/+$/, '')}/v1/messages`;
-    if (model.apiKey) headers['x-api-key'] = model.apiKey;
-    headers['anthropic-version'] = '2023-06-01';
+    if (model.apiKey) headers['Authorization'] = `Bearer ${model.apiKey}`;
     requestBody = {
       model: model.model,
       ...buildAnthropicPayload(SYSTEM_PROMPT, userContent, opts.maxTokens),
